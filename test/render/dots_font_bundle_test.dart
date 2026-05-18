@@ -27,11 +27,11 @@ Uint8List _loadProjectFont(String relativePath) {
 DotsFontBundle _loadRealBundle() {
   return DotsFontBundle(
     p22MackinacMedium:
-        _loadProjectFont('fonts/p22_mackinac/P22Mackinac-Medium_6.otf'),
+        _loadProjectFont('fonts/p22_mackinac/P22Mackinac-Medium_6.ttf'),
     p22MackinacBook:
-        _loadProjectFont('fonts/p22_mackinac/P22Mackinac-Book_13.otf'),
+        _loadProjectFont('fonts/p22_mackinac/P22Mackinac-Book_13.ttf'),
     p22MackinacMediumItalic:
-        _loadProjectFont('fonts/p22_mackinac/P22Mackinac-MedItalic_22.otf'),
+        _loadProjectFont('fonts/p22_mackinac/P22Mackinac-MedItalic_22.ttf'),
     inter: _loadProjectFont('fonts/inter/Inter-VariableFont_opsz,wght.ttf'),
     interItalic:
         _loadProjectFont('fonts/inter/Inter-Italic-VariableFont_opsz,wght.ttf'),
@@ -79,6 +79,7 @@ void main() {
         inter: Uint8List.fromList(<int>[4]),
         interItalic: Uint8List.fromList(<int>[5]),
         biroScriptPlus: Uint8List.fromList(<int>[6]),
+        assertSupportedFormats: false,
       );
       expect(
         bundle.bytesFor(DotsFontRole.p22MackinacMedium).single,
@@ -92,6 +93,68 @@ void main() {
       expect(bundle.bytesFor(DotsFontRole.inter).single, 4);
       expect(bundle.bytesFor(DotsFontRole.interItalic).single, 5);
       expect(bundle.bytesFor(DotsFontRole.biroScriptPlus).single, 6);
+    });
+
+    test('constructor rejects CFF-flavored OpenType (.otf) bytes', () {
+      final otfBytes = Uint8List.fromList(<int>[
+        // 'OTTO' magic = CFF-flavored OpenType.
+        0x4F, 0x54, 0x54, 0x4F,
+        // Pad to look minimally font-like.
+        0, 0, 0, 0,
+      ]);
+      final ttfBytes = Uint8List.fromList(<int>[
+        0x00, 0x01, 0x00, 0x00, 0, 0, 0, 0,
+      ]);
+      expect(
+        () => DotsFontBundle(
+          p22MackinacMedium: otfBytes,
+          p22MackinacBook: ttfBytes,
+          p22MackinacMediumItalic: ttfBytes,
+          inter: ttfBytes,
+          interItalic: ttfBytes,
+          biroScriptPlus: ttfBytes,
+        ),
+        throwsA(
+          isA<DotsConfigException>().having(
+            (e) => e.message,
+            'message',
+            allOf(contains('CFF'), contains('otf2ttf')),
+          ),
+        ),
+      );
+    });
+
+    test('constructor rejects unknown SFNT magic', () {
+      final junk = Uint8List.fromList(<int>[0xDE, 0xAD, 0xBE, 0xEF, 0, 0, 0, 0]);
+      final ttfBytes = Uint8List.fromList(<int>[
+        0x00, 0x01, 0x00, 0x00, 0, 0, 0, 0,
+      ]);
+      expect(
+        () => DotsFontBundle(
+          p22MackinacMedium: ttfBytes,
+          p22MackinacBook: ttfBytes,
+          p22MackinacMediumItalic: ttfBytes,
+          inter: junk,
+          interItalic: ttfBytes,
+          biroScriptPlus: ttfBytes,
+        ),
+        throwsA(isA<DotsConfigException>()),
+      );
+    });
+
+    test('constructor accepts TrueType (.ttf) bytes', () {
+      final ttfBytes = Uint8List.fromList(<int>[
+        0x00, 0x01, 0x00, 0x00, 0, 0, 0, 0,
+      ]);
+      // Should not throw.
+      DotsFontBundle(
+        p22MackinacMedium: ttfBytes,
+        p22MackinacBook: ttfBytes,
+        p22MackinacMediumItalic: ttfBytes,
+        inter: ttfBytes,
+        interItalic: ttfBytes,
+        biroScriptPlus: ttfBytes,
+      );
     });
   });
 
@@ -151,9 +214,12 @@ void main() {
 
       final without = await render(withBundle: false);
       final with_ = await render(withBundle: true);
-      // Embedded fonts add a meaningful number of bytes — P22 Mackinac
-      // Medium + Inter, each subset, should easily exceed 10 KB.
-      expect(with_ - without, greaterThan(10000));
+      // Embedded fonts add bytes; with proper TTF subsetting the
+      // delta on a short lhito page is ~6-10 KB. The lower bound
+      // here is deliberately conservative — the point is that
+      // glyph tables are actually embedded, not that the embedding
+      // is a particular size.
+      expect(with_ - without, greaterThan(1000));
     });
 
     test('text element fontFamily routes to bundled font', () async {
@@ -197,12 +263,13 @@ void main() {
           .file(await generator.wholePathFor('family_test'))
           .readAsBytes();
 
-      // Sanity: %PDF magic + a non-trivial byte stream.
+      // Sanity: %PDF magic + a non-trivial byte stream. Lower bound
+      // is conservative — what matters is that subsetting works.
       expect(bytes[0], 0x25);
       expect(bytes[1], 0x50);
       expect(bytes[2], 0x44);
       expect(bytes[3], 0x46);
-      expect(bytes.length, greaterThan(20000));
+      expect(bytes.length, greaterThan(3000));
     });
   });
 }

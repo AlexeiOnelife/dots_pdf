@@ -163,7 +163,7 @@ class DotsGenerator {
 
       yield PdfGenerationStarted(
         documentId: documentId,
-        totalPages: template.pages.length,
+        totalPages: template.effectivePages.length,
       );
 
       try {
@@ -184,7 +184,7 @@ class DotsGenerator {
             final tempPath = await _tempPathFor(documentId, 'whole.pdf');
             await renderer.render(
               template: template,
-              pages: template.pages,
+              pages: template.effectivePages,
               outputPath: tempPath,
             );
             await _atomicMove(tempPath, finalPath);
@@ -210,7 +210,7 @@ class DotsGenerator {
               urlFetcher: _urlFetcher,
               fontBundle: _fontBundle,
             );
-            final slices = _pairSlices(template.pages);
+            final slices = _pairSlices(template.effectivePages);
             for (var i = 0; i < slices.length; i++) {
               final pair = slices[i];
               final pairIndex = i + 1;
