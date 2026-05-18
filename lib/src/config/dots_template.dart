@@ -2,6 +2,7 @@ import 'package:meta/meta.dart';
 
 import '../render/layout/dots_layout_code.dart';
 import '../render/layout/dots_slot_rect.dart';
+import 'dots_pliego.dart';
 
 /// Immutable page size in PDF points (1 pt = 1/72 inch).
 @immutable
@@ -336,14 +337,41 @@ class DotsLayoutPage extends DotsPage {
 }
 
 /// Top-level template tree consumed by the generator.
+///
+/// A template can describe its content two equivalent ways:
+///
+/// - Page-level: an ordered list of [pages]. This is the lower-level
+///   model — the renderer consumes it directly.
+/// - Pliego-level: an ordered list of [pliegos] (2-page spreads).
+///   Each pliego is either two independent pages glued together
+///   ([DotsLayoutPliego]) or a single image spanning the spread
+///   ([DotsSpreadImagePliego]). The pliego-level API is the
+///   recommended public input.
+///
+/// **At most one of `pages` and `pliegos` may be non-empty** — the
+/// constructor asserts it, and the parser raises a descriptive error
+/// when both are present in JSON input.
 @immutable
 class DotsTemplate {
   /// Creates a template.
+  ///
+  /// `pages` and `pliegos` are mutually exclusive: leave at least one
+  /// at its default empty value. The assert below uses `identical`
+  /// against compile-time sentinels because `.length` / `.isEmpty`
+  /// are not const-evaluable on `List`.
   const DotsTemplate({
     required this.documentId,
     required this.pageSize,
-    required this.pages,
-  });
+    this.pages = _emptyPages,
+    this.pliegos = _emptyPliegos,
+  }) : assert(
+          identical(pages, _emptyPages) ||
+              identical(pliegos, _emptyPliegos),
+          'DotsTemplate accepts pages OR pliegos, not both',
+        );
+
+  static const List<DotsPage> _emptyPages = <DotsPage>[];
+  static const List<DotsPliego> _emptyPliegos = <DotsPliego>[];
 
   /// Stable identifier used for disk paths and cache lookups.
   final String documentId;
@@ -351,15 +379,42 @@ class DotsTemplate {
   /// Page geometry applied to every page.
   final DotsPageSize pageSize;
 
-  /// Ordered list of pages.
+  /// Page-level content. Empty when [pliegos] is the source of truth.
   final List<DotsPage> pages;
+
+  /// Pliego-level (2-page-spread) content. Empty when [pages] is the
+  /// source of truth.
+  final List<DotsPliego> pliegos;
+
+  /// Resolved list of pages the renderer consumes, regardless of
+  /// whether the template was authored page-level or pliego-level.
+  ///
+  /// When [pliegos] is non-empty, each pliego is flattened into its
+  /// two output pages with sequentially assigned page numbers; the
+  /// first pliego becomes pages 1 and 2, the second 3 and 4, and so
+  /// on. When [pages] is non-empty, the list is returned as-is.
+  List<DotsPage> get effectivePages {
+    if (pliegos.isEmpty) return pages;
+    final result = <DotsPage>[];
+    var nextPageNumber = 1;
+    for (final pliego in pliegos) {
+      final pliegoPages = pliego.toPages(nextPageNumber);
+      result.addAll(pliegoPages);
+      nextPageNumber += pliegoPages.length;
+    }
+    return List<DotsPage>.unmodifiable(result);
+  }
 
   /// Fast non-cryptographic hash of the template's logical content.
   ///
   /// Used as part of the cache key so that artifacts on disk are
   /// auto-invalidated whenever the template changes.
-  int get contentHash =>
-      Object.hash(documentId, pageSize, Object.hashAll(pages));
+  int get contentHash => Object.hash(
+        documentId,
+        pageSize,
+        Object.hashAll(pages),
+        Object.hashAll(pliegos),
+      );
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {

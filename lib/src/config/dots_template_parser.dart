@@ -1,10 +1,12 @@
 import 'dart:convert';
 
 import '../render/layout/dots_layout_code.dart';
+import '../render/layout/dots_layout_requirements.dart';
 import '../render/layout/dots_layout_solver.dart';
 import '../render/layout/dots_page_geometry.dart';
 import '../render/layout/dots_slot_rect.dart';
 import 'dots_config_exception.dart';
+import 'dots_pliego.dart';
 import 'dots_template.dart';
 
 /// JSON key in a caption map → solver-side slot kind.
@@ -13,6 +15,15 @@ const Map<String, DotsSlotKind> _captionJsonKeyToKind = <String, DotsSlotKind>{
   'date': DotsSlotKind.captionDate,
   'body': DotsSlotKind.captionBody,
   'qr': DotsSlotKind.qrCard,
+};
+
+/// Reverse of [_captionJsonKeyToKind] — slot kind → JSON key — used by
+/// validation error messages so users can copy/paste the right key.
+const Map<DotsSlotKind, String> _captionKindToJsonKey = <DotsSlotKind, String>{
+  DotsSlotKind.captionTitle: 'title',
+  DotsSlotKind.captionDate: 'date',
+  DotsSlotKind.captionBody: 'body',
+  DotsSlotKind.qrCard: 'qr',
 };
 
 /// Parses a JSON template string or pre-decoded map into a typed
@@ -52,6 +63,42 @@ class DotsTemplateParser {
       _requireMap(json, 'pageSize', r'$'),
       r'$.pageSize',
     );
+
+    final hasPages = json.containsKey('pages');
+    final hasPliegos = json.containsKey('pliegos');
+    if (hasPages && hasPliegos) {
+      throw const DotsConfigException(
+        'template must declare "pages" OR "pliegos", not both',
+        pointer: r'$',
+      );
+    }
+    if (!hasPages && !hasPliegos) {
+      throw const DotsConfigException(
+        'template must declare "pages" or "pliegos"',
+        pointer: r'$',
+      );
+    }
+
+    if (hasPliegos) {
+      final pliegosRaw = _requireList(json, 'pliegos', r'$');
+      final pliegos = <DotsPliego>[];
+      for (var i = 0; i < pliegosRaw.length; i++) {
+        final entry = pliegosRaw[i];
+        if (entry is! Map<String, dynamic>) {
+          throw DotsConfigException(
+            'pliego entry must be an object',
+            pointer: r'$.pliegos[' '$i' ']',
+          );
+        }
+        pliegos.add(_parsePliego(entry, r'$.pliegos[' '$i' ']'));
+      }
+      return DotsTemplate(
+        documentId: documentId,
+        pageSize: pageSize,
+        pliegos: List<DotsPliego>.unmodifiable(pliegos),
+      );
+    }
+
     final pagesRaw = _requireList(json, 'pages', r'$');
     final pages = <DotsPage>[];
     for (var i = 0; i < pagesRaw.length; i++) {
@@ -69,6 +116,88 @@ class DotsTemplateParser {
       pageSize: pageSize,
       pages: List<DotsPage>.unmodifiable(pages),
     );
+  }
+
+  /// Parses one pliego object. JSON shape:
+  ///
+  /// ```json
+  /// { "pliegoNumber": 1, "type": "layout",
+  ///   "left":  { /* page shape */ },
+  ///   "right": { /* page shape */ } }
+  /// ```
+  ///
+  /// or
+  ///
+  /// ```json
+  /// { "pliegoNumber": 2, "type": "spreadImage",
+  ///   "assetPath": "https://…",
+  ///   "spreadWidth": 1184, "height": 689,
+  ///   "x": 0, "y": 0,
+  ///   "bleedTop": true, "bleedBottom": true, "bleedOuter": true }
+  /// ```
+  ///
+  /// `pageNumber` on the inner pages of a layout pliego is ignored —
+  /// the renderer assigns the final page numbers from the pliego's
+  /// position in the template.
+  DotsPliego _parsePliego(Map<String, dynamic> json, String at) {
+    final pliegoNumber = _requireInt(json, 'pliegoNumber', at);
+    final type = _requireString(json, 'type', at);
+    switch (type) {
+      case 'layout':
+        final leftJson = _requireMap(json, 'left', at);
+        final rightJson = _requireMap(json, 'right', at);
+        // Inner pages may omit pageNumber — supply a placeholder; the
+        // pliego flattener overrides it from the parent position.
+        final leftWithPageNum = <String, dynamic>{
+          'pageNumber': 0,
+          ...leftJson,
+        };
+        final rightWithPageNum = <String, dynamic>{
+          'pageNumber': 0,
+          ...rightJson,
+        };
+        return DotsLayoutPliego(
+          pliegoNumber: pliegoNumber,
+          left: _parsePage(leftWithPageNum, '$at.left'),
+          right: _parsePage(rightWithPageNum, '$at.right'),
+        );
+      case 'spreadImage':
+        final spreadWidth = _requireDouble(json, 'spreadWidth', at);
+        if (spreadWidth <= 0) {
+          throw DotsConfigException(
+            'field "spreadWidth" must be positive (got $spreadWidth)',
+            pointer: '$at.spreadWidth',
+          );
+        }
+        final height = _requireDouble(json, 'height', at);
+        if (height <= 0) {
+          throw DotsConfigException(
+            'field "height" must be positive (got $height)',
+            pointer: '$at.height',
+          );
+        }
+        return DotsSpreadImagePliego(
+          pliegoNumber: pliegoNumber,
+          assetPath: _requireString(json, 'assetPath', at),
+          spreadWidth: spreadWidth,
+          height: height,
+          x: _optionalDouble(json, 'x') ?? 0,
+          y: _optionalDouble(json, 'y') ?? 0,
+          bleedTop: _optionalBool(json, 'bleedTop') ?? false,
+          bleedBottom: _optionalBool(json, 'bleedBottom') ?? false,
+          bleedOuter: _optionalBool(json, 'bleedOuter') ?? false,
+        );
+      default:
+        throw DotsConfigException(
+          'unknown pliego type "$type" (expected "layout" or "spreadImage")',
+          pointer: '$at.type',
+        );
+    }
+  }
+
+  double? _optionalDouble(Map<String, dynamic> json, String key) {
+    final value = json[key];
+    return value is num ? value.toDouble() : null;
   }
 
   DotsPageSize _parsePageSize(Map<String, dynamic> json, String at) {
@@ -244,6 +373,22 @@ class DotsTemplateParser {
         throw DotsConfigException(
           'layout "${layoutCode.name}" has no slot for caption kind '
           '"${providedKind.name}"',
+          pointer: '$at.captions',
+        );
+      }
+    }
+
+    // Enforce required captions per the layout's static descriptor.
+    // (See `lib/src/render/layout/dots_layout_requirements.dart` for
+    // the full table of who needs what.)
+    final requirements = layoutCode.requirements;
+    for (final requiredKind in requirements.requiredCaptionKinds) {
+      final value = captions[requiredKind];
+      if (value == null || value.isEmpty) {
+        throw DotsConfigException(
+          'layout "${layoutCode.name}" requires caption kind '
+          '"${requiredKind.name}" — supply a non-empty string under '
+          'captions.${_captionKindToJsonKey[requiredKind]}',
           pointer: '$at.captions',
         );
       }

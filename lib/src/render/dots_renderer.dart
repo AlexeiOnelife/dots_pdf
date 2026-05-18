@@ -321,7 +321,11 @@ abstract class DotsRenderer {
     return pw.Positioned(
       left: left,
       top: top,
-      child: pw.Image(image, width: width, height: height, fit: pw.BoxFit.fill),
+      // BoxFit.cover preserves the source image's aspect ratio,
+      // centring the content and cropping the overflow along the
+      // shorter axis. This matches the spec's "center-crop, fill
+      // without deformation" rule.
+      child: pw.Image(image, width: width, height: height, fit: pw.BoxFit.cover),
     );
   }
 
@@ -391,7 +395,9 @@ abstract class DotsRenderer {
                   image,
                   width: element.spreadWidth,
                   height: element.height + topBleed + bottomBleed,
-                  fit: pw.BoxFit.fill,
+                  // Preserve the panorama's aspect ratio; cover crops
+                  // along the shorter axis rather than stretching.
+                  fit: pw.BoxFit.cover,
                 ),
               ),
             ],
@@ -422,7 +428,11 @@ abstract class DotsRenderer {
     return pw.Positioned(
       left: left,
       top: top,
-      child: pw.Image(image, width: width, height: height, fit: pw.BoxFit.fill),
+      // BoxFit.cover preserves the source image's aspect ratio,
+      // centring the content and cropping the overflow along the
+      // shorter axis. This matches the spec's "center-crop, fill
+      // without deformation" rule.
+      child: pw.Image(image, width: width, height: height, fit: pw.BoxFit.cover),
     );
   }
 
@@ -436,7 +446,7 @@ abstract class DotsRenderer {
     final width = slot.widthMm * _mmToPt;
     final height = slot.heightMm * _mmToPt;
     final fontSize = _captionFontSizeFor(slot.kind, layoutCode);
-    final font = fontFor(_captionFontRoleFor(slot.kind));
+    final font = fontFor(_captionFontRoleFor(slot.kind, layoutCode));
 
     return pw.Positioned(
       left: left,
@@ -454,14 +464,22 @@ abstract class DotsRenderer {
 
   /// Maps a caption slot kind to its design-intent font role.
   ///
-  /// Per `docs/templates/SPECS_interior.md`: titles and dates are P22
-  /// Mackinac medium; body copy is Inter (Book in the spec; we ship
-  /// the variable Inter as a single role).
-  DotsFontRole _captionFontRoleFor(DotsSlotKind kind) {
+  /// Per `docs/templates/SPECS_interior.md`:
+  ///   - body-page caption blocks (L1/L7/etc.): title + date are P22
+  ///     Mackinac MEDIUM; body is Inter Book;
+  ///   - L_hito milestone page: title is P22 Mackinac MEDIUM, but the
+  ///     date (subtitle) is P22 Mackinac BOOK at 9 pt / 10.8 pt.
+  DotsFontRole _captionFontRoleFor(
+    DotsSlotKind kind,
+    DotsLayoutCode layoutCode,
+  ) {
     switch (kind) {
       case DotsSlotKind.captionTitle:
-      case DotsSlotKind.captionDate:
         return DotsFontRole.p22MackinacMedium;
+      case DotsSlotKind.captionDate:
+        return layoutCode == DotsLayoutCode.lhito
+            ? DotsFontRole.p22MackinacBook
+            : DotsFontRole.p22MackinacMedium;
       case DotsSlotKind.captionBody:
         return DotsFontRole.inter;
       case DotsSlotKind.photo:
@@ -516,9 +534,13 @@ abstract class DotsRenderer {
   double _captionFontSizeFor(DotsSlotKind kind, DotsLayoutCode layoutCode) {
     switch (kind) {
       case DotsSlotKind.captionTitle:
+        // L_hito title is 20 pt; everywhere else 11 pt per the spec.
         return layoutCode == DotsLayoutCode.lhito ? 20.0 : 11.0;
       case DotsSlotKind.captionDate:
-        return 11.0;
+        // L_hito date (subtitle) is 9 pt / 10.8 pt — the slot reserves
+        // exactly 10.8 pt of leading, so 11 pt overflows and pw.Text
+        // silently clips. Everywhere else dates are 11 pt.
+        return layoutCode == DotsLayoutCode.lhito ? 9.0 : 11.0;
       case DotsSlotKind.captionBody:
         return 9.0;
       case DotsSlotKind.photo:

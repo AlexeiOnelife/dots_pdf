@@ -3,6 +3,53 @@ import 'dart:typed_data';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:meta/meta.dart';
 
+import '../config/dots_config_exception.dart';
+
+/// SFNT magic bytes for the supported and unsupported font flavors.
+///
+/// - `0x00010000` — TrueType (`glyf` outlines). Supported.
+/// - `'OTTO'` (`0x4F54544F`) — CFF-flavored OpenType (PostScript
+///   outlines). NOT supported by the `pdf` package's TtfParser:
+///   it parses the SFNT tables but skips the `CFF ` outline table,
+///   leaving every glyph with zero advance width.
+const int _kSfntTrueTypeMagic = 0x00010000;
+const int _kSfntOpenTypeCffMagic = 0x4F54544F; // 'OTTO'
+
+void _assertTrueType(Uint8List bytes, String fieldName) {
+  if (bytes.length < 4) {
+    throw DotsConfigException(
+      'font bytes for "$fieldName" are too short (got ${bytes.length} bytes; '
+      'expected a TrueType `.ttf` file)',
+      pointer: r'$.fontBundle.' '$fieldName',
+    );
+  }
+  final magic = (bytes[0] << 24) |
+      (bytes[1] << 16) |
+      (bytes[2] << 8) |
+      bytes[3];
+  if (magic == _kSfntOpenTypeCffMagic) {
+    throw DotsConfigException(
+      '"$fieldName" is a CFF-flavored OpenType (.otf) font; the pdf '
+      'package does not embed CFF outlines, which renders text with '
+      'every letter stacked at the same x position. Convert the file '
+      'to TrueType (.ttf) once and bundle the .ttf instead:\n'
+      '    pip3 install --user fonttools cu2qu\n'
+      '    otf2ttf YourFont.otf   # produces YourFont.ttf\n'
+      'Then update DotsFontBundle.fromPackageAssets() (or the asset '
+      'paths in your own loader) to point at the .ttf file.',
+      pointer: r'$.fontBundle.' '$fieldName',
+    );
+  }
+  if (magic != _kSfntTrueTypeMagic) {
+    throw DotsConfigException(
+      '"$fieldName" has an unrecognised SFNT header magic '
+      '(0x${magic.toRadixString(16).padLeft(8, '0')}); expected a '
+      'TrueType `.ttf` font (magic 0x00010000).',
+      pointer: r'$.fontBundle.' '$fieldName',
+    );
+  }
+}
+
 /// Logical font role keyed by Dotbook design intent.
 ///
 /// The renderer routes text into one of these roles based on its slot
@@ -47,7 +94,58 @@ enum DotsFontRole {
 @immutable
 class DotsFontBundle {
   /// Creates a font bundle from raw byte streams.
-  const DotsFontBundle({
+  ///
+  /// Each byte stream must be a **TrueType** (`.ttf`) font — i.e. an
+  /// SFNT container whose header magic is `00 01 00 00`. CFF-flavored
+  /// OpenType (`.otf` with magic `OTTO`) is **not supported** by the
+  /// underlying `pdf` package: it parses the SFNT tables but skips the
+  /// `CFF ` outline table, so every glyph ends up with zero advance
+  /// width and text renders with every letter stacked at the same x
+  /// position.
+  ///
+  /// If you have `.otf` files, convert them once with `fontTools`:
+  ///
+  /// ```sh
+  /// pip3 install --user fonttools cu2qu
+  /// otf2ttf MyFont.otf   # produces MyFont.ttf alongside the .otf
+  /// ```
+  ///
+  /// The conversion is lossy at the outline level (cubic Bezier →
+  /// quadratic Bezier), but visually indistinguishable at print
+  /// resolution.
+  ///
+  /// [assertSupportedFormats] validates every input at construction
+  /// time and throws [DotsConfigException] when an unsupported format
+  /// is detected. Pass `false` only if you have a reason to believe
+  /// the detection is wrong for your inputs.
+  factory DotsFontBundle({
+    required Uint8List p22MackinacMedium,
+    required Uint8List p22MackinacBook,
+    required Uint8List p22MackinacMediumItalic,
+    required Uint8List inter,
+    required Uint8List interItalic,
+    required Uint8List biroScriptPlus,
+    bool assertSupportedFormats = true,
+  }) {
+    if (assertSupportedFormats) {
+      _assertTrueType(p22MackinacMedium, 'p22MackinacMedium');
+      _assertTrueType(p22MackinacBook, 'p22MackinacBook');
+      _assertTrueType(p22MackinacMediumItalic, 'p22MackinacMediumItalic');
+      _assertTrueType(inter, 'inter');
+      _assertTrueType(interItalic, 'interItalic');
+      _assertTrueType(biroScriptPlus, 'biroScriptPlus');
+    }
+    return DotsFontBundle._(
+      p22MackinacMedium: p22MackinacMedium,
+      p22MackinacBook: p22MackinacBook,
+      p22MackinacMediumItalic: p22MackinacMediumItalic,
+      inter: inter,
+      interItalic: interItalic,
+      biroScriptPlus: biroScriptPlus,
+    );
+  }
+
+  const DotsFontBundle._({
     required this.p22MackinacMedium,
     required this.p22MackinacBook,
     required this.p22MackinacMediumItalic,
@@ -90,9 +188,9 @@ class DotsFontBundle {
     }
 
     final results = await Future.wait<Uint8List>(<Future<Uint8List>>[
-      load('assets/fonts/p22_mackinac/P22Mackinac-Medium_6.otf'),
-      load('assets/fonts/p22_mackinac/P22Mackinac-Book_13.otf'),
-      load('assets/fonts/p22_mackinac/P22Mackinac-MedItalic_22.otf'),
+      load('assets/fonts/p22_mackinac/P22Mackinac-Medium_6.ttf'),
+      load('assets/fonts/p22_mackinac/P22Mackinac-Book_13.ttf'),
+      load('assets/fonts/p22_mackinac/P22Mackinac-MedItalic_22.ttf'),
       load('assets/fonts/inter/Inter-VariableFont_opsz,wght.ttf'),
       load('assets/fonts/inter/Inter-Italic-VariableFont_opsz,wght.ttf'),
       load('assets/fonts/biro_plus/Biro-ScriptPlus-Regular-subset.ttf'),

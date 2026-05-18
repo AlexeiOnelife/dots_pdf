@@ -188,11 +188,37 @@ Slot kinds emitted by the solver — what shows up in
 `DotsLayoutPage.captions`:
 
 ```dart
-DotsSlotKind.captionTitle   // P22 Mackinac medium, 11 pt (or 20 pt for lhito)
-DotsSlotKind.captionDate    // P22 Mackinac medium, 11 pt
+DotsSlotKind.captionTitle   // P22 Mackinac medium, 11 pt (20 pt for lhito)
+DotsSlotKind.captionDate    // P22 Mackinac medium, 11 pt (Book 9 pt for lhito)
 DotsSlotKind.captionBody    // Inter, 9 pt
-DotsSlotKind.qrCard         // QR code rendered from the payload string (typically a URL)
+DotsSlotKind.qrCard         // QR rendered from the payload string (typically a URL)
 ```
+
+#### Required vs. optional captions per layout
+
+Each `DotsLayoutCode` exposes its content contract via `.requirements`:
+
+```dart
+final r = DotsLayoutCode.lhito.requirements;
+r.photoCount;             // 0
+r.requiredCaptionKinds;   // [captionTitle, captionBody]
+r.optionalCaptionKinds;   // [captionDate, qrCard]
+```
+
+| Layout | Photos | Required captions | Optional captions |
+|---|---|---|---|
+| `l1`, `l1a`–`l1e` | 1 | — | — |
+| `l2a`–`l2c` | 2 | — | — |
+| `l3a` | 3 | — | — |
+| `l4a` | 4 | — | — |
+| `l4b` | 2 (per page of a 2-page spread) | — | — |
+| `l6a` | 3 (per page) | — | — |
+| `l7` | 2 (per page) | — | `captionDate`, `captionBody` |
+| `l8` | 3 (per page) | — | — |
+| `lhito` | 0 | `captionTitle`, `captionBody` | `captionDate`, `qrCard` |
+
+The parser raises `DotsConfigException` at parse time when a required
+caption is missing or empty.
 
 ### Asset sources
 
@@ -208,10 +234,52 @@ The default URL fetcher uses `dart:io HttpClient` with a 10-second
 timeout and accepts only 2xx responses. Inject `urlFetcher:` on
 `DotsGenerator` for tests or corporate proxies.
 
-### Spread-spanning images
+### Pliegos (2-page spreads, recommended)
 
-For an image that should print across both pages of a 2-page pair,
-declare a `DotsSpreadImageElement` on each page with matching `half`:
+`DotsTemplate` accepts content two equivalent ways: a flat `pages`
+list, or a `pliegos` list of 2-page spreads. The pliego-level API is
+recommended for new code — it's stricter about pagination (every
+pliego is exactly two pages) and lets you declare a spread-spanning
+image with a single asset path.
+
+```dart
+const template = DotsTemplate(
+  documentId: 'demo',
+  pageSize: DotsPageSize(width: 592.34, height: 736.81),
+  pliegos: <DotsPliego>[
+    // Two independent pages glued together.
+    DotsLayoutPliego(
+      pliegoNumber: 1,
+      left:  DotsLayoutPage(layoutCode: DotsLayoutCode.l1,
+                            photoAssetPaths: <String>['…']),
+      right: DotsLayoutPage(layoutCode: DotsLayoutCode.l4a,
+                            photoAssetPaths: <String>['…', '…', '…', '…']),
+    ),
+    // One image, one URL, spans the whole spread. The library splits
+    // it into left and right halves at render time — no duplicate
+    // declaration needed.
+    DotsSpreadImagePliego(
+      pliegoNumber: 2,
+      assetPath: 'https://example.com/panorama.jpg',
+      spreadWidth: 1184, height: 689,
+      bleedTop: true, bleedBottom: true, bleedOuter: true,
+    ),
+  ],
+);
+```
+
+`pages` and `pliegos` are **mutually exclusive** — set one or the
+other, not both. When `pliegos` is set, the library flattens the
+list into output pages internally (pliego N becomes pages 2N-1 and
+2N). The page numbers on the inner pages of a `DotsLayoutPliego`
+are overwritten with the correct sequential values, so you can put
+any placeholder there.
+
+### Spread-spanning images (page-level fallback)
+
+If you're staying on the page-level API and need a spread image
+without using a `DotsSpreadImagePliego`, declare a
+`DotsSpreadImageElement` on each page with matching `half`:
 
 ```dart
 const DotsElementsPage(
@@ -227,24 +295,13 @@ const DotsElementsPage(
     ),
   ],
 ),
-const DotsElementsPage(
-  pageNumber: 5,
-  elements: <DotsElement>[
-    DotsSpreadImageElement(
-      x: 0, y: 0,
-      assetPath: 'https://example.com/panorama.jpg',
-      spreadWidth: 1184,
-      height: 689,
-      half: DotsSpreadHalf.right,
-      bleedTop: true, bleedBottom: true, bleedOuter: true,
-    ),
-  ],
-),
+// Mirror with half: right on page 5.
 ```
 
 The renderer clips and offsets the underlying image so the two
 halves stitch at the binding. The same URL is fetched once per
-renderer instance.
+renderer instance. For new code, prefer `DotsSpreadImagePliego` —
+it expresses the same intent with a single asset path.
 
 ### Previewing the output
 
@@ -403,6 +460,39 @@ Validation is strict — any missing required field or shape mismatch
 throws `DotsConfigException` with a `pointer` locating the field in
 the source JSON.
 
+#### Pliego JSON (recommended)
+
+Replace `"pages"` with `"pliegos"` to use the 2-page-spread API:
+
+```json
+{
+  "documentId": "album_2026",
+  "pageSize": { "width": 592.34, "height": 736.81 },
+  "pliegos": [
+    {
+      "pliegoNumber": 1,
+      "type": "layout",
+      "left":  { "layout": "l1", "photos": ["…"] },
+      "right": { "layout": "l4a", "photos": ["…", "…", "…", "…"] }
+    },
+    {
+      "pliegoNumber": 2,
+      "type": "spreadImage",
+      "assetPath": "https://example.com/panorama.jpg",
+      "spreadWidth": 1184,
+      "height": 689,
+      "bleedTop": true,
+      "bleedBottom": true,
+      "bleedOuter": true
+    }
+  ]
+}
+```
+
+`"pages"` and `"pliegos"` are mutually exclusive. Inner pages of a
+`"layout"` pliego may omit `pageNumber` — the library assigns the
+sequential value from the pliego's position.
+
 ---
 
 ## Memory budget
@@ -457,6 +547,41 @@ field automatically.
 Unrecognised strings fall back to the pdf package's default font
 (Helvetica). Pass `fontBundle: null` (the default) to skip font
 loading entirely if you don't need real typography.
+
+### Font format requirement — TrueType only
+
+`DotsFontBundle` accepts **TrueType** (`.ttf`) fonts only. The
+underlying `pdf` package's `TtfParser` reads the SFNT tables but
+does **not** embed CFF outlines, which are what CFF-flavored
+OpenType (`.otf`, SFNT magic `OTTO`) uses. If you pass an `.otf`
+font, the library will throw `DotsConfigException` at construction
+time with a pointer to the affected role.
+
+The visible bug if the check is bypassed: **every letter renders at
+the same x position** (zero advance widths because the parser
+silently maps every glyph to `.notdef`).
+
+If your foundry only ships `.otf`, convert once with
+[`fontTools`](https://github.com/fonttools/fonttools):
+
+```sh
+pip3 install --user fonttools cu2qu otf2ttf
+cd assets/fonts/p22_mackinac/        # or wherever your .otf files live
+otf2ttf *.otf                        # produces .ttf alongside each .otf
+```
+
+Then:
+1. Update `pubspec.yaml` so the `assets:` list points at the new
+   `.ttf` filenames.
+2. If you use `DotsFontBundle.fromPackageAssets()`, the helper
+   currently expects the `.otf` filenames the library shipped with
+   — point the `load(...)` calls at the new `.ttf` files (or copy
+   the helper into your own code and adapt the paths).
+
+The conversion is lossy at the outline level (cubic-Bezier
+PostScript outlines are re-traced as quadratic-Bezier TrueType
+outlines), but at print resolution the result is visually
+indistinguishable.
 
 ---
 

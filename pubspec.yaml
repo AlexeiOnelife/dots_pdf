@@ -4,7 +4,7 @@ description: >-
   PDF or as 2-page-pair PDFs, persists artifacts on disk with typed path
   accessors, supports on-demand re-generation, and is optimized for low-end
   mobile devices (one-page-at-a-time pipeline, eager resource disposal).
-version: 0.1.0
+version: 0.1.1
 publish_to: none
 
 environment:
@@ -31,9 +31,9 @@ dev_dependencies:
 flutter:
   assets:
     - assets/FOGRA99.txt
-    - assets/fonts/p22_mackinac/P22Mackinac-Medium_6.otf
-    - assets/fonts/p22_mackinac/P22Mackinac-Book_13.otf
-    - assets/fonts/p22_mackinac/P22Mackinac-MedItalic_22.otf
+    - assets/fonts/p22_mackinac/P22Mackinac-Medium_6.ttf
+    - assets/fonts/p22_mackinac/P22Mackinac-Book_13.ttf
+    - assets/fonts/p22_mackinac/P22Mackinac-MedItalic_22.ttf
     - assets/fonts/inter/Inter-VariableFont_opsz,wght.ttf
     - assets/fonts/inter/Inter-Italic-VariableFont_opsz,wght.ttf
     - assets/fonts/biro_plus/Biro-ScriptPlus-Regular-subset.ttf
