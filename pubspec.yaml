@@ -4,7 +4,7 @@ description: >-
   PDF or as 2-page-pair PDFs, persists artifacts on disk with typed path
   accessors, supports on-demand re-generation, and is optimized for low-end
   mobile devices (one-page-at-a-time pipeline, eager resource disposal).
-version: 0.1.1
+version: 0.1.2
 publish_to: none
 
 environment:

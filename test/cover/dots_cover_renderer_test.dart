@@ -1,6 +1,7 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:dots_pdf/src/config/dots_config_exception.dart';
+import 'package:dots_pdf/src/cover/dots_cover_design.dart';
 import 'package:dots_pdf/src/cover/dots_cover_geometry.dart';
 import 'package:dots_pdf/src/cover/dots_cover_renderer.dart';
 import 'package:dots_pdf/src/cover/dots_cover_template.dart';
@@ -9,13 +10,16 @@ import 'package:dots_pdf/src/cover/dots_supplier.dart';
 import 'package:dots_pdf/src/logging/dots_logger.dart';
 import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 
-/// 1×1 transparent PNG, base64-encoded; the smallest valid PNG.
-const String _onePixelPngBase64 =
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjC'
-    'B0C8AAAAASUVORK5CYII=';
-
-Uint8List _onePixelPng() => base64Decode(_onePixelPngBase64);
+/// Encodes a solid-color PNG at the given pixel dimensions. Used to
+/// seed cover-artwork fixtures that meet each design's minimum source
+/// size while keeping the byte payload small.
+Uint8List _solidPng({required final int width, required final int height}) {
+  final img.Image image = img.Image(width: width, height: height);
+  img.fill(image, color: img.ColorRgb8(120, 160, 200));
+  return Uint8List.fromList(img.encodePng(image));
+}
 
 bool _hasPdfMagic(final Uint8List bytes) =>
     bytes.length >= 4 &&
@@ -26,9 +30,33 @@ bool _hasPdfMagic(final Uint8List bytes) =>
 
 Future<void> _seedArtworks(final MemoryFileSystem fs) async {
   await fs.directory('/assets').create(recursive: true);
-  await fs.file('/assets/front.png').writeAsBytes(_onePixelPng());
-  await fs.file('/assets/back.png').writeAsBytes(_onePixelPng());
-  await fs.file('/assets/spine.png').writeAsBytes(_onePixelPng());
+  // One file per design, sized at the per-design minimum.
+  await fs.file('/assets/square.png').writeAsBytes(
+        _solidPng(
+          width: DotsCoverDesign.square.minSourceWidthPx,
+          height: DotsCoverDesign.square.minSourceHeightPx,
+        ),
+      );
+  await fs.file('/assets/circle.png').writeAsBytes(
+        _solidPng(
+          width: DotsCoverDesign.circle.minSourceWidthPx,
+          height: DotsCoverDesign.circle.minSourceHeightPx,
+        ),
+      );
+  await fs.file('/assets/linen.png').writeAsBytes(
+        _solidPng(
+          width: DotsCoverDesign.linen.minSourceWidthPx,
+          height: DotsCoverDesign.linen.minSourceHeightPx,
+        ),
+      );
+  await fs.file('/assets/spine.png').writeAsBytes(
+        _solidPng(width: 200, height: 800),
+      );
+  // Intentionally below every design's minimum so validation tests can
+  // exercise the failure path.
+  await fs.file('/assets/tiny.png').writeAsBytes(
+        _solidPng(width: 100, height: 100),
+      );
 }
 
 DotsCoverGeometry _geometry132({
@@ -38,6 +66,36 @@ DotsCoverGeometry _geometry132({
       pageCount: 132,
       paperSubstrate: DotsPaperSubstrate.uncoated150,
       supplier: supplier,
+    );
+
+String _artworkFor(final DotsCoverDesign design) {
+  switch (design) {
+    case DotsCoverDesign.square:
+      return '/assets/square.png';
+    case DotsCoverDesign.circle:
+      return '/assets/circle.png';
+    case DotsCoverDesign.linen:
+      return '/assets/linen.png';
+  }
+}
+
+DotsCoverTemplate _template({
+  required final DotsCoverDesign design,
+  final String documentId = 'cover',
+  final DotsSupplier supplier = DotsSupplier.europa,
+  final String? spineTitle,
+  final String? spineArtworkPath,
+  final String backgroundColorHex = '#FFFFFF',
+  final String? frontArtworkPathOverride,
+}) =>
+    DotsCoverTemplate(
+      documentId: documentId,
+      geometry: _geometry132(supplier: supplier),
+      design: design,
+      frontArtworkPath: frontArtworkPathOverride ?? _artworkFor(design),
+      backgroundColorHex: backgroundColorHex,
+      spineTitle: spineTitle,
+      spineArtworkPath: spineArtworkPath,
     );
 
 void main() {
@@ -54,47 +112,36 @@ void main() {
     );
   });
 
-  group('DotsCoverRenderer', () {
-    test('produces a valid cover PDF (132 pages, europa, uncoated150)',
-        () async {
-      final DotsCoverTemplate template = DotsCoverTemplate(
-        documentId: 'cover_basic',
-        geometry: _geometry132(),
-        frontArtworkPath: '/assets/front.png',
-        backArtworkPath: '/assets/back.png',
-      );
+  group('DotsCoverRenderer — produces a valid PDF for every design', () {
+    for (final design in DotsCoverDesign.values) {
+      test('design = ${design.name}', () async {
+        final outPath = '/out/${design.name}.pdf';
+        await renderer.render(
+          template: _template(design: design, documentId: design.name),
+          outputPath: outPath,
+        );
+        final bytes = await fs.file(outPath).readAsBytes();
+        expect(_hasPdfMagic(bytes), isTrue);
+        expect(bytes.length, greaterThan(500));
+      });
+    }
+  });
 
-      const String outPath = '/out/cover_basic.pdf';
-      await renderer.render(template: template, outputPath: outPath);
-
-      final bytes = await fs.file(outPath).readAsBytes();
-      expect(await fs.file(outPath).exists(), isTrue);
-      expect(_hasPdfMagic(bytes), isTrue);
-      expect(bytes.length, greaterThan(500));
-    });
-
+  group('DotsCoverRenderer — common features', () {
     test('spineTitle adds bytes vs. the no-title baseline', () async {
-      final DotsCoverGeometry geometry = _geometry132();
-      final DotsCoverTemplate withoutTitle = DotsCoverTemplate(
-        documentId: 'cover_no_title',
-        geometry: geometry,
-        frontArtworkPath: '/assets/front.png',
-        backArtworkPath: '/assets/back.png',
-      );
-      final DotsCoverTemplate withTitle = DotsCoverTemplate(
-        documentId: 'cover_with_title',
-        geometry: geometry,
-        frontArtworkPath: '/assets/front.png',
-        backArtworkPath: '/assets/back.png',
-        spineTitle: 'Memories 2024',
-      );
-
       await renderer.render(
-        template: withoutTitle,
+        template: _template(
+          design: DotsCoverDesign.square,
+          documentId: 'no_title',
+        ),
         outputPath: '/out/no_title.pdf',
       );
       await renderer.render(
-        template: withTitle,
+        template: _template(
+          design: DotsCoverDesign.square,
+          documentId: 'with_title',
+          spineTitle: 'Memories 2024',
+        ),
         outputPath: '/out/with_title.pdf',
       );
 
@@ -103,31 +150,24 @@ void main() {
       final int withTitleBytes =
           (await fs.file('/out/with_title.pdf').readAsBytes()).length;
 
-      // The spine text widget adds at minimum a few dozen bytes worth
-      // of content stream + glyph references.
       expect(withTitleBytes, greaterThanOrEqualTo(noTitleBytes + 50));
     });
 
     test('latam omits crop marks; europa includes them', () async {
-      final DotsCoverTemplate europaTemplate = DotsCoverTemplate(
-        documentId: 'cover_europa',
-        geometry: _geometry132(),
-        frontArtworkPath: '/assets/front.png',
-        backArtworkPath: '/assets/back.png',
-      );
-      final DotsCoverTemplate latamTemplate = DotsCoverTemplate(
-        documentId: 'cover_latam',
-        geometry: _geometry132(supplier: DotsSupplier.latam),
-        frontArtworkPath: '/assets/front.png',
-        backArtworkPath: '/assets/back.png',
-      );
-
       await renderer.render(
-        template: europaTemplate,
+        template: _template(
+          design: DotsCoverDesign.square,
+          documentId: 'europa',
+          supplier: DotsSupplier.europa,
+        ),
         outputPath: '/out/europa.pdf',
       );
       await renderer.render(
-        template: latamTemplate,
+        template: _template(
+          design: DotsCoverDesign.square,
+          documentId: 'latam',
+          supplier: DotsSupplier.latam,
+        ),
         outputPath: '/out/latam.pdf',
       );
 
@@ -136,9 +176,6 @@ void main() {
       final int latamBytes =
           (await fs.file('/out/latam.pdf').readAsBytes()).length;
 
-      // Crop marks add eight thin filled rectangles to the page
-      // content stream. The Europa PDF must therefore be strictly
-      // larger than the Latam PDF rendered from the same artwork.
       expect(
         latamBytes,
         lessThan(europaBytes),
@@ -147,27 +184,19 @@ void main() {
     });
 
     test('optional spine artwork is rendered when provided', () async {
-      final DotsCoverGeometry geometry = _geometry132();
-      final DotsCoverTemplate withoutSpine = DotsCoverTemplate(
-        documentId: 'cover_no_spine_art',
-        geometry: geometry,
-        frontArtworkPath: '/assets/front.png',
-        backArtworkPath: '/assets/back.png',
-      );
-      final DotsCoverTemplate withSpine = DotsCoverTemplate(
-        documentId: 'cover_with_spine_art',
-        geometry: geometry,
-        frontArtworkPath: '/assets/front.png',
-        backArtworkPath: '/assets/back.png',
-        spineArtworkPath: '/assets/spine.png',
-      );
-
       await renderer.render(
-        template: withoutSpine,
+        template: _template(
+          design: DotsCoverDesign.square,
+          documentId: 'no_spine_art',
+        ),
         outputPath: '/out/no_spine.pdf',
       );
       await renderer.render(
-        template: withSpine,
+        template: _template(
+          design: DotsCoverDesign.square,
+          documentId: 'with_spine_art',
+          spineArtworkPath: '/assets/spine.png',
+        ),
         outputPath: '/out/spine.pdf',
       );
 
@@ -178,5 +207,55 @@ void main() {
 
       expect(withBytes, greaterThan(withoutBytes));
     });
+
+    test('non-default background color changes the rendered PDF', () async {
+      await renderer.render(
+        template: _template(
+          design: DotsCoverDesign.circle,
+          documentId: 'bg_white',
+        ),
+        outputPath: '/out/bg_white.pdf',
+      );
+      await renderer.render(
+        template: _template(
+          design: DotsCoverDesign.circle,
+          documentId: 'bg_black',
+          backgroundColorHex: '#000000',
+        ),
+        outputPath: '/out/bg_black.pdf',
+      );
+
+      final Uint8List whiteBytes =
+          await fs.file('/out/bg_white.pdf').readAsBytes();
+      final Uint8List blackBytes =
+          await fs.file('/out/bg_black.pdf').readAsBytes();
+      expect(whiteBytes, isNot(equals(blackBytes)));
+    });
+  });
+
+  group('DotsCoverRenderer — image-dimension validation', () {
+    for (final design in DotsCoverDesign.values) {
+      test(
+          'rejects an undersized source for ${design.name} '
+          'with DotsConfigException', () async {
+        expect(
+          () => renderer.render(
+            template: _template(
+              design: design,
+              documentId: '${design.name}_tiny',
+              frontArtworkPathOverride: '/assets/tiny.png',
+            ),
+            outputPath: '/out/${design.name}_tiny.pdf',
+          ),
+          throwsA(
+            isA<DotsConfigException>().having(
+              (final e) => e.message,
+              'message',
+              contains(design.name),
+            ),
+          ),
+        );
+      });
+    }
   });
 }

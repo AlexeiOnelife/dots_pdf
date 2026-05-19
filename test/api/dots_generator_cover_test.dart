@@ -1,15 +1,15 @@
-import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:dots_pdf/dots_pdf.dart';
 import 'package:file/memory.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:image/image.dart' as img;
 
-const String _onePixelPngBase64 =
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjC'
-    'B0C8AAAAASUVORK5CYII=';
-
-Uint8List _onePixelPng() => base64Decode(_onePixelPngBase64);
+Uint8List _solidPng({required final int width, required final int height}) {
+  final img.Image image = img.Image(width: width, height: height);
+  img.fill(image, color: img.ColorRgb8(120, 160, 200));
+  return Uint8List.fromList(img.encodePng(image));
+}
 
 bool _hasPdfMagic(final Uint8List bytes) =>
     bytes.length >= 4 &&
@@ -29,8 +29,8 @@ DotsCoverTemplate _template({
         paperSubstrate: DotsPaperSubstrate.uncoated150,
         supplier: DotsSupplier.europa,
       ),
+      design: DotsCoverDesign.square,
       frontArtworkPath: '/assets/front.png',
-      backArtworkPath: '/assets/back.png',
       spineTitle: spineTitle,
     );
 
@@ -41,8 +41,12 @@ void main() {
     fs = MemoryFileSystem.test();
     await fs.directory('/docs').create(recursive: true);
     await fs.directory('/assets').create(recursive: true);
-    await fs.file('/assets/front.png').writeAsBytes(_onePixelPng());
-    await fs.file('/assets/back.png').writeAsBytes(_onePixelPng());
+    await fs.file('/assets/front.png').writeAsBytes(
+          _solidPng(
+            width: DotsCoverDesign.square.minSourceWidthPx,
+            height: DotsCoverDesign.square.minSourceHeightPx,
+          ),
+        );
   });
 
   group('DotsGenerator.generateCover', () {
@@ -133,8 +137,6 @@ void main() {
           )
           .toList();
 
-      // Sidecar hash differs → second run renders again rather than
-      // emitting a cache hit.
       expect(second.whereType<PdfGenerationCacheHit>(), isEmpty);
       expect(second.last, isA<PdfGenerationCompleted>());
     });

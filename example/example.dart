@@ -204,8 +204,8 @@ Future<void> main() async {
   final DotsCoverTemplate coverTemplate = DotsCoverTemplate(
     documentId: template.documentId,
     geometry: coverGeometry,
+    design: DotsCoverDesign.square,
     frontArtworkPath: '/local/cover_front.jpg',
-    backArtworkPath: '/local/cover_back.jpg',
     spineTitle: 'Memories 2026',
   );
   await _drain(generator.generateCover(template: coverTemplate));
@@ -269,6 +269,14 @@ Future<void> _drain(Stream<PdfGenerationEvent> events) async {
         );
       case PdfGenerationFailed(:final documentId, :final error):
         stdout.writeln('[$documentId] FAILED: $error');
+      case PdfPhotoSlotSkipped(
+          :final documentId,
+          :final assetPath,
+          :final error,
+        ):
+        stdout.writeln(
+          '[$documentId] photo slot skipped ($assetPath): $error',
+        );
     }
   }
 }

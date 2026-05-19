@@ -2,11 +2,14 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:file/file.dart';
+import 'package:image/image.dart' as img;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
+import '../config/dots_config_exception.dart';
 import '../logging/dots_logger.dart';
 import '../render/dots_font_bundle.dart';
+import 'dots_cover_design.dart';
 import 'dots_cover_geometry.dart';
 import 'dots_cover_template.dart';
 
@@ -16,26 +19,28 @@ import 'dots_cover_template.dart';
 /// renderer: the page size comes from [DotsCoverGeometry] (not from a
 /// `DotsTemplate`), and only one page is ever emitted.
 ///
-/// Drawing order is:
+/// The cover layout depends on `template.design`:
 ///
-/// 1. Back-cover artwork (left panel, including wrap overhang).
-/// 2. Optional spine artwork (centre column).
-/// 3. Front-cover artwork (right panel, including wrap overhang).
-/// 4. Optional spine title, rotated 90° and centred on the spine.
-/// 5. Crop marks at the four trim corners — only when
-///    [DotsCoverGeometry.supplier] has `drawsCropMarks == true`
-///    (i.e. europa; latam ships without crop marks per
-///    `SPECS.md` resolved clarification #1).
+/// - [DotsCoverDesign.square]: front artwork is rendered as a rectangle
+///   covering 80% × 80% of the front panel, anchored 10 mm above the
+///   trim bottom and 10 mm left of the trim right of the front panel.
+///   The rest of the cover is painted with the background color.
+/// - [DotsCoverDesign.circle]: front artwork is rendered as a circular
+///   clip centred on the front panel; the diameter is 50% of the
+///   front-panel width (so the shape stays a true circle even though
+///   the panel is portrait). The rest of the cover is painted with the
+///   background color.
+/// - [DotsCoverDesign.linen]: front artwork is rendered as a horizontal
+///   strip spanning the full cover width (back panel + spine + front
+///   panel, including wraps). The strip's vertical centerline sits at
+///   40% from the bottom of the cover; its height is derived from the
+///   source aspect ratio so the image keeps its natural shape.
 ///
-/// Each artwork is authored at the panel's board dimensions
-/// (front/back = 199 × 260 mm); the renderer extends the image into
-/// the surrounding 20 mm wrap by drawing it on a panel rectangle that
-/// includes the wrap band (`pw.BoxFit.cover` keeps the centre stable
-/// and samples edge pixels into the wrap).
-///
-/// All per-artwork image bytes are read lazily and released between
-/// panels (no list-of-images is retained beyond the `pw.Stack`
-/// children list, which only ever holds 2–4 widgets).
+/// Optional spine artwork, spine title, and crop marks are drawn the
+/// same way for every design. Each design enforces a minimum source
+/// pixel size via [DotsCoverDesign]; the renderer eagerly validates
+/// incoming artworks and throws [DotsConfigException] when the source
+/// is too small.
 class DotsCoverRenderer {
   /// Creates a cover renderer.
   ///
@@ -91,16 +96,16 @@ class DotsCoverRenderer {
     required String outputPath,
   }) async {
     _log.info(
-      'DotsCoverRenderer: rendering cover for '
+      'DotsCoverRenderer: rendering ${template.design.name} cover for '
       '"${template.documentId}" to "$outputPath"',
     );
 
     final DotsCoverGeometry geometry = template.geometry;
-    final double pageWidthPt = geometry.totalCoverWidthInclBleedMm * _mmToPt;
-    final double pageHeightPt = geometry.totalCoverHeightInclBleedMm * _mmToPt;
+    final double pageWidthMm = geometry.totalCoverWidthInclBleedMm;
+    final double pageHeightMm = geometry.totalCoverHeightInclBleedMm;
+    final double pageWidthPt = pageWidthMm * _mmToPt;
+    final double pageHeightPt = pageHeightMm * _mmToPt;
     final PdfPageFormat format = PdfPageFormat(pageWidthPt, pageHeightPt);
-
-    final List<pw.Widget> children = <pw.Widget>[];
 
     // --- Panel geometry, mm, top-left origin -----------------------
     const double bleedMm = DotsCoverGeometry.bleedMm;
@@ -110,27 +115,61 @@ class DotsCoverRenderer {
     final double panelHeightMm = geometry.bookBlockHeightInclBleedMm;
     final double spineWidthMm = geometry.spineWidthMm;
 
-    // Back panel: bleed + wrap inset from the top-left corner.
     const double backPanelXMm = bleedMm + wrapMm;
     const double panelYMm = bleedMm + wrapMm;
-    // Spine column begins immediately after back panel + hinch.
     final double spineXMm = backPanelXMm + panelWidthMm + hinchMm;
-    // Front panel begins after the spine and the right-hand hinch.
     final double frontPanelXMm = spineXMm + spineWidthMm + hinchMm;
 
-    // --- 1. Back-cover artwork (extends into surrounding wrap) -----
+    final PdfColor backgroundColor = _parseColor(template.backgroundColorHex);
+
+    final List<pw.Widget> children = <pw.Widget>[];
+
+    // --- 1. Background fill ---------------------------------------
     children.add(
-      await _buildArtworkLayer(
-        assetPath: template.backArtworkPath,
-        panelXMm: backPanelXMm,
-        panelYMm: panelYMm,
-        panelWidthMm: panelWidthMm,
-        panelHeightMm: panelHeightMm,
-        wrapMm: wrapMm,
+      pw.Positioned(
+        left: 0,
+        top: 0,
+        child: pw.Container(
+          width: pageWidthPt,
+          height: pageHeightPt,
+          color: backgroundColor,
+        ),
       ),
     );
 
-    // --- 2. Optional spine artwork ---------------------------------
+    // --- 2. Design-specific artwork -------------------------------
+    switch (template.design) {
+      case DotsCoverDesign.square:
+        children.add(
+          await _buildSquareArtwork(
+            assetPath: template.frontArtworkPath,
+            frontPanelXMm: frontPanelXMm,
+            frontPanelYMm: panelYMm,
+            panelWidthMm: panelWidthMm,
+            panelHeightMm: panelHeightMm,
+          ),
+        );
+      case DotsCoverDesign.circle:
+        children.add(
+          await _buildCircleArtwork(
+            assetPath: template.frontArtworkPath,
+            frontPanelXMm: frontPanelXMm,
+            frontPanelYMm: panelYMm,
+            panelWidthMm: panelWidthMm,
+            panelHeightMm: panelHeightMm,
+          ),
+        );
+      case DotsCoverDesign.linen:
+        children.add(
+          await _buildLinenArtwork(
+            assetPath: template.frontArtworkPath,
+            pageWidthMm: pageWidthMm,
+            pageHeightMm: pageHeightMm,
+          ),
+        );
+    }
+
+    // --- 3. Optional spine artwork --------------------------------
     if (template.spineArtworkPath != null &&
         template.spineArtworkPath!.isNotEmpty) {
       children.add(
@@ -140,23 +179,10 @@ class DotsCoverRenderer {
           panelYMm: panelYMm,
           panelWidthMm: spineWidthMm,
           panelHeightMm: panelHeightMm,
-          // No wrap on the spine — it is bounded by the two hinches.
           wrapMm: 0,
         ),
       );
     }
-
-    // --- 3. Front-cover artwork (extends into surrounding wrap) ----
-    children.add(
-      await _buildArtworkLayer(
-        assetPath: template.frontArtworkPath,
-        panelXMm: frontPanelXMm,
-        panelYMm: panelYMm,
-        panelWidthMm: panelWidthMm,
-        panelHeightMm: panelHeightMm,
-        wrapMm: wrapMm,
-      ),
-    );
 
     // --- 4. Optional spine title ----------------------------------
     final String? spineTitle = template.spineTitle;
@@ -173,7 +199,7 @@ class DotsCoverRenderer {
       );
     }
 
-    // --- 5. Crop marks (europa only) -------------------------------
+    // --- 5. Crop marks (europa only) ------------------------------
     if (geometry.supplier.drawsCropMarks) {
       children.addAll(
         _buildCropMarks(
@@ -201,6 +227,150 @@ class DotsCoverRenderer {
     } finally {
       await sink.close();
     }
+  }
+
+  /// Loads bytes, decodes the source pixel dimensions, validates them
+  /// against [design], and returns a `(bytes, width, height)` triple.
+  ///
+  /// Throws [DotsConfigException] when the image is below the minimum
+  /// pixel size declared by the design.
+  Future<_DecodedArtwork> _loadAndValidate({
+    required final String assetPath,
+    required final DotsCoverDesign design,
+  }) async {
+    final Uint8List bytes = await _fs.file(assetPath).readAsBytes();
+    final img.Image? decoded = img.decodeImage(bytes);
+    if (decoded == null) {
+      throw DotsConfigException(
+        'cover artwork "$assetPath" could not be decoded as an image.',
+        pointer: r'$.frontArtworkPath',
+      );
+    }
+    if (decoded.width < design.minSourceWidthPx ||
+        decoded.height < design.minSourceHeightPx) {
+      throw DotsConfigException(
+        'cover artwork "$assetPath" is ${decoded.width}×${decoded.height}px, '
+        'below the minimum '
+        '${design.minSourceWidthPx}×${design.minSourceHeightPx}px '
+        'required by the ${design.name} design.',
+        pointer: r'$.frontArtworkPath',
+      );
+    }
+    return _DecodedArtwork(
+      bytes: bytes,
+      width: decoded.width,
+      height: decoded.height,
+    );
+  }
+
+  /// Builds the front-panel square artwork: 80% w × 80% h of the front
+  /// panel, anchored to the bottom-right with 10 mm of padding from
+  /// the trim edges.
+  Future<pw.Widget> _buildSquareArtwork({
+    required final String assetPath,
+    required final double frontPanelXMm,
+    required final double frontPanelYMm,
+    required final double panelWidthMm,
+    required final double panelHeightMm,
+  }) async {
+    final _DecodedArtwork artwork = await _loadAndValidate(
+      assetPath: assetPath,
+      design: DotsCoverDesign.square,
+    );
+    final pw.MemoryImage image = pw.MemoryImage(artwork.bytes);
+
+    final double squareWidthMm = panelWidthMm * 0.8;
+    final double squareHeightMm = panelHeightMm * 0.8;
+    const double paddingMm = 10;
+
+    final double trimRightMm = frontPanelXMm + panelWidthMm;
+    final double trimBottomMm = frontPanelYMm + panelHeightMm;
+    final double leftMm = trimRightMm - paddingMm - squareWidthMm;
+    final double topMm = trimBottomMm - paddingMm - squareHeightMm;
+
+    return pw.Positioned(
+      left: leftMm * _mmToPt,
+      top: topMm * _mmToPt,
+      child: pw.Image(
+        image,
+        width: squareWidthMm * _mmToPt,
+        height: squareHeightMm * _mmToPt,
+        fit: pw.BoxFit.cover,
+      ),
+    );
+  }
+
+  /// Builds the front-panel circle artwork: a true circle centred on
+  /// the front panel, diameter = 50% of the front-panel width.
+  Future<pw.Widget> _buildCircleArtwork({
+    required final String assetPath,
+    required final double frontPanelXMm,
+    required final double frontPanelYMm,
+    required final double panelWidthMm,
+    required final double panelHeightMm,
+  }) async {
+    final _DecodedArtwork artwork = await _loadAndValidate(
+      assetPath: assetPath,
+      design: DotsCoverDesign.circle,
+    );
+    final pw.MemoryImage image = pw.MemoryImage(artwork.bytes);
+
+    // The user spec says "covers 50% height and 50% of the width".
+    // The panel is portrait (199 × 254 mm), so 50% of each dimension
+    // gives a 99.5 × 127 mm rectangle. To keep the shape an actual
+    // circle, use the smaller of the two as the diameter.
+    final double diameterMm =
+        math.min(panelWidthMm * 0.5, panelHeightMm * 0.5);
+    final double leftMm =
+        frontPanelXMm + (panelWidthMm - diameterMm) / 2.0;
+    final double topMm =
+        frontPanelYMm + (panelHeightMm - diameterMm) / 2.0;
+    final double diameterPt = diameterMm * _mmToPt;
+
+    return pw.Positioned(
+      left: leftMm * _mmToPt,
+      top: topMm * _mmToPt,
+      child: pw.SizedBox(
+        width: diameterPt,
+        height: diameterPt,
+        child: pw.ClipOval(
+          child: pw.Image(image, fit: pw.BoxFit.cover),
+        ),
+      ),
+    );
+  }
+
+  /// Builds the linen-design horizontal strip: spans the full cover
+  /// width (back + spine + front, incl. wraps), centerline at 40% from
+  /// the bottom of the cover, height derived from the source aspect
+  /// ratio so the image is not distorted.
+  Future<pw.Widget> _buildLinenArtwork({
+    required final String assetPath,
+    required final double pageWidthMm,
+    required final double pageHeightMm,
+  }) async {
+    final _DecodedArtwork artwork = await _loadAndValidate(
+      assetPath: assetPath,
+      design: DotsCoverDesign.linen,
+    );
+    final pw.MemoryImage image = pw.MemoryImage(artwork.bytes);
+
+    final double stripWidthMm = pageWidthMm;
+    final double stripHeightMm = stripWidthMm * artwork.height / artwork.width;
+    // Vertical centerline at 40% from the bottom -> 60% from the top.
+    final double centerlineYMm = pageHeightMm * 0.6;
+    final double topMm = centerlineYMm - stripHeightMm / 2.0;
+
+    return pw.Positioned(
+      left: 0,
+      top: topMm * _mmToPt,
+      child: pw.Image(
+        image,
+        width: stripWidthMm * _mmToPt,
+        height: stripHeightMm * _mmToPt,
+        fit: pw.BoxFit.cover,
+      ),
+    );
   }
 
   /// Builds a positioned image widget for a single artwork panel.
@@ -248,10 +418,6 @@ class DotsCoverRenderer {
     required final double spineWidthMm,
     required final double panelHeightMm,
   }) {
-    // pw.Transform.rotate rotates about the child's centre, which is
-    // why we wrap the rotated Text inside a Center → SizedBox that
-    // sizes the spine band; positioning the band's top-left gives us
-    // a deterministic anchor for the rotated label.
     final double spineWidthPt = spineWidthMm * _mmToPt;
     final double panelHeightPt = panelHeightMm * _mmToPt;
     return pw.Positioned(
@@ -283,7 +449,7 @@ class DotsCoverRenderer {
   /// Each "tick" sits **outside** the trim rectangle: it starts at
   /// the corner and extends [_cropMarkLengthMm] into the wrap area,
   /// matching standard PDF/X-4 crop-mark conventions. Latam ships
-  /// without crop marks (see [DotsSupplier.drawsCropMarks]); the
+  /// without crop marks (see `DotsSupplier.drawsCropMarks`); the
   /// renderer skips this whole block in that case.
   List<pw.Widget> _buildCropMarks({
     required final double trimLeftMm,
@@ -323,26 +489,50 @@ class DotsCoverRenderer {
       );
     }
 
-    // Top-left corner: horizontal stroke extending left, vertical
-    // stroke extending up (both into the wrap area).
     addHorizontal(trimLeftMm - _cropMarkLengthMm, trimTopMm);
     addVertical(trimLeftMm, trimTopMm - _cropMarkLengthMm);
 
-    // Top-right corner.
     addHorizontal(trimRightMm, trimTopMm);
     addVertical(trimRightMm - _cropMarkStrokeMm, trimTopMm - _cropMarkLengthMm);
 
-    // Bottom-left corner.
     addHorizontal(
       trimLeftMm - _cropMarkLengthMm,
       trimBottomMm - _cropMarkStrokeMm,
     );
     addVertical(trimLeftMm, trimBottomMm);
 
-    // Bottom-right corner.
     addHorizontal(trimRightMm, trimBottomMm - _cropMarkStrokeMm);
     addVertical(trimRightMm - _cropMarkStrokeMm, trimBottomMm);
 
     return marks;
   }
+
+  /// Parses an `#RRGGBB` (or `RRGGBB`) hex string into a [PdfColor].
+  ///
+  /// Falls back to white on malformed input — the renderer is best-effort
+  /// here because the background fill is a finish, not a structural
+  /// invariant; throwing would punish callers for a typo that is easy
+  /// to spot visually.
+  PdfColor _parseColor(final String hex) {
+    final String trimmed = hex.startsWith('#') ? hex.substring(1) : hex;
+    if (trimmed.length != 6) return PdfColors.white;
+    final int? value = int.tryParse(trimmed, radix: 16);
+    if (value == null) return PdfColors.white;
+    final double r = ((value >> 16) & 0xff) / 255.0;
+    final double g = ((value >> 8) & 0xff) / 255.0;
+    final double b = (value & 0xff) / 255.0;
+    return PdfColor(r, g, b);
+  }
+}
+
+class _DecodedArtwork {
+  const _DecodedArtwork({
+    required this.bytes,
+    required this.width,
+    required this.height,
+  });
+
+  final Uint8List bytes;
+  final int width;
+  final int height;
 }

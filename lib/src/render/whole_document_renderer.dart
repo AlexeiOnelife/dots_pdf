@@ -15,6 +15,7 @@ class WholeDocumentRenderer extends DotsRenderer {
     super.tmpDir,
     super.urlFetcher,
     super.fontBundle,
+    super.onPhotoSlotFailure,
   });
 
   @override

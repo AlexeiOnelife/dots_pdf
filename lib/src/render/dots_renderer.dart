@@ -61,6 +61,7 @@ abstract class DotsRenderer {
     this.tmpDir,
     this.urlFetcher,
     this.fontBundle,
+    this.onPhotoSlotFailure,
   })  : fs = fileSystem,
         log = logger;
 
@@ -89,6 +90,17 @@ abstract class DotsRenderer {
   /// Optional font bundle. When `null`, text falls back to the pdf
   /// package's built-in Helvetica.
   final DotsFontBundle? fontBundle;
+
+  /// Optional callback invoked when a photo slot cannot be rendered —
+  /// for example because the source bytes are corrupt or the image
+  /// decoder rejects them. The renderer **does not abort** in this
+  /// case: it skips the slot, emits the failure through this callback,
+  /// and continues building the remaining slots.
+  ///
+  /// Wired by `DotsGenerator` to a stream-emit hook that surfaces the
+  /// failure as a `PdfPhotoSlotSkipped` event so the front-end can show
+  /// a non-fatal warning to the user.
+  final void Function(String assetPath, Object error)? onPhotoSlotFailure;
 
   DotsAssetLoader? _assetLoader;
 
@@ -235,7 +247,8 @@ abstract class DotsRenderer {
       switch (slot.kind) {
         case DotsSlotKind.photo:
           final assetPath = page.photoAssetPaths[photoCursor++];
-          children.add(await _buildPhotoSlot(slot, assetPath));
+          final widget = await _buildPhotoSlot(slot, assetPath);
+          if (widget != null) children.add(widget);
         case DotsSlotKind.captionTitle:
         case DotsSlotKind.captionDate:
         case DotsSlotKind.captionBody:
@@ -407,13 +420,30 @@ abstract class DotsRenderer {
     );
   }
 
-  Future<pw.Widget> _buildPhotoSlot(
+  /// Builds the widget for one photo slot.
+  ///
+  /// Returns `null` when the asset cannot be loaded or decoded. In that
+  /// case the failure is surfaced through [onPhotoSlotFailure] (if
+  /// wired) and logged; the caller drops the slot so the rest of the
+  /// page still renders.
+  Future<pw.Widget?> _buildPhotoSlot(
     DotsSlotRect slot,
     String assetPath,
   ) async {
-    final loader = assetLoaderFor(assetPath);
-    final bytes = await loader.loadBytes(assetPath);
-    final image = pw.MemoryImage(bytes);
+    final pw.MemoryImage image;
+    try {
+      final loader = assetLoaderFor(assetPath);
+      final bytes = await loader.loadBytes(assetPath);
+      image = pw.MemoryImage(bytes);
+    } catch (error, stackTrace) {
+      log.error(
+        'photo slot "$assetPath" could not be rendered; skipping',
+        error,
+        stackTrace,
+      );
+      onPhotoSlotFailure?.call(assetPath, error);
+      return null;
+    }
 
     final leftBleed = slot.bleedLeft ? bleedPt : 0.0;
     final rightBleed = slot.bleedRight ? bleedPt : 0.0;
