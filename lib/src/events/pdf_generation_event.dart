@@ -87,6 +87,28 @@ final class PdfPreviewProgress extends PdfGenerationEvent {
       totalPages == 0 ? 1 : completedPages / totalPages;
 }
 
+/// Emitted when a layout-page photo slot could not be rendered — for
+/// example because the source bytes are corrupt or the image decoder
+/// rejects them. The pipeline does not abort: the offending slot is
+/// skipped, and the generator keeps producing the rest of the document.
+///
+/// Front-ends should surface these events as non-fatal warnings so the
+/// user can replace the bad asset and re-generate.
+final class PdfPhotoSlotSkipped extends PdfGenerationEvent {
+  /// Creates a photo-slot-skipped event.
+  const PdfPhotoSlotSkipped({
+    required super.documentId,
+    required this.assetPath,
+    required this.error,
+  });
+
+  /// File-system path (or URL) of the artwork that failed to render.
+  final String assetPath;
+
+  /// Caught error object describing why the asset was skipped.
+  final Object error;
+}
+
 /// Emitted exactly once when generation succeeds.
 final class PdfGenerationCompleted extends PdfGenerationEvent {
   /// Creates a completion event.

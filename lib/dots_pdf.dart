@@ -13,6 +13,7 @@ export 'src/config/dots_config_exception.dart';
 export 'src/config/dots_pliego.dart';
 export 'src/config/dots_template.dart';
 export 'src/config/dots_template_parser.dart';
+export 'src/cover/dots_cover_design.dart';
 export 'src/cover/dots_cover_geometry.dart';
 export 'src/cover/dots_cover_renderer.dart';
 export 'src/cover/dots_cover_template.dart';

@@ -130,5 +130,48 @@ void main() {
       expect(_hasPdfMagic(bytes), isTrue);
       expect(bytes.length, greaterThan(500));
     });
+
+    test(
+        'unreadable photo slot does NOT abort generation; '
+        'pipeline emits PdfPhotoSlotSkipped and completes', () async {
+      await _writePixel(fs, '/assets/good.png');
+      await fs
+          .file('/assets/bad.png')
+          .writeAsBytes(Uint8List.fromList(<int>[0, 1, 2, 3])); // not an image
+      const template = DotsTemplate(
+        documentId: 'doc_bad_slot',
+        pageSize: _dotbookPageSize,
+        pages: [
+          DotsLayoutPage(
+            pageNumber: 1,
+            layoutCode: DotsLayoutCode.l4a,
+            photoAssetPaths: [
+              '/assets/good.png',
+              '/assets/bad.png',
+              '/assets/good.png',
+              '/assets/bad.png',
+            ],
+          ),
+        ],
+      );
+
+      final events =
+          await generator.generateWhole(template: template).toList();
+
+      expect(
+        events.last,
+        isA<PdfGenerationCompleted>(),
+        reason: 'a bad photo slot must not abort the run',
+      );
+      final skipped =
+          events.whereType<PdfPhotoSlotSkipped>().toList();
+      expect(skipped, hasLength(2));
+      expect(skipped.first.assetPath, '/assets/bad.png');
+      expect(skipped.first.documentId, 'doc_bad_slot');
+
+      final outPath = await generator.wholePathFor('doc_bad_slot');
+      final bytes = await fs.file(outPath).readAsBytes();
+      expect(_hasPdfMagic(bytes), isTrue);
+    });
   });
 }

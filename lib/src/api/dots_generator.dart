@@ -170,6 +170,13 @@ class DotsGenerator {
         final tmpDir = await _paths.tmpDir(documentId);
         final artifactPaths = <String>[];
         final previewPaths = <String>[];
+        // Photo-slot failures collected by the renderer are drained into
+        // PdfPhotoSlotSkipped events after each render call so the
+        // front-end can show non-fatal warnings without aborting the run.
+        final photoFailures = <({String assetPath, Object error})>[];
+        void onPhotoFailure(final String assetPath, final Object error) {
+          photoFailures.add((assetPath: assetPath, error: error));
+        }
         switch (mode) {
           case DotsOutputMode.whole:
             final renderer = WholeDocumentRenderer(
@@ -179,6 +186,7 @@ class DotsGenerator {
               tmpDir: tmpDir,
               urlFetcher: _urlFetcher,
               fontBundle: _fontBundle,
+              onPhotoSlotFailure: onPhotoFailure,
             );
             final finalPath = await _paths.wholePdfPath(documentId);
             final tempPath = await _tempPathFor(documentId, 'whole.pdf');
@@ -194,6 +202,14 @@ class DotsGenerator {
               completedUnits: 1,
               totalUnits: 1,
             );
+            for (final failure in photoFailures) {
+              yield PdfPhotoSlotSkipped(
+                documentId: documentId,
+                assetPath: failure.assetPath,
+                error: failure.error,
+              );
+            }
+            photoFailures.clear();
             yield* _emitPreviews(
               documentId: documentId,
               pdfPath: finalPath,
@@ -209,6 +225,7 @@ class DotsGenerator {
               tmpDir: tmpDir,
               urlFetcher: _urlFetcher,
               fontBundle: _fontBundle,
+              onPhotoSlotFailure: onPhotoFailure,
             );
             final slices = _pairSlices(template.effectivePages);
             for (var i = 0; i < slices.length; i++) {
@@ -232,6 +249,14 @@ class DotsGenerator {
                 completedUnits: pairIndex,
                 totalUnits: slices.length,
               );
+              for (final failure in photoFailures) {
+                yield PdfPhotoSlotSkipped(
+                  documentId: documentId,
+                  assetPath: failure.assetPath,
+                  error: failure.error,
+                );
+              }
+              photoFailures.clear();
               yield* _emitPreviews(
                 documentId: documentId,
                 pdfPath: finalPath,

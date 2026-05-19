@@ -1,3 +1,4 @@
+import 'package:dots_pdf/src/cover/dots_cover_design.dart';
 import 'package:dots_pdf/src/cover/dots_cover_geometry.dart';
 import 'package:dots_pdf/src/cover/dots_cover_template.dart';
 import 'package:dots_pdf/src/cover/dots_paper_substrate.dart';
@@ -11,6 +12,8 @@ DotsCoverGeometry _geometry132() => DotsCoverGeometry(
     );
 
 DotsCoverTemplate _baseTemplate({
+  final DotsCoverDesign design = DotsCoverDesign.square,
+  final String backgroundColorHex = '#FFFFFF',
   final String? spineTitle,
   final double spineTitleFontSize = 12,
   final String? spineArtworkPath,
@@ -18,8 +21,9 @@ DotsCoverTemplate _baseTemplate({
     DotsCoverTemplate(
       documentId: 'doc',
       geometry: _geometry132(),
+      design: design,
       frontArtworkPath: '/assets/front.png',
-      backArtworkPath: '/assets/back.png',
+      backgroundColorHex: backgroundColorHex,
       spineTitle: spineTitle,
       spineTitleFontSize: spineTitleFontSize,
       spineArtworkPath: spineArtworkPath,
@@ -63,8 +67,27 @@ void main() {
       expect(withoutArt == withArt, isFalse);
     });
 
-    test('toString includes the document id', () {
-      expect(_baseTemplate().toString(), contains('documentId: doc'));
+    test('contentHash changes when design changes', () {
+      final DotsCoverTemplate square =
+          _baseTemplate(design: DotsCoverDesign.square);
+      final DotsCoverTemplate circle =
+          _baseTemplate(design: DotsCoverDesign.circle);
+      expect(square.contentHash, isNot(circle.contentHash));
+      expect(square == circle, isFalse);
+    });
+
+    test('contentHash changes when backgroundColorHex changes', () {
+      final DotsCoverTemplate white = _baseTemplate();
+      final DotsCoverTemplate black =
+          _baseTemplate(backgroundColorHex: '#000000');
+      expect(white.contentHash, isNot(black.contentHash));
+      expect(white == black, isFalse);
+    });
+
+    test('toString includes the document id and design name', () {
+      final String s = _baseTemplate(design: DotsCoverDesign.linen).toString();
+      expect(s, contains('documentId: doc'));
+      expect(s, contains('linen'));
     });
   });
 }
