@@ -15,6 +15,54 @@ import 'layout/dots_layout_solver.dart';
 import 'layout/dots_page_geometry.dart';
 import 'layout/dots_slot_rect.dart';
 
+/// Collects every asset path referenced by [pages] and loads their bytes
+/// using a [DotsAssetLoader] backed by [fileSystem] / [tmpDir] /
+/// [urlFetcher].
+///
+/// Call this on the **main isolate** before passing the result map to
+/// [synthesizePdfInIsolate] so that the isolate never needs to touch
+/// platform channels or the injected [FileSystem].
+Future<Map<String, Uint8List>> preloadAssetBytes({
+  required List<DotsPage> pages,
+  required FileSystem fileSystem,
+  required Directory tmpDir,
+  DotsUrlFetcher? urlFetcher,
+}) async {
+  // Collect all unique asset paths across every page.
+  final paths = <String>{};
+  for (final page in pages) {
+    switch (page) {
+      case DotsElementsPage():
+        for (final element in page.elements) {
+          switch (element) {
+            case DotsImageElement():
+              paths.add(element.assetPath);
+            case DotsSpreadImageElement():
+              paths.add(element.assetPath);
+            case DotsTextElement():
+              break;
+          }
+        }
+      case DotsLayoutPage():
+        paths.addAll(page.photoAssetPaths);
+    }
+  }
+
+  if (paths.isEmpty) return const {};
+
+  final loader = DotsAssetLoader(
+    fileSystem: fileSystem,
+    tmpDir: tmpDir,
+    urlFetcher: urlFetcher,
+  );
+
+  final result = <String, Uint8List>{};
+  for (final path in paths) {
+    result[path] = await loader.loadBytes(path);
+  }
+  return result;
+}
+
 /// Conversion factor: 1 millimetre is `25.4 / 72` PDF points
 /// (i.e. 1 pt = 1/72 inch, 1 inch = 25.4 mm). Held to seven decimals so
 /// equality checks against literal pt values in tests remain stable.

@@ -15,6 +15,8 @@ import '../preview/dots_page_preview_generator.dart';
 import '../preview/dots_pdf_rasterizer.dart';
 import '../render/asset_loader.dart';
 import '../render/dots_font_bundle.dart';
+import '../render/dots_renderer.dart';
+import '../render/isolate_synthesis.dart';
 import '../render/pair_document_renderer.dart';
 import '../render/whole_document_renderer.dart';
 import 'dots_output_mode.dart';
@@ -36,6 +38,16 @@ class DotsGenerator {
   /// and `MemoryFileSystem()` in tests. [documentsDir] is the on-disk
   /// root under which the `dots_pdf/` folder is created — typically
   /// the result of `path_provider.getApplicationDocumentsDirectory()`.
+  ///
+  /// [useIsolate] — when `true`, the PDF synthesis step (`pw.Document`
+  /// build + `doc.save()` + bytes-to-disk) is offloaded to a Dart
+  /// isolate via `Isolate.run`. The rasterisation step always stays on
+  /// the main isolate because it depends on platform channels.
+  ///
+  /// **Constraint**: isolate mode requires a real on-disk path writable
+  /// by `dart:io`; it does NOT work with `MemoryFileSystem`. Pass
+  /// `useIsolate: false` (the default) when constructing the generator
+  /// inside tests that use `MemoryFileSystem`.
   DotsGenerator({
     required FileSystem fileSystem,
     required Directory documentsDir,
@@ -45,6 +57,7 @@ class DotsGenerator {
     DotsFontBundle? fontBundle,
     DotsPdfRasterizer? rasterizer,
     this.previewDpi = 150,
+    this.useIsolate = false,
   })  : _fs = fileSystem,
         _logger = logger,
         _urlFetcher = urlFetcher,
@@ -75,6 +88,15 @@ class DotsGenerator {
   /// Callers should derive this from `DotsSupplier.drawsCropMarks` —
   /// europa prints marks, latam does not. Defaults to `false`.
   final bool drawCropMarks;
+
+  /// When `true`, the PDF synthesis step runs in a Dart isolate via
+  /// `Isolate.run`. Defaults to `false` for backwards compatibility.
+  ///
+  /// **Not compatible with `MemoryFileSystem`** — isolate-side writes
+  /// go through `dart:io File` directly, bypassing the injected
+  /// [FileSystem]. Only enable this with `LocalFileSystem` in
+  /// production code.
+  final bool useIsolate;
 
   /// Resolved file path that a whole-document run will write to.
   Future<String> wholePathFor(String documentId) =>
@@ -139,6 +161,7 @@ class DotsGenerator {
   }) async* {
     final documentId = template.documentId;
     final hash = template.contentHash;
+    final totalStart = DateTime.now().millisecondsSinceEpoch;
 
     try {
       if (!forceRegenerate) {
@@ -177,24 +200,60 @@ class DotsGenerator {
         void onPhotoFailure(final String assetPath, final Object error) {
           photoFailures.add((assetPath: assetPath, error: error));
         }
+
+        // Perf counters (ms); populated below per mode.
+        int synthMs = 0;
+        int saveMs = 0;
+        int rasterMs = 0;
+        int pageCount = 0;
+
         switch (mode) {
           case DotsOutputMode.whole:
-            final renderer = WholeDocumentRenderer(
-              fileSystem: _fs,
-              logger: _logger,
-              drawCropMarks: drawCropMarks,
-              tmpDir: tmpDir,
-              urlFetcher: _urlFetcher,
-              fontBundle: _fontBundle,
-              onPhotoSlotFailure: onPhotoFailure,
-            );
+            final pages = template.effectivePages;
+            pageCount = pages.length;
+
             final finalPath = await _paths.wholePdfPath(documentId);
             final tempPath = await _tempPathFor(documentId, 'whole.pdf');
-            await renderer.render(
-              template: template,
-              pages: template.effectivePages,
-              outputPath: tempPath,
-            );
+
+            if (useIsolate) {
+              final preloaded = await preloadAssetBytes(
+                pages: pages,
+                fileSystem: _fs,
+                tmpDir: tmpDir,
+                urlFetcher: _urlFetcher,
+              );
+              final result = await synthesizePdfInIsolate(
+                template: template,
+                pages: pages,
+                outputPath: tempPath,
+                preloadedBytes: preloaded,
+                drawCropMarks: drawCropMarks,
+                fontBundle: _fontBundle,
+              );
+              synthMs += result.synthMs;
+              saveMs += result.saveMs;
+              for (final f in result.photoFailures) {
+                photoFailures.add(f);
+              }
+            } else {
+              final renderer = WholeDocumentRenderer(
+                fileSystem: _fs,
+                logger: _logger,
+                drawCropMarks: drawCropMarks,
+                tmpDir: tmpDir,
+                urlFetcher: _urlFetcher,
+                fontBundle: _fontBundle,
+                onPhotoSlotFailure: onPhotoFailure,
+              );
+              final sw = Stopwatch()..start();
+              await renderer.render(
+                template: template,
+                pages: pages,
+                outputPath: tempPath,
+              );
+              synthMs = sw.elapsedMilliseconds;
+            }
+
             await _atomicMove(tempPath, finalPath);
             artifactPaths.add(finalPath);
             yield PdfGenerationProgress(
@@ -210,6 +269,8 @@ class DotsGenerator {
               );
             }
             photoFailures.clear();
+
+            final rasterStart = DateTime.now().millisecondsSinceEpoch;
             yield* _emitPreviews(
               documentId: documentId,
               pdfPath: finalPath,
@@ -217,17 +278,23 @@ class DotsGenerator {
               wrapMm: 0,
               accumulator: previewPaths,
             );
+            rasterMs += DateTime.now().millisecondsSinceEpoch - rasterStart;
+
           case DotsOutputMode.pairs:
-            final renderer = PairDocumentRenderer(
-              fileSystem: _fs,
-              logger: _logger,
-              drawCropMarks: drawCropMarks,
-              tmpDir: tmpDir,
-              urlFetcher: _urlFetcher,
-              fontBundle: _fontBundle,
-              onPhotoSlotFailure: onPhotoFailure,
-            );
+            final renderer = useIsolate
+                ? null
+                : PairDocumentRenderer(
+                    fileSystem: _fs,
+                    logger: _logger,
+                    drawCropMarks: drawCropMarks,
+                    tmpDir: tmpDir,
+                    urlFetcher: _urlFetcher,
+                    fontBundle: _fontBundle,
+                    onPhotoSlotFailure: onPhotoFailure,
+                  );
             final slices = _pairSlices(template.effectivePages);
+            pageCount = template.effectivePages.length;
+
             for (var i = 0; i < slices.length; i++) {
               final pair = slices[i];
               final pairIndex = i + 1;
@@ -237,11 +304,37 @@ class DotsGenerator {
                 documentId,
                 'pair_${pairIndex.toString().padLeft(3, '0')}.pdf',
               );
-              await renderer.render(
-                template: template,
-                pages: pair,
-                outputPath: tempPath,
-              );
+
+              if (useIsolate) {
+                final preloaded = await preloadAssetBytes(
+                  pages: pair,
+                  fileSystem: _fs,
+                  tmpDir: tmpDir,
+                  urlFetcher: _urlFetcher,
+                );
+                final result = await synthesizePdfInIsolate(
+                  template: template,
+                  pages: pair,
+                  outputPath: tempPath,
+                  preloadedBytes: preloaded,
+                  drawCropMarks: drawCropMarks,
+                  fontBundle: _fontBundle,
+                );
+                synthMs += result.synthMs;
+                saveMs += result.saveMs;
+                for (final f in result.photoFailures) {
+                  photoFailures.add(f);
+                }
+              } else {
+                final sw = Stopwatch()..start();
+                await renderer!.render(
+                  template: template,
+                  pages: pair,
+                  outputPath: tempPath,
+                );
+                synthMs += sw.elapsedMilliseconds;
+              }
+
               await _atomicMove(tempPath, finalPath);
               artifactPaths.add(finalPath);
               yield PdfGenerationProgress(
@@ -257,6 +350,8 @@ class DotsGenerator {
                 );
               }
               photoFailures.clear();
+
+              final rasterStart = DateTime.now().millisecondsSinceEpoch;
               yield* _emitPreviews(
                 documentId: documentId,
                 pdfPath: finalPath,
@@ -266,6 +361,7 @@ class DotsGenerator {
                 filenamePrefix:
                     'pair_${pairIndex.toString().padLeft(3, '0')}_',
               );
+              rasterMs += DateTime.now().millisecondsSinceEpoch - rasterStart;
             }
         }
 
@@ -273,6 +369,16 @@ class DotsGenerator {
           documentId: documentId,
           mode: mode,
           contentHash: hash,
+        );
+
+        final totalMs = DateTime.now().millisecondsSinceEpoch - totalStart;
+        final isolateLabel = useIsolate ? 'on' : 'off';
+        final modeLabel = mode == DotsOutputMode.whole ? 'whole' : 'pairs';
+        _logger.info(
+          '[dots_pdf] perf documentId=$documentId isolate=$isolateLabel\n'
+          '  synth=${synthMs}ms save=${saveMs}ms '
+          'raster=${rasterMs}ms total=${totalMs}ms\n'
+          '  pages=$pageCount mode=$modeLabel',
         );
 
         yield PdfGenerationCompleted(
@@ -299,6 +405,7 @@ class DotsGenerator {
   }) async* {
     final documentId = template.documentId;
     final hash = template.contentHash;
+    final totalStart = DateTime.now().millisecondsSinceEpoch;
 
     try {
       if (!forceRegenerate) {
@@ -327,14 +434,35 @@ class DotsGenerator {
       );
 
       try {
-        final renderer = DotsCoverRenderer(
-          fileSystem: _fs,
-          logger: _logger,
-          fontBundle: _fontBundle,
-        );
         final finalPath = await _paths.coverPdfPath(documentId);
         final tempPath = await _tempPathFor(documentId, 'cover.pdf');
-        await renderer.render(template: template, outputPath: tempPath);
+
+        int synthMs = 0;
+        int saveMs = 0;
+        int rasterMs = 0;
+
+        if (useIsolate) {
+          // Pre-load all artwork bytes on the main isolate.
+          final preloaded = await _preloadCoverBytes(template);
+          final result = await synthesizeCoverInIsolate(
+            template: template,
+            outputPath: tempPath,
+            preloadedBytes: preloaded,
+            fontBundle: _fontBundle,
+          );
+          synthMs = result.synthMs;
+          saveMs = result.saveMs;
+        } else {
+          final renderer = DotsCoverRenderer(
+            fileSystem: _fs,
+            logger: _logger,
+            fontBundle: _fontBundle,
+          );
+          final sw = Stopwatch()..start();
+          await renderer.render(template: template, outputPath: tempPath);
+          synthMs = sw.elapsedMilliseconds;
+        }
+
         await _atomicMove(tempPath, finalPath);
 
         yield PdfGenerationProgress(
@@ -344,6 +472,7 @@ class DotsGenerator {
         );
 
         final previewPaths = <String>[];
+        final rasterStart = DateTime.now().millisecondsSinceEpoch;
         yield* _emitPreviews(
           documentId: documentId,
           pdfPath: finalPath,
@@ -354,10 +483,20 @@ class DotsGenerator {
           wrapMm: 20,
           accumulator: previewPaths,
         );
+        rasterMs = DateTime.now().millisecondsSinceEpoch - rasterStart;
 
         await _cache.recordCoverHash(
           documentId: documentId,
           contentHash: hash,
+        );
+
+        final totalMs = DateTime.now().millisecondsSinceEpoch - totalStart;
+        final isolateLabel = useIsolate ? 'on' : 'off';
+        _logger.info(
+          '[dots_pdf] perf documentId=$documentId isolate=$isolateLabel\n'
+          '  synth=${synthMs}ms save=${saveMs}ms '
+          'raster=${rasterMs}ms total=${totalMs}ms\n'
+          '  pages=1 mode=cover',
         );
 
         yield PdfGenerationCompleted(
@@ -380,6 +519,24 @@ class DotsGenerator {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Pre-loads all artwork byte arrays referenced by [template] from the
+  /// injected [FileSystem] on the main isolate.
+  ///
+  /// Called before handing off to [synthesizeCoverInIsolate] so the
+  /// isolate never touches platform channels or [FileSystem].
+  Future<Map<String, Uint8List>> _preloadCoverBytes(
+    DotsCoverTemplate template,
+  ) async {
+    final result = <String, Uint8List>{};
+    result[template.frontArtworkPath] =
+        await _fs.file(template.frontArtworkPath).readAsBytes();
+    final spine = template.spineArtworkPath;
+    if (spine != null && spine.isNotEmpty) {
+      result[spine] = await _fs.file(spine).readAsBytes();
+    }
+    return result;
   }
 
   /// Rasterizes [pdfPath] into PNG previews under
