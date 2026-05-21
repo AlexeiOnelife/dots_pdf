@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 
+import '../api/dots_album_type.dart';
 import '../render/layout/dots_layout_code.dart';
 import '../render/layout/dots_slot_rect.dart';
 import 'dots_pliego.dart';
@@ -336,6 +337,115 @@ class DotsLayoutPage extends DotsPage {
       );
 }
 
+/// Structural header for an album-spread page.
+///
+/// Carries the three top-of-page label positions: a left page number, a
+/// centre context label (e.g. the resolved `{Protagonistas}` token), and a
+/// right page number. All three are optional — absent positions are simply
+/// not drawn by the renderer.
+@immutable
+class DotsSpreadHeader {
+  /// Creates a spread header.
+  const DotsSpreadHeader({
+    this.leftPageNumber,
+    this.centerLabel,
+    this.rightPageNumber,
+  });
+
+  /// Optional page-number string shown at the top-left of the spread.
+  final String? leftPageNumber;
+
+  /// Optional context-label string shown at the top-centre of the spread.
+  ///
+  /// Typically the resolved value of `albumType.contextLabelToken` after
+  /// parse-time variable substitution.
+  final String? centerLabel;
+
+  /// Optional page-number string shown at the top-right of the spread.
+  final String? rightPageNumber;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsSpreadHeader &&
+      other.leftPageNumber == leftPageNumber &&
+      other.centerLabel == centerLabel &&
+      other.rightPageNumber == rightPageNumber;
+
+  @override
+  int get hashCode => Object.hash(leftPageNumber, centerLabel, rightPageNumber);
+}
+
+/// Structural footer for an album-spread page.
+///
+/// Carries the single bottom-centre wordmark position (e.g. "Dots. Memories").
+@immutable
+class DotsSpreadFooter {
+  /// Creates a spread footer.
+  const DotsSpreadFooter({required this.wordmark});
+
+  /// Wordmark string shown at the bottom-centre of the spread.
+  ///
+  /// Typically `"Dots. Memories"`.
+  final String wordmark;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsSpreadFooter && other.wordmark == wordmark;
+
+  @override
+  int get hashCode => wordmark.hashCode;
+}
+
+/// An album-spread page whose top and bottom edges carry first-class
+/// structural [header] and [footer] declarations.
+///
+/// This is a sibling subtype alongside [DotsElementsPage] and
+/// [DotsLayoutPage] in the sealed [DotsPage] hierarchy. It adds an
+/// optional [elements] list (the same primitive [DotsElementsPage] uses)
+/// so spread-specific decorative elements can be authored at explicit
+/// coordinates.
+///
+/// Renderer support for drawing the header and footer positions is
+/// introduced in slice 2. Slice 1 only establishes the model and parser
+/// support; attempting to render a [DotsAlbumSpreadPage] in slice 1
+/// throws an [UnimplementedError].
+class DotsAlbumSpreadPage extends DotsPage {
+  /// Creates an album-spread page.
+  const DotsAlbumSpreadPage({
+    required super.pageNumber,
+    required this.header,
+    required this.footer,
+    this.elements = const <DotsElement>[],
+  });
+
+  /// Top-of-page structural positions (left page number, centre label,
+  /// right page number).
+  final DotsSpreadHeader header;
+
+  /// Bottom-of-page structural position (wordmark).
+  final DotsSpreadFooter footer;
+
+  /// Optional explicit-coordinate elements drawn on the page body, in
+  /// declaration order.
+  final List<DotsElement> elements;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsAlbumSpreadPage &&
+      other.pageNumber == pageNumber &&
+      other.header == header &&
+      other.footer == footer &&
+      _listEquals(other.elements, elements);
+
+  @override
+  int get hashCode => Object.hash(
+        pageNumber,
+        header,
+        footer,
+        Object.hashAll(elements),
+      );
+}
+
 /// Top-level template tree consumed by the generator.
 ///
 /// A template can describe its content two equivalent ways:
@@ -362,6 +472,7 @@ class DotsTemplate {
   const DotsTemplate({
     required this.documentId,
     required this.pageSize,
+    this.albumType,
     this.pages = _emptyPages,
     this.pliegos = _emptyPliegos,
   }) : assert(
@@ -378,6 +489,11 @@ class DotsTemplate {
 
   /// Page geometry applied to every page.
   final DotsPageSize pageSize;
+
+  /// Optional album type that selects front/back matter and the
+  /// right-page top-center header label token. Defaults to `null` —
+  /// absent from templates that do not use album-type spread pages.
+  final DotsAlbumType? albumType;
 
   /// Page-level content. Empty when [pliegos] is the source of truth.
   final List<DotsPage> pages;
@@ -412,6 +528,7 @@ class DotsTemplate {
   int get contentHash => Object.hash(
         documentId,
         pageSize,
+        albumType,
         Object.hashAll(pages),
         Object.hashAll(pliegos),
       );

@@ -22,6 +22,44 @@ void main() {
       expect(pages[1], isA<DotsLayoutPage>());
     });
 
+    test('toPages assigns page numbers to DotsAlbumSpreadPage sides', () {
+      const header = DotsSpreadHeader(
+        leftPageNumber: '01',
+        centerLabel: 'foo',
+        rightPageNumber: '02',
+      );
+      const footer = DotsSpreadFooter(wordmark: 'Dots. Memories');
+      const pliego = DotsLayoutPliego(
+        pliegoNumber: 1,
+        left: DotsAlbumSpreadPage(
+          pageNumber: 0,
+          header: header,
+          footer: footer,
+          elements: <DotsElement>[],
+        ),
+        right: DotsAlbumSpreadPage(
+          pageNumber: 0,
+          header: header,
+          footer: footer,
+          elements: <DotsElement>[],
+        ),
+      );
+      final pages = pliego.toPages(5);
+      expect(pages, hasLength(2));
+      expect(pages[0], isA<DotsAlbumSpreadPage>());
+      expect(pages[1], isA<DotsAlbumSpreadPage>());
+      expect(pages[0].pageNumber, 5);
+      expect(pages[1].pageNumber, 6);
+      final left = pages[0] as DotsAlbumSpreadPage;
+      final right = pages[1] as DotsAlbumSpreadPage;
+      expect(left.header, header);
+      expect(left.footer, footer);
+      expect(left.elements, isEmpty);
+      expect(right.header, header);
+      expect(right.footer, footer);
+      expect(right.elements, isEmpty);
+    });
+
     test('DotsSpreadImagePliego produces left+right halves', () {
       const pliego = DotsSpreadImagePliego(
         pliegoNumber: 1,

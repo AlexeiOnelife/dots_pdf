@@ -45,6 +45,17 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
         }
       case DotsLayoutPage():
         paths.addAll(page.photoAssetPaths);
+      case DotsAlbumSpreadPage():
+        for (final element in page.elements) {
+          switch (element) {
+            case DotsImageElement():
+              paths.add(element.assetPath);
+            case DotsSpreadImageElement():
+              paths.add(element.assetPath);
+            case DotsTextElement():
+              break;
+          }
+        }
     }
   }
 
@@ -260,6 +271,10 @@ abstract class DotsRenderer {
         return _buildElementsPage(format, page);
       case DotsLayoutPage():
         return _buildLayoutPage(format, page);
+      case DotsAlbumSpreadPage():
+        throw UnimplementedError(
+          'DotsAlbumSpreadPage rendering is part of slice 2 — not yet implemented',
+        );
     }
   }
 

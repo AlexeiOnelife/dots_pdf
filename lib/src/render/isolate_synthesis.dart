@@ -203,6 +203,10 @@ class _IsolatePageRenderer {
         return _buildElementsPage(format, page);
       case DotsLayoutPage():
         return _buildLayoutPage(format, page);
+      case DotsAlbumSpreadPage():
+        throw UnimplementedError(
+          'DotsAlbumSpreadPage rendering is part of slice 2 — not yet implemented',
+        );
     }
   }
 

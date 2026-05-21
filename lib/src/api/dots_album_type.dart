@@ -1,3 +1,28 @@
+/// Provides context-label resolver logic for [DotsAlbumType].
+///
+/// The [contextLabelToken] getter returns the token name used as the
+/// top-center context label on the right page of an album-spread page.
+/// Callers include this token in the `variables` map passed to
+/// [DotsTemplateParser.parse] so that the text element value is resolved
+/// at parse time.
+extension DotsAlbumTypeContext on DotsAlbumType {
+  /// Token name for the top-center label on right-page album-spread headers.
+  ///
+  /// Mapping:
+  /// | Value          | Token              |
+  /// |----------------|--------------------|
+  /// | boda           | `{Protagonistas}`  |
+  /// | hijos          | `{Protagonistas}`  |
+  /// | parejas        | `{tiempojuntos}`   |
+  /// | individuales   | `{Año}`            |
+  /// | otros          | `{Año}`            |
+  String get contextLabelToken => switch (this) {
+        DotsAlbumType.boda || DotsAlbumType.hijos => '{Protagonistas}',
+        DotsAlbumType.parejas => '{tiempojuntos}',
+        DotsAlbumType.individuales || DotsAlbumType.otros => '{Año}',
+      };
+}
+
 /// Album types the library supports.
 ///
 /// Each value selects the front- and back-matter spread set defined in

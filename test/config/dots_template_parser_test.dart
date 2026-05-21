@@ -191,4 +191,57 @@ void main() {
       );
     });
   });
+
+  // ---- R5: backwards-compat — existing fixtures parse unchanged ----
+
+  group('DotsTemplateParser — backwards compatibility (R5)', () {
+    // Fixture: a template with no albumType and no variable tokens.
+    // The parser must accept it without error and produce identical output
+    // whether or not the new albumType/variables plumbing exists.
+    const existingFixture = '''
+{
+  "documentId": "doc_existing",
+  "pageSize": { "width": 595.0, "height": 842.0 },
+  "pages": [
+    {
+      "pageNumber": 1,
+      "elements": [
+        { "type": "text", "value": "hello world", "x": 10, "y": 20, "fontSize": 12 },
+        { "type": "image", "assetPath": "a.png", "x": 0, "y": 0, "width": 50, "height": 50 }
+      ]
+    }
+  ]
+}
+''';
+
+    test(
+        'DotsTemplateParser — existing fixture parses unchanged after slice (backwards compat)',
+        () {
+      // Must not throw.
+      final template = parser.parse(existingFixture);
+
+      // albumType must be null — no key in JSON.
+      expect(template.albumType, isNull);
+
+      // All existing fields must be intact.
+      expect(template.documentId, equals('doc_existing'));
+      expect(template.pages, hasLength(1));
+      final page = template.pages.single as DotsElementsPage;
+      expect(page.elements, hasLength(2));
+      final text = page.elements.first as DotsTextElement;
+      // Literal text must be unchanged (no substitution with empty map).
+      expect(text.value, equals('hello world'));
+    });
+
+    test(
+        'DotsTemplateParser — template without variables map parses unchanged',
+        () {
+      // Calling parseMap without the variables argument (default const {})
+      // must leave all DotsTextElement.value strings as-is.
+      final template = parser.parse(existingFixture);
+      final page = template.pages.single as DotsElementsPage;
+      final text = page.elements.first as DotsTextElement;
+      expect(text.value, equals('hello world'));
+    });
+  });
 }
