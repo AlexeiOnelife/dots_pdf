@@ -351,7 +351,7 @@ The following tests MUST exist in `test/` to satisfy this spec:
 - `AlbumSpreadPage — closing page title is 20pt for parejas`
 - `AlbumSpreadPage — closing page title is 20pt for hijos`
 - `AlbumSpreadPage — closing page title is 20pt for individuales`
-- `AlbumSpreadPage — closing page title is 20pt for otros`
+- `AlbumSpreadPage — closing page title is 20pt for outros`
 - `AlbumSpreadPage — closing page with null photoPath renders without error`
 - `AlbumSpreadPage — closing page photo slot is 66×86 mm`
 

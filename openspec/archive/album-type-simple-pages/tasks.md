@@ -9,12 +9,11 @@
 | Chained PRs recommended | Yes |
 | Suggested split | PR 1 = T1 + T2 (scaffolding + element types) → PR 2 = T3 + T4 + T5 (helper + builders + exports + verification) |
 | Delivery strategy | ask-on-risk |
-| Chain strategy | pending — orchestrator must ask before apply |
+| Chain strategy | completed via feature-branch-chain strategy |
 
 Decision needed before apply: Yes
 Chained PRs recommended: Yes
-Chain strategy: pending
-400-line budget risk: High
+Chain strategy: feature-branch-chain
 
 ### Suggested Work Units
 
@@ -27,12 +26,12 @@ Chain strategy: pending
 
 ## Phase T1 — Test scaffolding (RED — write failing tests first)
 
-- [x] T1.1 Create `test/render/album_spread_page_test.dart` — write failing tests per spec acceptance list: dedication renders title + body + signature for parejas / hijos / individuales / otros (R1 scenarios); signature present via `DotsRotatedTextElement` at 2°; body constrained to 102 mm width.
-- [x] T1.2 In `test/render/album_spread_page_test.dart` — write failing tests for closing-page rendering: title is 12 pt for boda; 20 pt for parejas, hijos, individuales, otros (R2 scenarios); null `photoPath` renders without error; photo slot is 66×86 mm.
+- [x] T1.1 Create `test/render/album_spread_page_test.dart` — write failing tests per spec acceptance list: dedication renders title + body + signature for parejas / hijos / individuales / outros (R1 scenarios); signature present via `DotsRotatedTextElement` at 2°; body constrained to 102 mm width.
+- [x] T1.2 In `test/render/album_spread_page_test.dart` — write failing tests for closing-page rendering: title is 12 pt for boda; 20 pt for parejas, hijos, individuales, outros (R2 scenarios); null `photoPath` renders without error; photo slot is 66×86 mm.
 - [x] T1.3 In `test/render/album_spread_page_test.dart` — write failing tests for header/footer: all four labels drawn; Inter Semibold 7 pt; null header fields omitted without error (R3 scenarios).
 - [x] T1.4 In `test/render/album_spread_page_test.dart` — write failing tests for `DotsTextBlockElement` warn behavior: body ≤ limits → no warning; body > 1000 chars → one warning; body > 32 newline-lines → one warning; both exceeded → at least one warning (R5 scenarios).
 - [x] T1.5 In `test/render/album_spread_page_test.dart` — write failing tests for isolate dispatch: `useIsolate=false` produces valid non-empty PDF; `useIsolate=true` produces valid non-empty PDF; both paths produce output within 20% size tolerance (R7 scenarios).
-- [x] T1.6 Create `test/api/build_simple_pages_test.dart` — write failing tests: `buildSimplePagesFor(parejas, full)` → 2 pages in dedication→closing order; `(boda, full)` → 1 page closing only; `(hijos, full)` → 2 pages; `(individuales, full)` → 2 pages; `(otros, full)` → 2 pages; header.centerLabel tokens per type (R6 scenarios); dedication-only → 1 page; closing-only → 1 page; both null → empty list.
+- [x] T1.6 Create `test/api/build_simple_pages_test.dart` — write failing tests: `buildSimplePagesFor(parejas, full)` → 2 pages in dedication→closing order; `(boda, full)` → 1 page closing only; `(hijos, full)` → 2 pages; `(individuales, full)` → 2 pages; `(outros, full)` → 2 pages; header.centerLabel tokens per type (R6 scenarios); dedication-only → 1 page; closing-only → 1 page; both null → empty list.
 - [x] T1.7 In `test/config/dots_template_test.dart` — add failing tests: `DotsRotatedTextElement` equality + hashCode; `DotsTextBlockElement` equality + hashCode; `DotsAlbumSpreadPage.dedication(...)` smoke (non-null, elements not empty); `DotsAlbumSpreadPage.closing(...)` smoke; `DotsAlbumSpreadPage` with empty elements list constructs without error (R8 compat scenario).
 
 ---
@@ -62,7 +61,7 @@ Chain strategy: pending
 ## Phase T4 — Named constructors + builder (GREEN for model + builder tests)
 
 - [x] T4.1 In `lib/src/config/dots_template.dart` — add `factory DotsAlbumSpreadPage.dedication({required DotsAlbumType type, required int pageNumber, required String contextLabelValue, required String title, required String body, required String signature})`: assembles `header` (leftPageNumber: '$pageNumber', centerLabel: contextLabelValue, rightPageNumber: null), footer wordmark "Dots. Memories", and elements list [DotsTextElement(TITLE, P22 Mackinac Medium 23 pt), DotsTextBlockElement(BODY, Inter Book 9 pt, width=102 mm in pts, center, lineHeight 1.2, maxChars 1000, maxLines 32), DotsRotatedTextElement(SIGNATURE, Biro Script Plus 12 pt, angleDegrees 2.0)]; skips rotated element when `signature.isEmpty` (R1, D4).
-- [x] T4.2 In `lib/src/config/dots_template.dart` — add `factory DotsAlbumSpreadPage.closing({required DotsAlbumType type, required int pageNumber, required String contextLabelValue, required String? photoPath, required String title, required String subtitle})`: title font size via exhaustive `switch (type) { case boda: 12.0; case parejas || hijos || individuales || otros: 20.0; }` (no default — compile-time exhaustive); assembles photo element (if photoPath non-null), DotsTextElement(TITLE, P22 Mackinac Medium, computed size), DotsTextBlockElement(SUBTITLE, P22 Mackinac Book 9 pt, 2 lines), header and footer (R2, D4).
+- [x] T4.2 In `lib/src/config/dots_template.dart` — add `factory DotsAlbumSpreadPage.closing({required DotsAlbumType type, required int pageNumber, required String contextLabelValue, required String? photoPath, required String title, required String subtitle})`: title font size via exhaustive `switch (type) { case boda: 12.0; case parejas || hijos || individuales || outros: 20.0; }` (no default — compile-time exhaustive); assembles photo element (if photoPath non-null), DotsTextElement(TITLE, P22 Mackinac Medium, computed size), DotsTextBlockElement(SUBTITLE, P22 Mackinac Book 9 pt, 2 lines), header and footer (R2, D4).
 - [x] T4.3 Create `lib/src/api/album_simple_content.dart` — define `@immutable class AlbumSimpleContent`, `@immutable class DedicationContent`, `@immutable class ClosingContent` with `==` / `hashCode` per existing library style (D3).
 - [x] T4.4 Create `lib/src/api/build_simple_pages.dart` — implement `List<DotsPage> buildSimplePagesFor(DotsAlbumType type, AlbumSimpleContent content, {required int firstPageNumber, required String contextLabelValue})`: for boda emit only closing (if content.closing != null); for all other types emit dedication (if non-null) then closing (if non-null); pass `contextLabelValue` straight through to named constructors — it is a pre-resolved string, NOT a token substitution call (R6, D4, D3). Note: the caller is responsible for resolving `type.contextLabelToken` from the variable map before passing `contextLabelValue`; this function does not perform token substitution.
 - [x] T4.5 Run `flutter test test/api/build_simple_pages_test.dart test/config/dots_template_test.dart` — all builder and model tests pass (GREEN for T1.6–T1.7).

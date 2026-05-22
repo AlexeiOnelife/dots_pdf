@@ -28,48 +28,35 @@ List<DotsAlbumSpreadPage> buildSimplePagesFor(
 }) {
   final pages = <DotsAlbumSpreadPage>[];
 
-  switch (type) {
-    case DotsAlbumType.boda:
-      // boda has no dedication page.
-      final closing = content.closing;
-      if (closing != null) {
-        pages.add(DotsAlbumSpreadPage.closing(
-          type: type,
-          pageNumber: firstPageNumber + pages.length,
-          contextLabelValue: contextLabelValue,
-          photoPath: closing.photoPath,
-          title: closing.title,
-          subtitle: closing.subtitle,
-        ));
-      }
+  if (_hasDedication(type)) {
+    final dedication = content.dedication;
+    if (dedication != null) {
+      pages.add(DotsAlbumSpreadPage.dedication(
+        type: type,
+        pageNumber: firstPageNumber + pages.length,
+        contextLabelValue: contextLabelValue,
+        title: dedication.title,
+        body: dedication.body,
+        signature: dedication.signature,
+      ));
+    }
+  }
 
-    case DotsAlbumType.parejas ||
-          DotsAlbumType.hijos ||
-          DotsAlbumType.individuales ||
-          DotsAlbumType.otros:
-      final dedication = content.dedication;
-      if (dedication != null) {
-        pages.add(DotsAlbumSpreadPage.dedication(
-          type: type,
-          pageNumber: firstPageNumber + pages.length,
-          contextLabelValue: contextLabelValue,
-          title: dedication.title,
-          body: dedication.body,
-          signature: dedication.signature,
-        ));
-      }
-      final closing = content.closing;
-      if (closing != null) {
-        pages.add(DotsAlbumSpreadPage.closing(
-          type: type,
-          pageNumber: firstPageNumber + pages.length,
-          contextLabelValue: contextLabelValue,
-          photoPath: closing.photoPath,
-          title: closing.title,
-          subtitle: closing.subtitle,
-        ));
-      }
+  final closing = content.closing;
+  if (closing != null) {
+    pages.add(DotsAlbumSpreadPage.closing(
+      type: type,
+      pageNumber: firstPageNumber + pages.length,
+      contextLabelValue: contextLabelValue,
+      photoPath: closing.photoPath,
+      title: closing.title,
+      subtitle: closing.subtitle,
+    ));
   }
 
   return pages;
 }
+
+/// Returns `true` for every album type that has a dedication page.
+/// Only [DotsAlbumType.boda] does not — it goes straight to a closing page.
+bool _hasDedication(DotsAlbumType type) => type != DotsAlbumType.boda;

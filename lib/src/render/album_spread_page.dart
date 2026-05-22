@@ -1,6 +1,7 @@
 import 'dart:math' show pi;
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
@@ -25,6 +26,10 @@ const double _kFooterBottomMarginMm = 8.0;
 
 /// Canonical font size for header and footer labels (7pt / 8.4pt leading).
 const double _kHeaderFontSize = 7.0;
+
+/// Exposed for testing: the header/footer font size in PDF points.
+@visibleForTesting
+const double kHeaderFontSizeForTest = _kHeaderFontSize;
 
 /// Leading multiplier for header/footer text (8.4 / 7 = 1.2).
 const double _kHeaderLineHeight = 1.2;
@@ -266,17 +271,25 @@ pw.Widget _buildRotatedText(
   final font = role == null ? null : fontResolver(role);
   final angleRadians = element.angleDegrees * pi / 180.0;
 
+  // Wrap in SizedBox sized for the un-rotated text so the rotation has a
+  // deterministic centre (design decision D1).  Width estimate: character
+  // width ≈ 0.6 × fontSize (rough but sufficient at 2° rotation).
+  final double estimatedWidth = element.fontSize * element.value.length * 0.6;
+
   return pw.Positioned(
     left: element.x,
     top: element.y,
     child: pw.Transform.rotate(
       angle: angleRadians,
-      child: pw.Text(
-        element.value,
-        style: pw.TextStyle(
-          fontSize: element.fontSize,
-          font: font,
-          color: _parseColor(element.colorHex),
+      child: pw.SizedBox(
+        width: estimatedWidth,
+        child: pw.Text(
+          element.value,
+          style: pw.TextStyle(
+            fontSize: element.fontSize,
+            font: font,
+            color: _parseColor(element.colorHex),
+          ),
         ),
       ),
     ),

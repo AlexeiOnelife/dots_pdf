@@ -6,7 +6,8 @@ import 'dart:io' as io;
 import 'dart:typed_data';
 
 import 'package:dots_pdf/dots_pdf.dart';
-import 'package:dots_pdf/src/render/album_spread_page.dart';
+import 'package:dots_pdf/src/render/album_spread_page.dart'
+    show buildAlbumSpreadPage, kHeaderFontSizeForTest;
 import 'package:file/local.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
@@ -496,6 +497,118 @@ void main() {
           : isoBytes.length;
       expect(smaller / larger, greaterThan(0.80),
           reason: 'Both PDFs should be within 20% size of each other',);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // W1 — Title font and body font are distinct  (R1 font-distinct scenario)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('AlbumSpreadPage — font family contracts', () {
+    test(
+        'AlbumSpreadPage — dedication title uses P22 Mackinac Medium and body '
+        'uses Inter', () {
+      final page = _dedicationPage(DotsAlbumType.parejas);
+
+      final titleFont =
+          page.elements.whereType<DotsTextElement>().first.fontFamily;
+      expect(titleFont, equals('P22 Mackinac Medium'),
+          reason: 'title element must use P22 Mackinac Medium');
+
+      final bodyFont =
+          page.elements.whereType<DotsTextBlockElement>().first.fontFamily;
+      expect(bodyFont, equals('Inter'),
+          reason: 'body text block must use Inter');
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // W2 — Body exceeding both limits triggers at least one warning  (R5)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('DotsTextBlockElement — combined-limits warn behavior', () {
+    test(
+        'DotsTextBlockElement — body exceeding both char and line limits emits '
+        'at least one warning and renders', () async {
+      final logger = _SpyLogger();
+      // 1001 chars AND 33 newline-separated lines — exceeds both thresholds.
+      final value = '${'x' * 1001}\n${'extra\n' * 32}';
+      final page = DotsAlbumSpreadPage(
+        pageNumber: 4,
+        header: const DotsSpreadHeader(),
+        footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+        elements: [
+          DotsTextBlockElement(
+            x: 0,
+            y: 100,
+            value: value,
+            fontSize: 9,
+            width: 289,
+            maxChars: 1000,
+            maxLines: 32,
+          ),
+        ],
+      );
+      final pwPage = await _buildPage(page, logger: logger);
+      expect(logger.warnMessages.length, greaterThanOrEqualTo(1),
+          reason: 'must warn when both char and line limits are exceeded');
+      expect(pwPage, isNotNull, reason: 'page must still render despite warnings');
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // W3 — Header font size is 7pt  (R3)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('AlbumSpreadPage — header font size', () {
+    test('AlbumSpreadPage — header font size constant is 7pt', () {
+      expect(kHeaderFontSizeForTest, equals(7.0),
+          reason: 'header/footer labels must be rendered at 7pt');
+    });
+
+    // S3 — header render produces a non-null pw.Page when all fields populated.
+    test(
+        'AlbumSpreadPage — buildAlbumSpreadPage with all header/footer fields '
+        'returns a non-null pw.Page', () async {
+      const page = DotsAlbumSpreadPage(
+        pageNumber: 7,
+        header: DotsSpreadHeader(
+          leftPageNumber: '7',
+          centerLabel: 'tiempojuntos',
+          rightPageNumber: '8',
+        ),
+        footer: DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      );
+      final pwPage = await _buildPage(page);
+      expect(pwPage, isNotNull,
+          reason: 'buildAlbumSpreadPage must return a page when all '
+              'header/footer fields are populated');
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // W4 — 86 mm bottom margin invariant  (R1)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('AlbumSpreadPage — 86mm bottom margin invariant', () {
+    test(
+        'AlbumSpreadPage — dedication signature respects 86mm bottom margin',
+        () {
+      final page = _dedicationPage(DotsAlbumType.parejas);
+
+      final sig = page.elements.whereType<DotsRotatedTextElement>().first;
+
+      // Trim height for a dotbook page: 254mm × _mmToPt.
+      const double pageHeightPt = 254.0 * _mmToPt;
+      // approxGlyphHeight = signature fontSize (12pt) — conservative guard.
+      const double approxGlyphHeight = 12.0;
+      const double bottomMarginPt = 86.0 * _mmToPt;
+
+      expect(
+        sig.y + approxGlyphHeight,
+        lessThanOrEqualTo(pageHeightPt - bottomMarginPt),
+        reason: 'signature must sit at or above the 86mm bottom margin',
+      );
     });
   });
 }
