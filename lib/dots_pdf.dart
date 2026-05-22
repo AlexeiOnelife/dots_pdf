@@ -6,6 +6,9 @@
 /// must not be imported by consumers.
 library;
 
+export 'src/api/album_simple_content.dart'
+    show AlbumSimpleContent, DedicationContent, ClosingContent;
+export 'src/api/build_simple_pages.dart' show buildSimplePagesFor;
 export 'src/api/dots_album_type.dart';
 export 'src/api/dots_generator.dart';
 export 'src/api/dots_output_mode.dart';

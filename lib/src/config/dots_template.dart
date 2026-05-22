@@ -5,6 +5,13 @@ import '../render/layout/dots_layout_code.dart';
 import '../render/layout/dots_slot_rect.dart';
 import 'dots_pliego.dart';
 
+// ---------------------------------------------------------------------------
+// Millimetres → PDF points constant (same as DotsRenderer._mmToPt).
+// ---------------------------------------------------------------------------
+
+/// 1 mm expressed in PDF points (1 pt = 1/72 inch; 1 inch = 25.4 mm).
+const double _mmToPt = 2.834645669;
+
 /// Immutable page size in PDF points (1 pt = 1/72 inch).
 @immutable
 class DotsPageSize {
@@ -146,6 +153,154 @@ class DotsImageElement extends DotsElement {
         bleedBottom,
         bleedLeft,
         bleedRight,
+      );
+}
+
+/// Alignment of text within a [DotsTextBlockElement].
+///
+/// Maps 1-to-1 to `pw.TextAlign` internally; the public API does not
+/// expose any `package:pdf` types directly.
+enum DotsTextAlign {
+  /// Align text to the left edge of the block.
+  left,
+
+  /// Centre text horizontally within the block.
+  center,
+
+  /// Align text to the right edge of the block.
+  right,
+}
+
+/// A run of styled text that is visually rotated by [angleDegrees] around
+/// its geometric centre and positioned at ([x], [y]).
+///
+/// Positive [angleDegrees] values rotate the text clockwise. The bounding
+/// box used for positioning is that of the **un-rotated** text; glyphs may
+/// extend slightly beyond it when the angle is non-zero.
+class DotsRotatedTextElement extends DotsElement {
+  /// Creates a rotated text element.
+  const DotsRotatedTextElement({
+    required super.x,
+    required super.y,
+    required this.value,
+    required this.fontSize,
+    required this.angleDegrees,
+    this.fontFamily,
+    this.colorHex,
+  });
+
+  /// Literal text content.
+  final String value;
+
+  /// Font size in PDF points.
+  final double fontSize;
+
+  /// Rotation angle in degrees. Positive = clockwise.
+  ///
+  /// The renderer converts this to radians at the call site using
+  /// `angleDegrees * pi / 180`.
+  final double angleDegrees;
+
+  /// Optional font family name; falls back to the template default.
+  final String? fontFamily;
+
+  /// Optional RGB color encoded as `#RRGGBB`.
+  final String? colorHex;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsRotatedTextElement &&
+      other.x == x &&
+      other.y == y &&
+      other.value == value &&
+      other.fontSize == fontSize &&
+      other.angleDegrees == angleDegrees &&
+      other.fontFamily == fontFamily &&
+      other.colorHex == colorHex;
+
+  @override
+  int get hashCode =>
+      Object.hash(x, y, value, fontSize, angleDegrees, fontFamily, colorHex);
+}
+
+/// A width-constrained, word-wrapping text block positioned at ([x], [y]).
+///
+/// The renderer wraps this in a `pw.SizedBox(width:)` so the `pdf` package
+/// handles word-wrap automatically. When [maxChars] or [maxLines] is
+/// exceeded the renderer emits a warning via the injected [DotsLogger] but
+/// still renders the full text without throwing.
+class DotsTextBlockElement extends DotsElement {
+  /// Creates a text block element.
+  const DotsTextBlockElement({
+    required super.x,
+    required super.y,
+    required this.value,
+    required this.fontSize,
+    required this.width,
+    this.fontFamily,
+    this.colorHex,
+    this.textAlign = DotsTextAlign.left,
+    this.lineHeight = 1.2,
+    this.maxChars,
+    this.maxLines,
+  });
+
+  /// Literal text content.
+  final String value;
+
+  /// Font size in PDF points.
+  final double fontSize;
+
+  /// Maximum width of the text block in PDF points. The caller converts
+  /// millimetres to points before constructing this element.
+  final double width;
+
+  /// Optional font family name; falls back to the template default.
+  final String? fontFamily;
+
+  /// Optional RGB color encoded as `#RRGGBB`.
+  final String? colorHex;
+
+  /// Horizontal alignment of text within the block.
+  final DotsTextAlign textAlign;
+
+  /// Line-height multiplier applied to [fontSize] to compute leading.
+  final double lineHeight;
+
+  /// When non-null, the renderer warns if `value.length > maxChars`.
+  final int? maxChars;
+
+  /// When non-null, the renderer warns if `value.split('\n').length > maxLines`.
+  final int? maxLines;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsTextBlockElement &&
+      other.x == x &&
+      other.y == y &&
+      other.value == value &&
+      other.fontSize == fontSize &&
+      other.width == width &&
+      other.fontFamily == fontFamily &&
+      other.colorHex == colorHex &&
+      other.textAlign == textAlign &&
+      other.lineHeight == lineHeight &&
+      other.maxChars == maxChars &&
+      other.maxLines == maxLines;
+
+  @override
+  int get hashCode => Object.hash(
+        x,
+        y,
+        value,
+        fontSize,
+        width,
+        fontFamily,
+        colorHex,
+        textAlign,
+        lineHeight,
+        maxChars,
+        maxLines,
       );
 }
 
@@ -417,6 +572,184 @@ class DotsAlbumSpreadPage extends DotsPage {
     required this.footer,
     this.elements = const <DotsElement>[],
   });
+
+  // ---------------------------------------------------------------------------
+  // Named constructors
+  // ---------------------------------------------------------------------------
+
+  /// Builds a dedication page for [type] at [pageNumber].
+  ///
+  /// Assembles:
+  ///   - TITLE: [DotsTextElement] in P22 Mackinac Medium 23pt
+  ///   - BODY:  [DotsTextBlockElement] in Inter Book 9pt, 102mm wide, centred,
+  ///            with maxChars=1000 and maxLines=32 warn thresholds
+  ///   - SIGNATURE (when [signature] is non-empty):
+  ///     [DotsRotatedTextElement] in Biro Script Plus 12pt at 2°
+  ///
+  /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
+  ///         rightPageNumber = null (single page — no facing).
+  /// Footer: wordmark = "Dots. Memories".
+  ///
+  /// [contextLabelValue] is a pre-resolved string (the caller is responsible
+  /// for substituting the token before passing it here).
+  factory DotsAlbumSpreadPage.dedication({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required String contextLabelValue,
+    required String title,
+    required String body,
+    required String signature,
+  }) {
+    // Canonical element positions (top-left page coordinate frame, in pt).
+    // x=0, y=0 is the top-left corner of the page trim.  Exact coordinates
+    // are the single source of truth; the renderer places Positioned widgets
+    // at these values directly.
+    const double titleX = 0;
+    const double titleY = 60 * _mmToPt; // ~170 pt from top
+    const double bodyX = 0;
+    const double bodyY = 90 * _mmToPt; // below title
+    const double signatureX = 0;
+    const double signatureY = 160 * _mmToPt; // below body block
+    const double bodyWidthPt = 102.0 * _mmToPt; // ~289.13 pt
+
+    final elements = <DotsElement>[
+      DotsTextElement(
+        x: titleX,
+        y: titleY,
+        value: title,
+        fontSize: 23,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextBlockElement(
+        x: bodyX,
+        y: bodyY,
+        value: body,
+        fontSize: 9,
+        width: bodyWidthPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 1.2,
+        maxChars: 1000,
+        maxLines: 32,
+      ),
+      if (signature.isNotEmpty)
+        DotsRotatedTextElement(
+          x: signatureX,
+          y: signatureY,
+          value: signature,
+          fontSize: 12,
+          angleDegrees: 2.0,
+          fontFamily: 'Biro Script Plus',
+          colorHex: '#1e1e1e',
+        ),
+    ];
+
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: '$pageNumber',
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: null,
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: elements,
+    );
+  }
+
+  /// Builds a closing single page for [type] at [pageNumber].
+  ///
+  /// The TITLE font size depends on [type]:
+  ///   - [DotsAlbumType.boda]                                          → 12pt
+  ///   - [DotsAlbumType.parejas], [DotsAlbumType.hijos],
+  ///     [DotsAlbumType.individuales], [DotsAlbumType.otros]           → 20pt
+  ///
+  /// Assembles (in order):
+  ///   - PHOTO (when [photoPath] is non-null): [DotsImageElement] 66×86mm,
+  ///     centred on the page
+  ///   - TITLE: [DotsTextElement] in P22 Mackinac Medium at computed size
+  ///   - SUBTITLE: [DotsTextBlockElement] in P22 Mackinac Book 9pt, 2 lines
+  ///
+  /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
+  ///         rightPageNumber = null.
+  /// Footer: wordmark = "Dots. Memories".
+  factory DotsAlbumSpreadPage.closing({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required String contextLabelValue,
+    required String? photoPath,
+    required String title,
+    required String subtitle,
+  }) {
+    // Exhaustive switch — compile-time guarantee every type is handled.
+    final double titleFontSize = switch (type) {
+      DotsAlbumType.boda => 12.0,
+      DotsAlbumType.parejas ||
+      DotsAlbumType.hijos ||
+      DotsAlbumType.individuales ||
+      DotsAlbumType.otros =>
+        20.0,
+    };
+
+    // Canonical element positions (pt, top-left page coordinate frame).
+    // Photo slot: 66×86 mm centred horizontally; pageWidth ~575 pt → offset.
+    // These are reasonable layout defaults — the renderer places them as-is.
+    const double pageWidthPt = 575.43; // dotbook default (203mm)
+    const double photoWidthPt = 66.0 * _mmToPt; // ~187.09 pt
+    const double photoHeightPt = 86.0 * _mmToPt; // ~243.78 pt
+    const double photoX = (pageWidthPt - photoWidthPt) / 2.0; // centred
+    const double photoY = 60.0 * _mmToPt;
+    const double titleX = 0;
+    const double titleY = photoY + photoHeightPt + 10.0 * _mmToPt;
+    const double subtitleX = 0;
+    final double subtitleY = titleY + titleFontSize * 1.5;
+    const double subtitleWidthPt = 102.0 * _mmToPt;
+
+    final elements = <DotsElement>[
+      if (photoPath != null)
+        DotsImageElement(
+          x: photoX,
+          y: photoY,
+          assetPath: photoPath,
+          width: photoWidthPt,
+          height: photoHeightPt,
+        ),
+      DotsTextElement(
+        x: titleX,
+        y: titleY,
+        value: title,
+        fontSize: titleFontSize,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextBlockElement(
+        x: subtitleX,
+        y: subtitleY,
+        value: subtitle,
+        fontSize: 9,
+        width: subtitleWidthPt,
+        fontFamily: 'P22 Mackinac Book',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 1.2,
+        maxLines: 2,
+      ),
+    ];
+
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: '$pageNumber',
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: null,
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: elements,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Fields
+  // ---------------------------------------------------------------------------
 
   /// Top-of-page structural positions (left page number, centre label,
   /// right page number).

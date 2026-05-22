@@ -12,6 +12,8 @@ import '../config/dots_template.dart';
 import '../cover/dots_cover_design.dart';
 import '../cover/dots_cover_geometry.dart';
 import '../cover/dots_cover_template.dart';
+import '../logging/dots_logger.dart';
+import 'album_spread_page.dart';
 import 'crop_marks.dart';
 import 'dots_font_bundle.dart';
 import 'layout/dots_layout_code.dart';
@@ -204,8 +206,16 @@ class _IsolatePageRenderer {
       case DotsLayoutPage():
         return _buildLayoutPage(format, page);
       case DotsAlbumSpreadPage():
-        throw UnimplementedError(
-          'DotsAlbumSpreadPage rendering is part of slice 2 — not yet implemented',
+        return buildAlbumSpreadPage(
+          format: format,
+          page: page,
+          fontResolver: _fontFor,
+          bytesResolver: (path) async => _bytesFor(path),
+          logger: const DotsSilentLogger(),
+          onPhotoFailure: (assetPath, error) {
+            photoFailures.add((assetPath: assetPath, error: error));
+          },
+          drawCropMarks: drawCropMarks,
         );
     }
   }
@@ -283,6 +293,13 @@ class _IsolatePageRenderer {
         return _buildImage(element);
       case DotsSpreadImageElement():
         return _buildSpreadImage(element);
+      case DotsRotatedTextElement():
+        // These element types are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently to keep the sealed switch exhaustive.
+        return null;
+      case DotsTextBlockElement():
+        return null;
     }
   }
 

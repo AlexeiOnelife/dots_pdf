@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../config/dots_template.dart';
 import '../logging/dots_logger.dart';
+import 'album_spread_page.dart';
 import 'asset_loader.dart';
 import 'crop_marks.dart';
 import 'dots_font_bundle.dart';
@@ -41,6 +42,10 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
               paths.add(element.assetPath);
             case DotsTextElement():
               break;
+            case DotsRotatedTextElement():
+              break;
+            case DotsTextBlockElement():
+              break;
           }
         }
       case DotsLayoutPage():
@@ -53,6 +58,10 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
             case DotsSpreadImageElement():
               paths.add(element.assetPath);
             case DotsTextElement():
+              break;
+            case DotsRotatedTextElement():
+              break;
+            case DotsTextBlockElement():
               break;
           }
         }
@@ -272,8 +281,20 @@ abstract class DotsRenderer {
       case DotsLayoutPage():
         return _buildLayoutPage(format, page);
       case DotsAlbumSpreadPage():
-        throw UnimplementedError(
-          'DotsAlbumSpreadPage rendering is part of slice 2 — not yet implemented',
+        return buildAlbumSpreadPage(
+          format: format,
+          page: page,
+          fontResolver: fontFor,
+          bytesResolver: (path) async => assetLoaderFor(path).loadBytes(path),
+          logger: log,
+          onPhotoFailure: (assetPath, error) {
+            log.error(
+              'album-spread photo "$assetPath" could not be rendered; skipping',
+              error,
+            );
+            onPhotoSlotFailure?.call(assetPath, error);
+          },
+          drawCropMarks: drawCropMarks,
         );
     }
   }
@@ -353,6 +374,13 @@ abstract class DotsRenderer {
         return _buildImage(element);
       case DotsSpreadImageElement():
         return _buildSpreadImage(element);
+      case DotsRotatedTextElement():
+        // These element types are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently to keep the sealed switch exhaustive.
+        return null;
+      case DotsTextBlockElement():
+        return null;
     }
   }
 
