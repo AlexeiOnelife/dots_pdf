@@ -6,9 +6,13 @@
 /// must not be imported by consumers.
 library;
 
+export 'src/api/album_collage_content.dart' show AlbumCollageContent;
 export 'src/api/album_simple_content.dart'
     show AlbumSimpleContent, DedicationContent, ClosingContent;
+export 'src/api/build_polaroid_collage_page.dart' show buildPolaroidCollagePageFor;
 export 'src/api/build_simple_pages.dart' show buildSimplePagesFor;
+export 'src/render/polaroid_slot_position.dart' show PolaroidSlotPosition;
+export 'src/render/polaroid_slots.dart' show kDefaultPolaroidSlots;
 export 'src/api/dots_album_type.dart';
 export 'src/api/dots_generator.dart';
 export 'src/api/dots_output_mode.dart';

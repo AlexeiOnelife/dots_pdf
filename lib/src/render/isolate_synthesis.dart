@@ -300,6 +300,11 @@ class _IsolatePageRenderer {
         return null;
       case DotsTextBlockElement():
         return null;
+      case DotsPolaroidElement():
+        // Polaroid elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently to keep the sealed switch exhaustive.
+        return null;
     }
   }
 

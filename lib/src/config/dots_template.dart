@@ -3,6 +3,8 @@ import 'package:meta/meta.dart';
 import '../api/dots_album_type.dart';
 import '../render/layout/dots_layout_code.dart';
 import '../render/layout/dots_slot_rect.dart';
+import '../render/polaroid_slot_position.dart';
+import '../render/polaroid_slots.dart';
 import 'dots_pliego.dart';
 
 // ---------------------------------------------------------------------------
@@ -301,6 +303,106 @@ class DotsTextBlockElement extends DotsElement {
         lineHeight,
         maxChars,
         maxLines,
+      );
+}
+
+/// A polaroid-style photo card positioned at ([x], [y]) with explicit
+/// [width] and [height] for the outer white frame, a signed rotation
+/// [angleDegrees] around the geometric centre, and an optional
+/// right-to-left opacity gradient overlay on the inner photo.
+///
+/// [x] and [y] are the un-rotated outer-frame top-left coordinates in
+/// PDF points. [width] and [height] are the outer frame dimensions in
+/// PDF points (typically 108 × 134 mm converted to pt).
+///
+/// The polaroid frame border widths (5.5/5.5/5.5/6.5 mm) and inner-photo
+/// corner radius (0) are renderer-side constants — they are NOT exposed
+/// here so the element stays free of styling concerns.
+///
+/// [gradientRtl] — when `true`, the renderer paints a horizontal
+/// `pw.LinearGradient` from `centerLeft` (85% white) to `centerRight`
+/// (fully transparent) over the inner photo BEFORE the rotation transform
+/// is applied. Used for the `otros` p.6 bottom-left slot only.
+///
+/// Bleed flags declare which edges of the un-rotated frame extend past
+/// the trim into the 3 mm bleed band. [bleedLeft] is `true` for polar-2
+/// which bleeds off the left page edge at +8°.
+@immutable
+class DotsPolaroidElement extends DotsElement {
+  /// Creates a polaroid element.
+  const DotsPolaroidElement({
+    required super.x,
+    required super.y,
+    required this.assetPath,
+    required this.width,
+    required this.height,
+    required this.angleDegrees,
+    this.gradientRtl = false,
+    this.bleedLeft = false,
+    this.bleedRight = false,
+    this.bleedTop = false,
+    this.bleedBottom = false,
+  });
+
+  /// Path or asset key for the inner photo, resolvable by the caller-
+  /// provided asset loader.
+  final String assetPath;
+
+  /// Outer frame width in PDF points (un-rotated; typically 108 mm × _mmToPt).
+  final double width;
+
+  /// Outer frame height in PDF points (un-rotated; typically 134 mm × _mmToPt).
+  final double height;
+
+  /// Signed rotation angle in degrees. Positive = clockwise.
+  ///
+  /// The renderer converts to radians: `angleDegrees * pi / 180`.
+  final double angleDegrees;
+
+  /// When `true`, paints a right-to-left opacity gradient over the inner
+  /// photo (left edge 85% opaque → right edge fully transparent).
+  final bool gradientRtl;
+
+  /// Whether the un-rotated frame extends into the bleed beyond its left edge.
+  final bool bleedLeft;
+
+  /// Whether the un-rotated frame extends into the bleed beyond its right edge.
+  final bool bleedRight;
+
+  /// Whether the un-rotated frame extends into the bleed above its top edge.
+  final bool bleedTop;
+
+  /// Whether the un-rotated frame extends into the bleed below its bottom edge.
+  final bool bleedBottom;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsPolaroidElement &&
+      other.x == x &&
+      other.y == y &&
+      other.assetPath == assetPath &&
+      other.width == width &&
+      other.height == height &&
+      other.angleDegrees == angleDegrees &&
+      other.gradientRtl == gradientRtl &&
+      other.bleedLeft == bleedLeft &&
+      other.bleedRight == bleedRight &&
+      other.bleedTop == bleedTop &&
+      other.bleedBottom == bleedBottom;
+
+  @override
+  int get hashCode => Object.hash(
+        x,
+        y,
+        assetPath,
+        width,
+        height,
+        angleDegrees,
+        gradientRtl,
+        bleedLeft,
+        bleedRight,
+        bleedTop,
+        bleedBottom,
       );
 }
 
@@ -741,6 +843,76 @@ class DotsAlbumSpreadPage extends DotsPage {
         leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
         rightPageNumber: null,
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: elements,
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Named constructors
+  // ---------------------------------------------------------------------------
+
+  /// Builds a polaroid-collage spread page.
+  ///
+  /// Zips [photoPaths] against [kDefaultPolaroidSlots] (the 6 documented slot
+  /// positions) plus any caller-supplied [additionalSlots] to produce a list
+  /// of [DotsPolaroidElement] instances.
+  ///
+  /// When [applyOtrosGradient] is `true`, the element for slot index 1
+  /// (polar-2) carries `gradientRtl: true`; all other elements carry
+  /// `gradientRtl: false`.
+  ///
+  /// [photoPaths] must have exactly
+  /// `kDefaultPolaroidSlots.length + additionalSlots.length` entries.
+  /// A [RangeError] is thrown if the lengths do not match.
+  ///
+  /// Header: `centerLabel` = [contextLabelValue].
+  /// Footer: wordmark = "Dots. Memories".
+  factory DotsAlbumSpreadPage.polaroidCollage({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required String contextLabelValue,
+    required List<String> photoPaths,
+    bool applyOtrosGradient = false,
+    List<PolaroidSlotPosition> additionalSlots = const <PolaroidSlotPosition>[],
+  }) {
+    final allSlots = [...kDefaultPolaroidSlots, ...additionalSlots];
+    final expectedLength = allSlots.length;
+    if (photoPaths.length != expectedLength) {
+      throw RangeError.value(
+        photoPaths.length,
+        'photoPaths.length',
+        'Expected $expectedLength photo paths '
+            '(${kDefaultPolaroidSlots.length} default slots + '
+            '${additionalSlots.length} additional slots), '
+            'but got ${photoPaths.length}.',
+      );
+    }
+
+    final elements = <DotsElement>[];
+    for (var i = 0; i < allSlots.length; i++) {
+      final slot = allSlots[i];
+      final gradientRtl = applyOtrosGradient && i == 1;
+      elements.add(DotsPolaroidElement(
+        x: slot.x,
+        y: slot.y,
+        assetPath: photoPaths[i],
+        width: slot.width,
+        height: slot.height,
+        angleDegrees: slot.angleDegrees,
+        gradientRtl: gradientRtl,
+        bleedLeft: slot.bleedLeft,
+        bleedRight: slot.bleedRight,
+        bleedTop: slot.bleedTop,
+        bleedBottom: slot.bleedBottom,
+      ));
+    }
+
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: elements,

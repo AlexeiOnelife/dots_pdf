@@ -31,6 +31,25 @@ const double _kHeaderFontSize = 7.0;
 @visibleForTesting
 const double kHeaderFontSizeForTest = _kHeaderFontSize;
 
+// ---------------------------------------------------------------------------
+// Polaroid frame constants (renderer-side; NOT exposed on DotsPolaroidElement)
+// ---------------------------------------------------------------------------
+
+/// Left frame border width for a polaroid card, in millimetres.
+const double _kPolaroidFrameLeftBorderMm = 5.5;
+
+/// Right frame border width for a polaroid card, in millimetres.
+const double _kPolaroidFrameRightBorderMm = 5.5;
+
+/// Top frame border width for a polaroid card, in millimetres.
+const double _kPolaroidFrameTopBorderMm = 5.5;
+
+/// Bottom frame border width for a polaroid card, in millimetres.
+/// Slightly taller than the other three to produce the classic polaroid
+/// caption-strip aesthetic (5.5 + 6.5 = 12 mm total vertical border vs
+/// 11 mm horizontal; inner photo is 97 × 122 mm for a 108 × 134 mm outer).
+const double _kPolaroidFrameBottomBorderMm = 6.5;
+
 /// Leading multiplier for header/footer text (8.4 / 7 = 1.2).
 const double _kHeaderLineHeight = 1.2;
 
@@ -198,6 +217,13 @@ Future<pw.Widget?> _buildElement({
         fontResolver: fontResolver,
         logger: logger,
         pageNumber: pageNumber,
+      );
+
+    case DotsPolaroidElement():
+      return _buildPolaroidElement(
+        element: element,
+        bytesResolver: bytesResolver,
+        onPhotoFailure: onPhotoFailure,
       );
   }
 }
@@ -368,5 +394,87 @@ PdfColor? _parseColor(String? hex) {
     ((value >> 16) & 0xff) / 255.0,
     ((value >> 8) & 0xff) / 255.0,
     (value & 0xff) / 255.0,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Polaroid element builder
+// ---------------------------------------------------------------------------
+
+/// Builds a polaroid card widget for [element].
+///
+/// Composes:
+///   1. White outer [pw.Container] at [element.width] × [element.height].
+///   2. [pw.Padding] with the hardcoded LTRB frame border widths
+///      (5.5 / 5.5 / 5.5 / 6.5 mm).
+///   3. Inner [pw.Stack] containing [pw.Image] and, when
+///      [DotsPolaroidElement.gradientRtl] is `true`, a
+///      [pw.Positioned.fill] gradient overlay.
+///   4. Wraps the container in [pw.Transform.rotate] around the geometric
+///      centre.
+///   5. Positions the rotated card via [pw.Positioned] at
+///      ([element.x], [element.y]).
+///
+/// Returns `null` and calls [onPhotoFailure] when the asset cannot be
+/// decoded (same contract as `_buildImage`).
+Future<pw.Widget?> _buildPolaroidElement({
+  required DotsPolaroidElement element,
+  required Future<Uint8List> Function(String assetPath) bytesResolver,
+  required void Function(String assetPath, Object error) onPhotoFailure,
+}) async {
+  final pw.MemoryImage image;
+  try {
+    final bytes = await bytesResolver(element.assetPath);
+    image = pw.MemoryImage(bytes);
+  } catch (error) {
+    onPhotoFailure(element.assetPath, error);
+    return null;
+  }
+
+  final angleRadians = element.angleDegrees * pi / 180.0;
+
+  // Polaroid body — un-rotated coordinate frame.
+  final body = pw.Container(
+    width: element.width,
+    height: element.height,
+    color: PdfColors.white,
+    child: pw.Padding(
+      padding: const pw.EdgeInsets.fromLTRB(
+        _kPolaroidFrameLeftBorderMm * _kMmToPt,
+        _kPolaroidFrameTopBorderMm * _kMmToPt,
+        _kPolaroidFrameRightBorderMm * _kMmToPt,
+        _kPolaroidFrameBottomBorderMm * _kMmToPt,
+      ),
+      child: pw.Stack(
+        children: <pw.Widget>[
+          pw.Image(image, fit: pw.BoxFit.cover),
+          if (element.gradientRtl)
+            pw.Positioned.fill(
+              child: pw.Container(
+                decoration: const pw.BoxDecoration(
+                  gradient: pw.LinearGradient(
+                    begin: pw.Alignment.centerLeft,
+                    end: pw.Alignment.centerRight,
+                    colors: <PdfColor>[
+                      PdfColor(1, 1, 1, 0.85),
+                      PdfColor(1, 1, 1, 0.00),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+
+  return pw.Positioned(
+    left: element.x,
+    top: element.y,
+    child: pw.Transform.rotate(
+      angle: angleRadians,
+      alignment: pw.Alignment.center,
+      child: body,
+    ),
   );
 }

@@ -40,6 +40,8 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
               paths.add(element.assetPath);
             case DotsSpreadImageElement():
               paths.add(element.assetPath);
+            case DotsPolaroidElement():
+              paths.add(element.assetPath);
             case DotsTextElement():
               break;
             case DotsRotatedTextElement():
@@ -56,6 +58,8 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
             case DotsImageElement():
               paths.add(element.assetPath);
             case DotsSpreadImageElement():
+              paths.add(element.assetPath);
+            case DotsPolaroidElement():
               paths.add(element.assetPath);
             case DotsTextElement():
               break;
@@ -380,6 +384,11 @@ abstract class DotsRenderer {
         // not valid; skip silently to keep the sealed switch exhaustive.
         return null;
       case DotsTextBlockElement():
+        return null;
+      case DotsPolaroidElement():
+        // Polaroid elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently to keep the sealed switch exhaustive.
         return null;
     }
   }
