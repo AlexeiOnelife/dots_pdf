@@ -265,6 +265,18 @@ Future<pw.Widget?> _buildElement({
 
     case DotsDecorativeCircleElement():
       return _buildDecorativeCircleElement(element);
+
+    case DotsPhotoCircleElement():
+      // Photo-circle rendering — implemented in slice 5 PR 2.
+      throw UnimplementedError(
+        'DotsPhotoCircleElement rendering — part of slice 5 PR 2',
+      );
+
+    case DotsOvalQrElement():
+      // Oval QR rendering — implemented in slice 5 PR 2.
+      throw UnimplementedError(
+        'DotsOvalQrElement rendering — part of slice 5 PR 2',
+      );
   }
 }
 

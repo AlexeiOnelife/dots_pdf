@@ -310,6 +310,16 @@ class _IsolatePageRenderer {
         // they appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they
         // are not valid; skip silently (delegation pattern).
         return null;
+      case DotsPhotoCircleElement():
+        // Photo-circle elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently (delegation pattern).
+        return null;
+      case DotsOvalQrElement():
+        // Oval QR elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently (delegation pattern).
+        return null;
     }
   }
 

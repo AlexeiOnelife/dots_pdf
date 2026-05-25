@@ -1,8 +1,10 @@
 import 'package:meta/meta.dart';
 
+import '../api/album_photo_arc_content.dart';
 import '../api/dots_album_type.dart';
 import '../render/cover_circles.dart';
 import '../render/layout/dots_layout_code.dart';
+import '../render/photo_arc_layout.dart';
 import '../render/layout/dots_slot_rect.dart';
 import '../render/polaroid_slot_position.dart';
 import '../render/polaroid_slots.dart';
@@ -383,6 +385,130 @@ class DotsDecorativeCircleElement extends DotsElement {
         bleedTop,
         bleedBottom,
       );
+}
+
+/// A circular-cropped photo element positioned at ([x], [y]) with a uniform
+/// [diameter].
+///
+/// Used on the photo-arc spread page. The renderer wraps the decoded
+/// [assetPath] bytes in `pw.ClipOval` at `width: diameter, height: diameter`
+/// and positions it via `pw.Positioned(left: x, top: y)`.
+///
+/// All geometry fields are in PDF points (1 pt = 1/72 inch). Bleed flags
+/// match the [DotsImageElement] / [DotsPolaroidElement] convention; all
+/// 10 photo-arc circles are inside the spread trim, so the flags default
+/// to `false`.
+@immutable
+class DotsPhotoCircleElement extends DotsElement {
+  /// Creates a photo-circle element.
+  const DotsPhotoCircleElement({
+    required super.x,
+    required super.y,
+    required this.assetPath,
+    required this.diameter,
+    this.bleedLeft = false,
+    this.bleedRight = false,
+    this.bleedTop = false,
+    this.bleedBottom = false,
+  });
+
+  /// Path or asset key resolvable by the caller-provided asset loader.
+  final String assetPath;
+
+  /// Circle diameter in PDF points.
+  final double diameter;
+
+  /// Whether the circle extends into the bleed beyond its left edge.
+  final bool bleedLeft;
+
+  /// Whether the circle extends into the bleed beyond its right edge.
+  final bool bleedRight;
+
+  /// Whether the circle extends into the bleed above its top edge.
+  final bool bleedTop;
+
+  /// Whether the circle extends into the bleed below its bottom edge.
+  final bool bleedBottom;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsPhotoCircleElement &&
+      other.x == x &&
+      other.y == y &&
+      other.assetPath == assetPath &&
+      other.diameter == diameter &&
+      other.bleedLeft == bleedLeft &&
+      other.bleedRight == bleedRight &&
+      other.bleedTop == bleedTop &&
+      other.bleedBottom == bleedBottom;
+
+  @override
+  int get hashCode => Object.hash(
+        x,
+        y,
+        assetPath,
+        diameter,
+        bleedLeft,
+        bleedRight,
+        bleedTop,
+        bleedBottom,
+      );
+}
+
+/// An oval-framed QR card positioned at ([x], [y]).
+///
+/// Used on the photo-arc spread page. The renderer produces a composite
+/// at `(x, y)` consisting of:
+///   1. A stroked ellipse frame of `ovalWidth × ovalHeight`.
+///   2. A `pw.BarcodeWidget` for [qrPayload] centred inside the oval.
+///   3. A caption text line below the oval at a renderer-side constant font
+///      size (P22 Mackinac Book 8 pt, colour `#9E9E9D`, 3 mm gap).
+///
+/// Caption font size, font family, and colour are renderer-side constants
+/// (file-private in `album_spread_page.dart`) — NOT exposed as element
+/// fields.
+///
+/// All geometry fields are in PDF points (1 pt = 1/72 inch).
+@immutable
+class DotsOvalQrElement extends DotsElement {
+  /// Creates an oval QR element.
+  const DotsOvalQrElement({
+    required super.x,
+    required super.y,
+    required this.ovalWidth,
+    required this.ovalHeight,
+    required this.qrPayload,
+    required this.caption,
+  });
+
+  /// Bounding-box width of the oval in PDF points.
+  final double ovalWidth;
+
+  /// Bounding-box height of the oval in PDF points.
+  final double ovalHeight;
+
+  /// QR code payload (typically a URL).
+  final String qrPayload;
+
+  /// Caption text rendered below the oval frame.
+  ///
+  /// The caption font size, family, and colour are renderer-side constants;
+  /// this field carries only the resolved text string.
+  final String caption;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsOvalQrElement &&
+      other.x == x &&
+      other.y == y &&
+      other.ovalWidth == ovalWidth &&
+      other.ovalHeight == ovalHeight &&
+      other.qrPayload == qrPayload &&
+      other.caption == caption;
+
+  @override
+  int get hashCode =>
+      Object.hash(x, y, ovalWidth, ovalHeight, qrPayload, caption);
 }
 
 /// A polaroid-style photo card positioned at ([x], [y]) with explicit
@@ -1101,6 +1227,145 @@ class DotsAlbumSpreadPage extends DotsPage {
       header: const DotsSpreadHeader(),
       footer: const DotsSpreadFooter(wordmark: ''),
       elements: [...circles, ...texts],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Named constructor — photo-arc spread
+  // ---------------------------------------------------------------------------
+
+  /// Builds the "Un año lleno de recuerdos" photo-arc spread for [type].
+  ///
+  /// Supported types: [DotsAlbumType.parejas], [DotsAlbumType.hijos],
+  /// [DotsAlbumType.individuales], and [DotsAlbumType.otros].
+  /// Calling with [DotsAlbumType.boda] throws an [ArgumentError].
+  ///
+  /// **Caller contract**: the [DotsTemplate.pageSize] that wraps this page
+  /// MUST have `width >= 406 mm (1150.87 pt)`. Elements with
+  /// `x + diameter > pageWidth` will be clipped silently by the PDF viewer.
+  ///
+  /// Throws a [RangeError] when `content.photoPaths.length != 10`.
+  factory DotsAlbumSpreadPage.photoArc({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required String contextLabelValue,
+    required AlbumPhotoArcContent content,
+  }) {
+    // Type guard — boda is not supported.
+    if (type == DotsAlbumType.boda) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'DotsAlbumSpreadPage.photoArc does not support DotsAlbumType.boda; '
+            "boda's analogue (p.4 radial halo) is not implemented.",
+      );
+    }
+
+    // Photo-paths length check.
+    if (content.photoPaths.length != kPhotoArcLayout.length) {
+      throw RangeError.value(
+        content.photoPaths.length,
+        'photoPaths.length',
+        'Expected ${kPhotoArcLayout.length} photo paths, '
+            'got ${content.photoPaths.length}.',
+      );
+    }
+
+    // Per-type QR caption defaults.
+    const String rightCaption = 'Todos tus hitos en un lugar';
+    final String defaultLeftCaption = switch (type) {
+      DotsAlbumType.parejas => 'Vuestro álbum en digital',
+      DotsAlbumType.hijos ||
+      DotsAlbumType.individuales ||
+      DotsAlbumType.otros =>
+        'Tu album en digital',
+      DotsAlbumType.boda => '', // unreachable — guarded above
+    };
+    final String leftCaption =
+        content.qrCaptionLeftOverride ?? defaultLeftCaption;
+    final String rightCaptionResolved =
+        content.qrCaptionRightOverride ?? rightCaption;
+
+    // Oval QR geometry constants (mm → pt).
+    const double kOvalWidthMm = 50.0;
+    const double kOvalHeightMm = 45.0;
+    // Gutter centre at 203 mm; QR centres 27 mm each side.
+    // Top of QR caption: 20 mm above page bottom (254 mm) → caption top at 234 mm.
+    // Gap between oval bottom and caption top: 3 mm (renderer constant _kOvalQrCaptionGapMm).
+    // Oval top-left y = 234 - 3 - 45 = 186 mm.
+    const double ovalYMm = 186.0;
+    // Left QR centre x = 176 mm → top-left x = 176 - 25 = 151 mm.
+    const double ovalLeftXMm = 151.0;
+    // Right QR centre x = 230 mm → top-left x = 230 - 25 = 205 mm.
+    const double ovalRightXMm = 205.0;
+
+    // Build 10 photo-circle elements from kPhotoArcLayout.
+    final circles = <DotsElement>[
+      for (var i = 0; i < kPhotoArcLayout.length; i++)
+        DotsPhotoCircleElement(
+          x: kPhotoArcLayout[i].xMm * _mmToPt,
+          y: kPhotoArcLayout[i].yMm * _mmToPt,
+          assetPath: content.photoPaths[i],
+          diameter: kPhotoArcLayout[i].diameterMm * _mmToPt,
+        ),
+    ];
+
+    // Build 2 oval-QR elements at the bottom gutter.
+    final ovals = <DotsElement>[
+      DotsOvalQrElement(
+        x: ovalLeftXMm * _mmToPt,
+        y: ovalYMm * _mmToPt,
+        ovalWidth: kOvalWidthMm * _mmToPt,
+        ovalHeight: kOvalHeightMm * _mmToPt,
+        qrPayload: content.qrPayloadLeft,
+        caption: leftCaption,
+      ),
+      DotsOvalQrElement(
+        x: ovalRightXMm * _mmToPt,
+        y: ovalYMm * _mmToPt,
+        ovalWidth: kOvalWidthMm * _mmToPt,
+        ovalHeight: kOvalHeightMm * _mmToPt,
+        qrPayload: content.qrPayloadRight,
+        caption: rightCaptionResolved,
+      ),
+    ];
+
+    // Build title text at (19 mm, 43 mm) — P22 Mackinac Medium 23pt.
+    // Build date subtitle at (19 mm, 43 mm + 23pt*1.2/mmToPt + 5 mm).
+    // 23pt * 1.2 = 27.6pt; 27.6pt / 2.834645669 ≈ 9.737 mm; + 5 mm = 14.737 mm gap.
+    const double titleXMm = 19.0;
+    const double titleYMm = 43.0;
+    const double titleFontSize = 23.0;
+    const double subtitleXMm = 19.0;
+    const double subtitleYMm =
+        titleYMm + (titleFontSize * 1.2 / _mmToPt) + 5.0;
+
+    final texts = <DotsElement>[
+      DotsTextElement(
+        x: titleXMm * _mmToPt,
+        y: titleYMm * _mmToPt,
+        value: content.title,
+        fontSize: titleFontSize,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextElement(
+        x: subtitleXMm * _mmToPt,
+        y: subtitleYMm * _mmToPt,
+        value: content.dateSubtitle,
+        fontSize: 9.0,
+        fontFamily: 'P22 Mackinac Book',
+      ),
+    ];
+
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: '$pageNumber',
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: '$pageNumber',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: [...circles, ...ovals, ...texts],
     );
   }
 
