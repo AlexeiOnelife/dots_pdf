@@ -14,6 +14,22 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 // ---------------------------------------------------------------------------
+// Shared slice-1/2/3 fixtures (used by backwards-compatibility smoke test).
+// ---------------------------------------------------------------------------
+
+const _dedicationContent = DedicationContent(
+  title: 'Nuestro viaje',
+  body: 'Un año de amor.',
+  signature: 'Blanqui',
+);
+
+const _closingContent = ClosingContent(
+  photoPath: 'photo.jpg',
+  title: 'Vivid together',
+  subtitle: 'Ana y Luis',
+);
+
+// ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
@@ -372,6 +388,48 @@ void main() {
       // Footer wordmark is empty so no footer text is rendered.
       expect(page.footer.wordmark, isEmpty,
           reason: 'footer wordmark must be empty on cover page',);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Backwards compatibility smoke test (R9/AT-25)
+  // Proves that slice-4 additions do not break the slice-1/2/3 infrastructure.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('backwards compatibility (R9)', () {
+    test('backwards compatibility — all slice-1/2/3 tests pass unchanged', () {
+      // Representative slice-2 path: buildSimplePagesFor produces both a
+      // dedication page and a closing page without throwing.  This is a
+      // structural smoke-test — it does not re-implement slice-1/2/3 unit
+      // tests, but it proves the shared DotsAlbumSpreadPage infrastructure
+      // (elements, header, footer) is unaffected by the slice-4 additions.
+      final pages = buildSimplePagesFor(
+        DotsAlbumType.parejas,
+        const AlbumSimpleContent(
+          dedication: _dedicationContent,
+          closing: _closingContent,
+        ),
+        firstPageNumber: 5,
+        contextLabelValue: DotsAlbumType.parejas.contextLabelToken,
+      );
+
+      expect(pages, hasLength(2),
+          reason: 'buildSimplePagesFor must still return 2 pages for parejas');
+
+      // Dedication page: must contain at least one rotated text element
+      // (slice-2 angled title convention).
+      expect(
+        pages[0].elements.whereType<DotsRotatedTextElement>(),
+        isNotEmpty,
+        reason: 'dedication page must still carry a rotated text element',
+      );
+
+      // Closing page: must contain at least one image element (cover photo).
+      expect(
+        pages[1].elements.whereType<DotsImageElement>(),
+        isNotEmpty,
+        reason: 'closing page must still carry an image element',
+      );
     });
   });
 

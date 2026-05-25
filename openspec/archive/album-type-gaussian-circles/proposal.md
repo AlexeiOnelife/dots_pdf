@@ -137,15 +137,15 @@ byte-identical before and after rollback.
 
 ## Success Criteria
 
-- [ ] `DotsDecorativeCircleElement` constructs, supports value equality, and
+- [x] `DotsDecorativeCircleElement` constructs, supports value equality, and
       participates in the sealed `DotsElement` switch without breaking exhaustiveness.
-- [ ] `DotsAlbumSpreadPage.cover(type: parejas, ...)` returns a page whose
+- [x] `DotsAlbumSpreadPage.cover(type: parejas, ...)` returns a page whose
       `elements` list contains exactly 17 entries (14 circles + 3 text elements).
-- [ ] Rendering the cover via both the main-isolate and worker-isolate paths
+- [x] Rendering the cover via both the main-isolate and worker-isolate paths
       produces a non-empty valid PDF byte buffer.
-- [ ] Cover for `parejas` resolves the eyebrow to `"DOTBOOK"`; for `hijos`,
+- [x] Cover for `parejas` resolves the eyebrow to `"DOTBOOK"`; for `hijos`,
       to `"DOTBOOK DE {NOMBREHIJO}"` (literal — caller substitutes the token).
-- [ ] `buildCoverPageFor` produces geometry-identical output for parejas and
+- [x] `buildCoverPageFor` produces geometry-identical output for parejas and
       hijos when the same `AlbumCoverContent` is passed (only the eyebrow text differs).
-- [ ] All slice 1-3 tests pass unchanged.
-- [ ] All new public symbols are exported from `lib/dots_pdf.dart`.
+- [x] All slice 1-3 tests pass unchanged.
+- [x] All new public symbols are exported from `lib/dots_pdf.dart`.

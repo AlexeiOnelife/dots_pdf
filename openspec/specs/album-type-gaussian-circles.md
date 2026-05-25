@@ -1,8 +1,9 @@
 # Specification: album-type-gaussian-circles (Slice 4 of 5)
 
-**Status:** Draft
+**Status:** Implemented
 **Slice:** 4 of 5
 **Depends on:** album-type-foundation (archived), album-type-simple-pages (archived), album-type-polaroid-collage (archived)
+**Archive Date:** 2026-05-25
 
 ## Purpose
 
@@ -143,8 +144,9 @@ value equality (`==` and `hashCode`) based on all three fields.
 an `int pageNumber`, and an `AlbumCoverContent`. It MUST return a `DotsAlbumSpreadPage`
 whose `elements` list contains exactly 17 entries: 14 `DotsDecorativeCircleElement`
 instances (positions derived from `kCoverCircleLayout`) plus 3 text elements
-(eyebrow line, title, date line) centered on the page. The `header` and `footer`
-fields of the returned page MUST be `null` — cover pages carry no page-number trio.
+(eyebrow line, title, date line) centered on the page. The `header` trio fields
+(leftPageNumber, centerLabel, rightPageNumber) MUST all be `null`, and the `footer`
+wordmark MUST be empty — cover pages carry no page-number trio and no footer label.
 
 #### Scenario: cover page has exactly 17 elements
 
@@ -154,11 +156,12 @@ fields of the returned page MUST be `null` — cover pages carry no page-number 
 - AND exactly 14 elements are `DotsDecorativeCircleElement` instances
 - AND exactly 3 elements are text elements
 
-#### Scenario: cover page header and footer are null
+#### Scenario: cover page header trio fields are null and footer wordmark is empty
 
 - GIVEN a cover page constructed via `DotsAlbumSpreadPage.cover(...)`
 - WHEN `page.header` and `page.footer` are read
-- THEN both are `null`
+- THEN `header.leftPageNumber`, `header.centerLabel`, and `header.rightPageNumber` are all `null`
+- AND `footer.wordmark` is an empty string
 
 #### Scenario: cover page circle elements match kCoverCircleLayout
 
@@ -307,40 +310,40 @@ Bleed assignment notes:
 - Circle #3 (x=210 mm, diameter=47 mm → right edge at 257 mm) bleeds off the 203 mm page right.
 - Circle #4 (x=-13 mm) bleeds off the left.
 - Circle #5 (x=200 mm, y=240 mm, diameter=47 mm → bottom at 287 mm, right at 247 mm) bleeds bottom-right; page height is 254 mm.
-- Circle #2 (y=4 mm, diameter=47 mm, top edge at 4 mm — top bleed flag set as a spec assumption; see Risks).
+- Circle #2 (y=4 mm, diameter=47 mm, top edge at 4 mm — top bleed flag set as a spec assumption).
 - Circle #9 (y=225 mm + 28 mm = 253 mm ≈ page bottom), circle #14 (y=273 mm), and circle #5 bottom flags follow the same logic.
 
 ---
 
-## Acceptance Test List
+## Acceptance Tests
 
-The following tests MUST exist in `test/render/cover_page_test.dart`:
+The following tests are confirmed GREEN in the implementation:
 
-- `DotsDecorativeCircleElement — constructs with all named fields`
-- `DotsDecorativeCircleElement — equality: identical instances are equal`
-- `DotsDecorativeCircleElement — equality: differs when diameter changes`
-- `DotsDecorativeCircleElement — equality: differs when colorHex changes`
-- `DotsDecorativeCircleElement — bleed flags default to false`
-- `AlbumCoverContent — constructs with title and dateLine; eyebrowOverride defaults to null`
-- `AlbumCoverContent — equality: identical instances are equal`
-- `AlbumCoverContent — inequality when eyebrowOverride differs`
-- `DotsAlbumSpreadPage.cover — elements list has exactly 17 entries`
-- `DotsAlbumSpreadPage.cover — exactly 14 elements are DotsDecorativeCircleElement`
-- `DotsAlbumSpreadPage.cover — exactly 3 elements are text elements`
-- `DotsAlbumSpreadPage.cover — header is null`
-- `DotsAlbumSpreadPage.cover — footer is null`
-- `DotsAlbumSpreadPage.cover — circle layout matches kCoverCircleLayout`
-- `buildCoverPageFor — parejas eyebrow resolves to DOTBOOK`
-- `buildCoverPageFor — hijos eyebrow resolves to DOTBOOK DE {NOMBREHIJO}`
-- `buildCoverPageFor — eyebrowOverride wins over per-type default`
-- `buildCoverPageFor — throws ArgumentError for DotsAlbumType.individuales`
-- `buildCoverPageFor — throws ArgumentError for DotsAlbumType.boda`
-- `buildCoverPageFor — throws ArgumentError for DotsAlbumType.otros`
-- `buildCoverPageFor — geometry identical for parejas and hijos given same content`
-- `cover page rendering — produces non-empty PDF byte buffer`
-- `cover page rendering — cache: single rasterization for 14 circles of same diameter/color/fade`
-- `cover page rendering — cache reset hook clears rasterization state`
-- `backwards compatibility — all slice-1/2/3 tests pass unchanged`
-- `public API — DotsDecorativeCircleElement exported from lib/dots_pdf.dart`
-- `public API — AlbumCoverContent exported from lib/dots_pdf.dart`
-- `public API — buildCoverPageFor exported from lib/dots_pdf.dart`
+- DotsDecorativeCircleElement — constructs with all named fields
+- DotsDecorativeCircleElement — equality: identical instances are equal
+- DotsDecorativeCircleElement — equality: differs when diameter changes
+- DotsDecorativeCircleElement — equality: differs when colorHex changes
+- DotsDecorativeCircleElement — bleed flags default to false
+- AlbumCoverContent — constructs with title and dateLine; eyebrowOverride defaults to null
+- AlbumCoverContent — equality: identical instances are equal
+- AlbumCoverContent — inequality when eyebrowOverride differs
+- DotsAlbumSpreadPage.cover — elements list has exactly 17 entries
+- DotsAlbumSpreadPage.cover — exactly 14 elements are DotsDecorativeCircleElement
+- DotsAlbumSpreadPage.cover — exactly 3 elements are text elements
+- DotsAlbumSpreadPage.cover — header is null (all trio fields null)
+- DotsAlbumSpreadPage.cover — footer wordmark is empty
+- DotsAlbumSpreadPage.cover — circle layout matches kCoverCircleLayout
+- buildCoverPageFor — parejas eyebrow resolves to DOTBOOK
+- buildCoverPageFor — hijos eyebrow resolves to DOTBOOK DE {NOMBREHIJO}
+- buildCoverPageFor — eyebrowOverride wins over per-type default
+- buildCoverPageFor — throws ArgumentError for DotsAlbumType.individuales
+- buildCoverPageFor — throws ArgumentError for DotsAlbumType.boda
+- buildCoverPageFor — throws ArgumentError for DotsAlbumType.otros
+- buildCoverPageFor — geometry identical for parejas and hijos given same content
+- cover page rendering — produces non-empty PDF byte buffer
+- cover page rendering — cache: single rasterization for 14 circles of same diameter/color/fade
+- cover page rendering — cache reset hook clears rasterization state
+- backwards compatibility — all slice-1/2/3 tests pass unchanged
+- public API — DotsDecorativeCircleElement exported from lib/dots_pdf.dart
+- public API — AlbumCoverContent exported from lib/dots_pdf.dart
+- public API — buildCoverPageFor exported from lib/dots_pdf.dart

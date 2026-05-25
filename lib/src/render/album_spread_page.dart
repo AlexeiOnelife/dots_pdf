@@ -311,6 +311,25 @@ int decorativeCircleCacheSizeForTest() => _circleCache.length;
 ///   4. Fill the circle (antialias: true) with [color] at full opacity.
 ///   5. Apply gaussianBlur with radius = fadePx.round().
 ///   6. Encode as PNG and return the bytes.
+///
+/// ## Gaussian blur convention (radius vs sigma)
+///
+/// [gaussianFadeMm] is passed as the `radius` argument to `img.gaussianBlur`.
+/// This follows the Illustrator / Photoshop convention where the UI control
+/// labelled "Radius" equals the full extent of the blur kernel, not the
+/// standard-deviation (sigma). The `image:^4.8.0` package internally derives
+/// `sigma = radius * 2/3`, so the effective soft-edge band is approximately
+/// 2/3 of [gaussianFadeMm] in physical units.
+///
+/// If the spec authors intended [gaussianFadeMm] to be sigma (i.e. one
+/// standard deviation), multiply the value by approximately 1.5 before
+/// passing it to this function:
+/// ```dart
+/// gaussianFadeMm: element.gaussianFadeMm * 1.5,
+/// ```
+///
+/// Visual QA against the design reference is required to confirm which
+/// interpretation is correct before changing the multiplier.
 Uint8List _rasterizeFadedCircle({
   required double diameterPt,
   required PdfColor color,
@@ -354,6 +373,32 @@ Uint8List _rasterizeFadedCircle({
 // Replaces the UnimplementedError stub from PR 1.
 // ---------------------------------------------------------------------------
 
+/// Builds a [pw.Widget] that positions a pre-rasterized Gaussian-halo circle
+/// PNG onto the page via [pw.Positioned].
+///
+/// ## Bleed flag handling
+///
+/// [DotsDecorativeCircleElement] carries `bleedLeft`, `bleedRight`,
+/// `bleedTop`, and `bleedBottom` flags that are stored on the model but are
+/// NOT applied as explicit positional offsets here. This differs from
+/// `_buildImage` and `_buildPhotoSlot`, which shift the widget by `bleedPt`
+/// when a bleed flag is set (e.g. `left: element.x - bleedPt`).
+///
+/// The reason the offset is unnecessary for decorative circles is that the
+/// rasterized PNG canvas is already larger than the nominal `diameter`:
+/// `_rasterizeFadedCircle` grows the canvas by `2 * fadePx * 3` (i.e. 3σ on
+/// each side) so the Gaussian halo extends well past the circle edge.
+/// Because `pw.Stack` does not clip its children by default, a circle
+/// positioned at, say, `x = 210 mm` on a 203 mm-wide page will naturally
+/// paint its halo past the right edge without any additional offset.
+///
+/// If print QA reveals unexpected clipping (e.g. the PDF viewer clips the
+/// Stack), add an explicit positional shift following the `_buildImage`
+/// pattern:
+/// ```dart
+/// final double bleedPt = element.gaussianFadeMm * _kMmToPt;
+/// left: element.bleedLeft ? element.x - bleedPt : element.x - haloPt,
+/// ```
 pw.Widget _buildDecorativeCircleElement(DotsDecorativeCircleElement element) {
   // Round diameter to 4 decimals to absorb float noise from mm→pt conversion.
   final double roundedDiameter =
