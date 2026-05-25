@@ -261,7 +261,20 @@ Future<pw.Widget?> _buildElement({
         bytesResolver: bytesResolver,
         onPhotoFailure: onPhotoFailure,
       );
+
+    case DotsDecorativeCircleElement():
+      return _buildDecorativeCircleElement(element);
   }
+}
+
+// ---------------------------------------------------------------------------
+// Decorative circle element builder (stub — real impl lands in PR 2 / T3.2+)
+// ---------------------------------------------------------------------------
+
+pw.Widget _buildDecorativeCircleElement(DotsDecorativeCircleElement element) {
+  throw UnimplementedError(
+    'decorative circle rendering — part of slice 4 PR 2',
+  );
 }
 
 // ---------------------------------------------------------------------------

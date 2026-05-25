@@ -305,6 +305,11 @@ class _IsolatePageRenderer {
         // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
         // not valid; skip silently to keep the sealed switch exhaustive.
         return null;
+      case DotsDecorativeCircleElement():
+        // Decorative circle elements are rendered by buildAlbumSpreadPage when
+        // they appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they
+        // are not valid; skip silently (delegation pattern).
+        return null;
     }
   }
 

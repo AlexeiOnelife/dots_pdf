@@ -306,6 +306,84 @@ class DotsTextBlockElement extends DotsElement {
       );
 }
 
+/// A decorative circle element for album cover pages.
+///
+/// Bundles position + diameter + colour + Gaussian fade radius + four bleed
+/// flags into a single immutable element. The renderer pre-rasterizes a PNG
+/// per unique `(diameter, colorHex, gaussianFadeMm)` tuple and caches it
+/// process-wide to avoid redundant work across the 14 circles on a cover page.
+///
+/// All geometry fields use PDF points (1 pt = 1/72 inch); [gaussianFadeMm]
+/// uses millimetres because the spec is authored in mm (`1.764 mm`) and every
+/// cover circle shares the same fade. Default `1.764` mm from `SPECS_album_types.md` p.4.
+///
+/// Bleed flags match the `DotsImageElement` / `DotsPolaroidElement` convention.
+@immutable
+class DotsDecorativeCircleElement extends DotsElement {
+  /// Creates a decorative circle element.
+  const DotsDecorativeCircleElement({
+    required super.x,
+    required super.y,
+    required this.diameter,
+    required this.colorHex,
+    this.gaussianFadeMm = 1.764,
+    this.bleedLeft = false,
+    this.bleedRight = false,
+    this.bleedTop = false,
+    this.bleedBottom = false,
+  });
+
+  /// Circle diameter in PDF points.
+  final double diameter;
+
+  /// Fill colour encoded as `#RRGGBB`. Baked into the rasterized PNG;
+  /// the renderer does NOT tint at runtime.
+  final String colorHex;
+
+  /// Gaussian-blur edge-feather width in millimetres. Default is 1.764 mm
+  /// (spec p.4). This value is intentionally kept in mm because the spec
+  /// authors in mm; the factory converts to pixels at rasterisation time.
+  final double gaussianFadeMm;
+
+  /// Whether the circle extends into the bleed beyond its left edge.
+  final bool bleedLeft;
+
+  /// Whether the circle extends into the bleed beyond its right edge.
+  final bool bleedRight;
+
+  /// Whether the circle extends into the bleed above its top edge.
+  final bool bleedTop;
+
+  /// Whether the circle extends into the bleed below its bottom edge.
+  final bool bleedBottom;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsDecorativeCircleElement &&
+      other.x == x &&
+      other.y == y &&
+      other.diameter == diameter &&
+      other.colorHex == colorHex &&
+      other.gaussianFadeMm == gaussianFadeMm &&
+      other.bleedLeft == bleedLeft &&
+      other.bleedRight == bleedRight &&
+      other.bleedTop == bleedTop &&
+      other.bleedBottom == bleedBottom;
+
+  @override
+  int get hashCode => Object.hash(
+        x,
+        y,
+        diameter,
+        colorHex,
+        gaussianFadeMm,
+        bleedLeft,
+        bleedRight,
+        bleedTop,
+        bleedBottom,
+      );
+}
+
 /// A polaroid-style photo card positioned at ([x], [y]) with explicit
 /// [width] and [height] for the outer white frame, a signed rotation
 /// [angleDegrees] around the geometric centre, and an optional
