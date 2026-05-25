@@ -1,6 +1,7 @@
 import 'dart:math' show pi;
 import 'dart:typed_data';
 
+import 'package:image/image.dart' as img;
 import 'package:meta/meta.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -268,12 +269,131 @@ Future<pw.Widget?> _buildElement({
 }
 
 // ---------------------------------------------------------------------------
-// Decorative circle element builder (stub — real impl lands in PR 2 / T3.2+)
+// Rasterization cache (T3.1)
+// Keyed by (diameterPt rounded to 4 decimals, colorHex, gaussianFadeMm).
+// Process-wide; cleared by resetDecorativeCircleCacheForTest in tests.
+// ---------------------------------------------------------------------------
+
+typedef _CircleCacheKey = ({
+  double diameterPt,
+  String colorHex,
+  double gaussianFadeMm,
+});
+
+final Map<_CircleCacheKey, Uint8List> _circleCache = {};
+
+/// Clears the decorative-circle rasterization cache.
+///
+/// Call this in [setUp] when a test needs to observe cache-miss / cache-hit
+/// behaviour or when test isolation requires a clean slate.
+@visibleForTesting
+void resetDecorativeCircleCacheForTest() => _circleCache.clear();
+
+/// Test-only window into the decorative-circle rasterization cache.
+///
+/// Returns the number of entries currently held. A test that wants to
+/// verify "N circles sharing K unique (diameter, color, fade) keys
+/// produce exactly K rasterizations" can call this after rendering.
+@visibleForTesting
+int decorativeCircleCacheSizeForTest() => _circleCache.length;
+
+// ---------------------------------------------------------------------------
+// Rasterization pipeline (T3.2)
+// Produces a PNG with a filled circle that has a Gaussian-blurred soft edge.
+// ---------------------------------------------------------------------------
+
+/// Rasterizes a single filled circle with a Gaussian fade to transparent.
+///
+/// Steps:
+///   1. Convert dimensions to pixels at 300 dpi.
+///   2. Canvas = ceil(diameterPx + 2 * fadePx * 3) — reserves 3σ for the blur.
+///   3. Build an RGBA image with transparent background.
+///   4. Fill the circle (antialias: true) with [color] at full opacity.
+///   5. Apply gaussianBlur with radius = fadePx.round().
+///   6. Encode as PNG and return the bytes.
+Uint8List _rasterizeFadedCircle({
+  required double diameterPt,
+  required PdfColor color,
+  required double gaussianFadeMm,
+}) {
+  const int dpi = 300;
+  const double inchesPerMm = 1.0 / 25.4;
+
+  final double diameterPx = diameterPt / 72.0 * dpi;
+  final double fadePx = gaussianFadeMm * inchesPerMm * dpi;
+  final int canvasPx = (diameterPx + 2 * fadePx * 3).ceil();
+  final int center = canvasPx ~/ 2;
+  final int radius = (diameterPx / 2).round();
+
+  final int r = (color.red * 255).round();
+  final int g = (color.green * 255).round();
+  final int b = (color.blue * 255).round();
+
+  final image = img.Image(
+    width: canvasPx,
+    height: canvasPx,
+    numChannels: 4,
+  );
+
+  img.fillCircle(
+    image,
+    x: center,
+    y: center,
+    radius: radius,
+    color: img.ColorRgba8(r, g, b, 255),
+    antialias: true,
+  );
+
+  img.gaussianBlur(image, radius: fadePx.round());
+
+  return img.encodePng(image);
+}
+
+// ---------------------------------------------------------------------------
+// Decorative circle element builder (T3.3)
+// Replaces the UnimplementedError stub from PR 1.
 // ---------------------------------------------------------------------------
 
 pw.Widget _buildDecorativeCircleElement(DotsDecorativeCircleElement element) {
-  throw UnimplementedError(
-    'decorative circle rendering — part of slice 4 PR 2',
+  // Round diameter to 4 decimals to absorb float noise from mm→pt conversion.
+  final double roundedDiameter =
+      (element.diameter * 10000).round() / 10000.0;
+
+  final color = _parseColor(element.colorHex) ??
+      const PdfColor(
+        0xCD / 255.0,
+        0xE7 / 255.0,
+        0xF2 / 255.0,
+      );
+
+  final key = (
+    diameterPt: roundedDiameter,
+    colorHex: element.colorHex,
+    gaussianFadeMm: element.gaussianFadeMm,
+  );
+
+  final bytes = _circleCache.putIfAbsent(
+    key,
+    () => _rasterizeFadedCircle(
+      diameterPt: roundedDiameter,
+      color: color,
+      gaussianFadeMm: element.gaussianFadeMm,
+    ),
+  );
+
+  final memImage = pw.MemoryImage(bytes);
+
+  // The PNG canvas is larger than the circle diameter by 2 * fadePx * 3 on
+  // each side so the halo doesn't clip. Compute the pt dimensions of the
+  // canvas and shift the Positioned widget accordingly so the circle's
+  // geometric centre lands at (element.x + diameter/2, element.y + diameter/2).
+  final double haloPt = element.gaussianFadeMm * _kMmToPt * 3;
+  final double canvasPt = element.diameter + 2 * haloPt;
+
+  return pw.Positioned(
+    left: element.x - haloPt,
+    top: element.y - haloPt,
+    child: pw.Image(memImage, width: canvasPt, height: canvasPt),
   );
 }
 

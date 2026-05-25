@@ -21,17 +21,30 @@ void main() {
     test(
         'AlbumCoverContent — constructs with title and dateLine; eyebrowOverride defaults to null',
         () {
-      fail(
-        'PR 2: AlbumCoverContent not yet implemented',
+      const content = AlbumCoverContent(
+        title: 'Mi álbum',
+        dateLine: '01/01/2024 | 31/12/2024',
       );
+      expect(content.title, equals('Mi álbum'));
+      expect(content.dateLine, equals('01/01/2024 | 31/12/2024'));
+      expect(content.eyebrowOverride, isNull);
     });
 
     test('AlbumCoverContent — equality: identical instances are equal', () {
-      fail('PR 2: AlbumCoverContent not yet implemented');
+      const a = AlbumCoverContent(title: 'Mi álbum', dateLine: '2024');
+      const b = AlbumCoverContent(title: 'Mi álbum', dateLine: '2024');
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
     });
 
     test('AlbumCoverContent — inequality when eyebrowOverride differs', () {
-      fail('PR 2: AlbumCoverContent not yet implemented');
+      const a = AlbumCoverContent(title: 'T', dateLine: 'D');
+      const b = AlbumCoverContent(
+        title: 'T',
+        dateLine: 'D',
+        eyebrowOverride: 'CUSTOM',
+      );
+      expect(a, isNot(equals(b)));
     });
   });
 
@@ -41,44 +54,137 @@ void main() {
 
   group('buildCoverPageFor — builder contract (R7)', () {
     test('buildCoverPageFor — returns DotsAlbumSpreadPage', () {
-      fail('PR 2: buildCoverPageFor not yet implemented');
+      final result = buildCoverPageFor(
+        DotsAlbumType.parejas,
+        const AlbumCoverContent(title: 'T', dateLine: 'D'),
+        pageNumber: 1,
+      );
+      expect(result, isA<DotsAlbumSpreadPage>());
     });
 
     test('buildCoverPageFor — parejas default eyebrow resolves to DOTBOOK',
         () {
-      fail('PR 2: buildCoverPageFor not yet implemented');
+      final page = buildCoverPageFor(
+        DotsAlbumType.parejas,
+        const AlbumCoverContent(title: 'T', dateLine: 'D'),
+        pageNumber: 1,
+      );
+      final eyebrow = page.elements.whereType<DotsTextBlockElement>().first;
+      expect(eyebrow.value, equals('DOTBOOK'));
     });
 
     test(
         'buildCoverPageFor — hijos default eyebrow resolves to DOTBOOK DE {NOMBREHIJO}',
         () {
-      fail('PR 2: buildCoverPageFor not yet implemented');
+      final page = buildCoverPageFor(
+        DotsAlbumType.hijos,
+        const AlbumCoverContent(title: 'T', dateLine: 'D'),
+        pageNumber: 1,
+      );
+      final eyebrow = page.elements.whereType<DotsTextBlockElement>().first;
+      expect(eyebrow.value, equals('DOTBOOK DE {NOMBREHIJO}'));
     });
 
     test('buildCoverPageFor — eyebrowOverride wins for both types', () {
-      fail('PR 2: buildCoverPageFor not yet implemented');
+      for (final type in [DotsAlbumType.parejas, DotsAlbumType.hijos]) {
+        final page = buildCoverPageFor(
+          type,
+          const AlbumCoverContent(
+            title: 'T',
+            dateLine: 'D',
+            eyebrowOverride: 'CUSTOM',
+          ),
+          pageNumber: 1,
+        );
+        final eyebrow = page.elements.whereType<DotsTextBlockElement>().first;
+        expect(eyebrow.value, equals('CUSTOM'),
+            reason: 'eyebrowOverride must win for type $type');
+      }
     });
 
     test(
         'buildCoverPageFor — throws ArgumentError for DotsAlbumType.individuales',
         () {
-      fail('PR 2: buildCoverPageFor not yet implemented');
+      expect(
+        () => buildCoverPageFor(
+          DotsAlbumType.individuales,
+          const AlbumCoverContent(title: 'T', dateLine: 'D'),
+          pageNumber: 1,
+        ),
+        throwsArgumentError,
+      );
     });
 
     test('buildCoverPageFor — throws ArgumentError for DotsAlbumType.boda',
         () {
-      fail('PR 2: buildCoverPageFor not yet implemented');
+      expect(
+        () => buildCoverPageFor(
+          DotsAlbumType.boda,
+          const AlbumCoverContent(title: 'T', dateLine: 'D'),
+          pageNumber: 1,
+        ),
+        throwsArgumentError,
+      );
     });
 
     test('buildCoverPageFor — throws ArgumentError for DotsAlbumType.otros',
         () {
-      fail('PR 2: buildCoverPageFor not yet implemented');
+      expect(
+        () => buildCoverPageFor(
+          DotsAlbumType.otros,
+          const AlbumCoverContent(title: 'T', dateLine: 'D'),
+          pageNumber: 1,
+        ),
+        throwsArgumentError,
+      );
     });
 
     test(
         'buildCoverPageFor — geometry identical for parejas vs hijos given same content',
         () {
-      fail('PR 2: buildCoverPageFor not yet implemented');
+      final pageP = buildCoverPageFor(
+        DotsAlbumType.parejas,
+        const AlbumCoverContent(title: 'T', dateLine: 'D'),
+        pageNumber: 1,
+      );
+      final pageH = buildCoverPageFor(
+        DotsAlbumType.hijos,
+        const AlbumCoverContent(title: 'T', dateLine: 'D'),
+        pageNumber: 1,
+      );
+
+      // 14 circle elements must be identical in position and diameter.
+      final circlesP =
+          pageP.elements.whereType<DotsDecorativeCircleElement>().toList();
+      final circlesH =
+          pageH.elements.whereType<DotsDecorativeCircleElement>().toList();
+      expect(circlesP.length, equals(14));
+      expect(circlesH.length, equals(14));
+      for (var i = 0; i < circlesP.length; i++) {
+        expect(circlesP[i].x, equals(circlesH[i].x),
+            reason: 'circle $i x must match');
+        expect(circlesP[i].y, equals(circlesH[i].y),
+            reason: 'circle $i y must match');
+        expect(circlesP[i].diameter, equals(circlesH[i].diameter),
+            reason: 'circle $i diameter must match');
+      }
+
+      // Text element positions must match; only the eyebrow value differs.
+      final textsP =
+          pageP.elements.whereType<DotsTextBlockElement>().toList();
+      final textsH =
+          pageH.elements.whereType<DotsTextBlockElement>().toList();
+      expect(textsP.length, equals(3));
+      expect(textsH.length, equals(3));
+      // Title (index 1) and date (index 2) must have identical x, y, and value.
+      for (var i = 1; i < textsP.length; i++) {
+        expect(textsP[i].x, equals(textsH[i].x));
+        expect(textsP[i].y, equals(textsH[i].y));
+        expect(textsP[i].value, equals(textsH[i].value));
+      }
+      // Eyebrow (index 0) values must differ between parejas and hijos.
+      expect(textsP[0].value, isNot(equals(textsH[0].value)),
+          reason: 'eyebrow must differ between parejas and hijos');
     });
   });
 
@@ -106,13 +212,22 @@ void main() {
     });
 
     test('public API — AlbumCoverContent exported from lib/dots_pdf.dart', () {
-      fail('PR 2: AlbumCoverContent not yet exported');
+      // Verify AlbumCoverContent is accessible via the public barrel.
+      const content = AlbumCoverContent(title: 'T', dateLine: 'D');
+      expect(content, isA<AlbumCoverContent>());
+      expect(content.eyebrowOverride, isNull);
     });
 
     test(
         'public API — buildCoverPageFor exported from lib/dots_pdf.dart',
         () {
-      fail('PR 2: buildCoverPageFor not yet exported');
+      // Verify buildCoverPageFor is callable via the public barrel.
+      final page = buildCoverPageFor(
+        DotsAlbumType.parejas,
+        const AlbumCoverContent(title: 'T', dateLine: 'D'),
+        pageNumber: 1,
+      );
+      expect(page, isA<DotsAlbumSpreadPage>());
     });
   });
 }

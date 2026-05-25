@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 
 import '../api/dots_album_type.dart';
+import '../render/cover_circles.dart';
 import '../render/layout/dots_layout_code.dart';
 import '../render/layout/dots_slot_rect.dart';
 import '../render/polaroid_slot_position.dart';
@@ -998,6 +999,108 @@ class DotsAlbumSpreadPage extends DotsPage {
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: elements,
+    );
+  }
+
+  /// Builds a cover page for [type] at [pageNumber].
+  ///
+  /// Supported types: [DotsAlbumType.parejas] and [DotsAlbumType.hijos].
+  /// Calling with any other type throws an [ArgumentError].
+  ///
+  /// Assembles:
+  ///   - 14 [DotsDecorativeCircleElement] instances from [kCoverCircleLayout]
+  ///     (colour `#CDE7F2`, Gaussian fade 1.764 mm).
+  ///   - 3 text elements: eyebrow, title, date line — centered on the page.
+  ///
+  /// The eyebrow is resolved as follows:
+  ///   - [eyebrowOverride] wins when non-null.
+  ///   - [DotsAlbumType.parejas] default → `"DOTBOOK"`.
+  ///   - [DotsAlbumType.hijos]   default → `"DOTBOOK DE {NOMBREHIJO}"`.
+  ///
+  /// [header] and [footer] are set so that no page-number trio or wordmark
+  /// appears on the cover (header trio is all-null; footer wordmark is empty).
+  factory DotsAlbumSpreadPage.cover({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required String title,
+    required String dateLine,
+    String? eyebrowOverride,
+  }) {
+    // Resolve per-type eyebrow; throw for unsupported types.
+    final String defaultEyebrow = switch (type) {
+      DotsAlbumType.parejas => 'DOTBOOK',
+      DotsAlbumType.hijos => 'DOTBOOK DE {NOMBREHIJO}',
+      _ => throw ArgumentError.value(
+          type,
+          'type',
+          'DotsAlbumSpreadPage.cover only supports '
+              'DotsAlbumType.parejas and DotsAlbumType.hijos; got $type',
+        ),
+    };
+    final String eyebrow = eyebrowOverride ?? defaultEyebrow;
+
+    // Page geometry (203 × 254 mm in PDF points).
+    const double pageWidthPt = 203.0 * _mmToPt;
+    const double pageHeightPt = 254.0 * _mmToPt;
+
+    // ── 14 decorative circles from kCoverCircleLayout ────────────────────────
+    final circles = kCoverCircleLayout
+        .map(
+          (a) => DotsDecorativeCircleElement(
+            x: a.xMm * _mmToPt,
+            y: a.yMm * _mmToPt,
+            diameter: a.diameterMm * _mmToPt,
+            colorHex: '#CDE7F2',
+            gaussianFadeMm: 1.764,
+            bleedLeft: a.bleedLeft,
+            bleedRight: a.bleedRight,
+            bleedTop: a.bleedTop,
+            bleedBottom: a.bleedBottom,
+          ),
+        )
+        .toList();
+
+    // ── 3 text elements (eyebrow / title / date) ─────────────────────────────
+    // Positions derived from D8: block centred at pageHeight/2.
+    const double eyebrowY = pageHeightPt / 2 - 12.0 * _mmToPt;
+    const double titleY = pageHeightPt / 2;
+    const double dateY = pageHeightPt / 2 + 18.0 * _mmToPt;
+
+    final texts = <DotsElement>[
+      DotsTextBlockElement(
+        x: 0,
+        y: eyebrowY,
+        value: eyebrow,
+        fontSize: 9,
+        width: pageWidthPt,
+        fontFamily: 'Inter',
+        textAlign: DotsTextAlign.center,
+      ),
+      DotsTextBlockElement(
+        x: 0,
+        y: titleY,
+        value: title,
+        fontSize: 23,
+        width: pageWidthPt,
+        fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+      ),
+      DotsTextBlockElement(
+        x: 0,
+        y: dateY,
+        value: dateLine,
+        fontSize: 9,
+        width: pageWidthPt,
+        fontFamily: 'Inter',
+        textAlign: DotsTextAlign.center,
+      ),
+    ];
+
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: const DotsSpreadHeader(),
+      footer: const DotsSpreadFooter(wordmark: ''),
+      elements: [...circles, ...texts],
     );
   }
 
