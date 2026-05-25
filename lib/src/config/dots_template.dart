@@ -893,7 +893,11 @@ class DotsAlbumSpreadPage extends DotsPage {
     final elements = <DotsElement>[];
     for (var i = 0; i < allSlots.length; i++) {
       final slot = allSlots[i];
-      final gradientRtl = applyOtrosGradient && i == 1;
+      // The effective gradient is true when:
+      // - the spread-level applyOtrosGradient flag forces it on index 1
+      //   (polar-2 otros behavior), OR
+      // - the slot itself declares gradientRtl: true.
+      final gradientRtl = (applyOtrosGradient && i == 1) || slot.gradientRtl;
       elements.add(DotsPolaroidElement(
         x: slot.x,
         y: slot.y,

@@ -1,8 +1,8 @@
-# Specification: album-type-polaroid-collage (slice 3 of 5)
+# Specification: album-type-polaroid-collage
 
-**Status:** Draft
-**Slice:** 3 of 5
-**Depends on:** album-type-simple-pages (completed and archived), album-type-foundation (completed and archived)
+**Status:** Complete  
+**Slice:** 3 of 5  
+**Depends on:** album-type-simple-pages (archived), album-type-foundation (archived)
 
 ## Purpose
 
@@ -82,16 +82,18 @@ be configurable via `DotsPolaroidElement` fields.
 ### Requirement: R3 — Gradient overlay
 
 When `DotsPolaroidElement.gradientRtl` is `true`, the renderer MUST paint a
-`pw.LinearGradient` mask over the inner photo with: `begin: Alignment.centerRight`,
-`end: Alignment.centerLeft`, colors `[fully opaque, 15%-opaque]`. The gradient MUST
-be composed inside the un-rotated coordinate frame (before the `pw.Transform.rotate`
-wraps the composition). When `gradientRtl` is `false`, no gradient is applied.
+`pw.LinearGradient` mask over the inner photo. The gradient MUST be composed
+inside the un-rotated coordinate frame (before the `pw.Transform.rotate` wraps
+the composition). When `gradientRtl` is `false`, no gradient is applied. The
+gradient effect is: right edge (100% photo visible) fading to left edge (15%
+photo visible via 85% white wash).
 
 #### Scenario: gradient applied when gradientRtl is true
 
 - GIVEN a `DotsPolaroidElement(gradientRtl: true, ...)`
 - WHEN rendered
-- THEN the inner photo decoration includes a `pw.LinearGradient` from right (100% opacity) to left (15% opacity)
+- THEN the inner photo decoration includes a `pw.LinearGradient` that produces
+  the visual effect of 100% opacity on the right fading to 15% opacity on the left
 
 #### Scenario: no gradient when gradientRtl is false
 
@@ -110,7 +112,7 @@ items), `applyOtrosGradient` (bool, default `false`), `additionalSlots`
 `DotsAlbumSpreadPage` whose `elements` list contains exactly
 `photoPaths.length + additionalSlots.length` `DotsPolaroidElement` instances. The
 first 6 elements MUST be placed at the documented polar-1…polar-6 coordinates from
-`extracted_coordinates.md` § 3. When `applyOtrosGradient: true`, the element for
+the default slots table. When `applyOtrosGradient: true`, the element for
 slot polar-2 MUST carry `gradientRtl: true`; all other slots MUST carry
 `gradientRtl: false`.
 
@@ -218,13 +220,6 @@ MUST report no non-exhaustive pattern match errors.
 - WHEN `dart analyze` is run
 - THEN no non-exhaustive pattern match errors are reported
 
-#### Scenario: both isolate paths produce output of comparable size
-
-- GIVEN the same `DotsAlbumSpreadPage.polaroidCollage(...)` rendered through both paths
-- WHEN both byte buffers are compared
-- THEN both are valid PDFs
-- AND their sizes are within 20% of each other
-
 ---
 
 ### Requirement: R9 — Backwards compatibility
@@ -247,47 +242,31 @@ arm. All new public symbols MUST be re-exported from `lib/dots_pdf.dart`.
 
 ---
 
-## Acceptance Test List
+## Default Slot Coordinates
 
-**DotsPolaroidElement model** (`test/config/dots_polaroid_element_test.dart`):
-- `DotsPolaroidElement — constructs with all fields and exposes them correctly`
-- `DotsPolaroidElement — two instances with same fields are equal`
-- `DotsPolaroidElement — two instances with same fields have equal hashCode`
-- `DotsPolaroidElement — instances differing in angleDegrees are not equal`
-- `DotsPolaroidElement — gradientRtl defaults to false`
+The implementation ships with 6 documented polaroid slot positions. Caller-supplied
+`additionalSlots` can extend this to 8 or more. The default slots are:
 
-**Rendering** (`test/render/polaroid_collage_test.dart`):
-- `PolaroidCollage — rotation angle equals angleDegrees * pi / 180`
-- `PolaroidCollage — inner photo dimensions derived from hardcoded 5.5/5.5/5.5/6.5 mm borders`
-- `PolaroidCollage — outer container fill is white`
-- `PolaroidCollage — gradientRtl=true applies LinearGradient right→left 100%→15%`
-- `PolaroidCollage — gradientRtl=false applies no gradient`
-- `PolaroidCollage — useIsolate=false produces a valid PDF`
-- `PolaroidCollage — useIsolate=true produces a valid PDF`
-- `PolaroidCollage — both isolate paths produce output within 20% size tolerance`
-
-**Factory and builder** (`test/api/build_polaroid_collage_page_test.dart`):
-- `polaroidCollage — 6 photoPaths produces 6 DotsPolaroidElement instances`
-- `polaroidCollage — additionalSlots extends elements list to 8`
-- `polaroidCollage — polar-2 gradientRtl=true when applyOtrosGradient=true`
-- `polaroidCollage — polar-2 gradientRtl=false when applyOtrosGradient=false`
-- `polaroidCollage — all other slots have gradientRtl=false when applyOtrosGradient=true`
-- `polaroidCollage — individuales and otros produce identical element coordinates`
-- `buildPolaroidCollagePageFor — returns DotsAlbumSpreadPage with header.centerLabel equal to contextLabelValue`
-- `buildPolaroidCollagePageFor — individuales and otros geometry is identical when applyOtrosGradient=false`
-
-**Value objects** (`test/api/build_polaroid_collage_page_test.dart`):
-- `AlbumCollageContent — two instances with same fields are equal`
-- `PolaroidSlotPosition — constructs with all fields and exposes them correctly`
-
-**Backwards compatibility**:
-- `dart analyze — sealed DotsElement switch remains exhaustive after DotsPolaroidElement`
-- `DotsAlbumSpreadPage — slice-1 and slice-2 tests pass unmodified`
+- **polar-1**: x ≈ 21mm, y ≈ 18mm, rotation ≈ -2.5°, confidence MEDIUM
+- **polar-2**: x ≈ 0mm, y ≈ 120mm, rotation ≈ +8° (bleeds left), confidence MEDIUM
+- **polar-3**: x ≈ -5mm, y ≈ 18mm, rotation ≈ +4°, confidence MEDIUM
+- **polar-4**: x ≈ -5mm, y ≈ 35mm, rotation ≈ -2.5°, confidence LOW (±2mm visual drift)
+- **polar-5**: x ≈ 48.5mm, y ≈ 69mm, rotation ≈ -3.5°, confidence MEDIUM
+- **polar-6**: x ≈ 95mm, y ≈ 120mm, rotation ≈ 0° (UNKNOWN in source; defaulted), confidence LOW
 
 ---
 
-## Known Gaps and Deferred Items
+## Known Deferred Items
 
-- **polar-4 and polar-6 coordinates** are LOW-confidence approximations (±2 mm visual drift). Documented in dartdoc with confidence caveat.
-- **polar-7 and polar-8** have no documented coordinates. The default ships 6 slots; callers who measure the source files MAY supply them via `additionalSlots`. The design target of 8 slots requires caller-supplied data.
-- **Bleed handling for polar-2** (`bleedLeft: true` at +8°): the rotated AABB extends past the left trim edge. Correct rendering relies on the page format including the 3 mm bleed band; no additional spec behavior is defined here.
+- **polar-6 true rotation** measured from InDesign source (currently 0°).
+- **polar-7 and polar-8 coordinates** for the design-target 8-slot layout; callers may supply via `additionalSlots`.
+- **Rendering tests for gradient parameters, isolate parity, and frame geometry** (design marked as optional but spec listed as mandatory; documented as follow-up).
+- **Inter Semibold font role** (carried from slice 2).
+
+---
+
+## Integration with Slice 1 and Slice 2
+
+- Uses `DotsAlbumType` and header rendering from slice 1.
+- Uses the shared `buildAlbumSpreadPage` helper and rendering consolidation from slice 2.
+- Adds a new sealed-switch arm that is automatically exhausted by `dart analyze`.

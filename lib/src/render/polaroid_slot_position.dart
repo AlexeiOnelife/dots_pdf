@@ -42,8 +42,9 @@ class PolaroidSlotPosition {
   final double angleDegrees;
 
   /// When `true`, the factory will set `gradientRtl: true` on the
-  /// [DotsPolaroidElement] produced from this slot when the spread-level
-  /// `applyOtrosGradient` flag is active.
+  /// corresponding [DotsPolaroidElement]. The spread-level
+  /// `applyOtrosGradient` flag forces `gradientRtl: true` on the element
+  /// at index 1 (polar-2) regardless of this slot's value.
   final bool gradientRtl;
 
   /// Whether the un-rotated frame extends into the bleed beyond its left edge.

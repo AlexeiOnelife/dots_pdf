@@ -57,6 +57,42 @@ const double _kHeaderLineHeight = 1.2;
 const double _kMmToPt = 2.834645669;
 
 // ---------------------------------------------------------------------------
+// Testing constants (refer to private constants above — must be declared after)
+// ---------------------------------------------------------------------------
+
+/// Exposed for testing: polaroid frame left border width in millimetres.
+@visibleForTesting
+const double kPolaroidFrameLeftBorderMmForTest = _kPolaroidFrameLeftBorderMm;
+
+/// Exposed for testing: polaroid frame right border width in millimetres.
+@visibleForTesting
+const double kPolaroidFrameRightBorderMmForTest = _kPolaroidFrameRightBorderMm;
+
+/// Exposed for testing: polaroid frame top border width in millimetres.
+@visibleForTesting
+const double kPolaroidFrameTopBorderMmForTest = _kPolaroidFrameTopBorderMm;
+
+/// Exposed for testing: polaroid frame bottom border width in millimetres.
+@visibleForTesting
+const double kPolaroidFrameBottomBorderMmForTest = _kPolaroidFrameBottomBorderMm;
+
+/// Exposed for testing: mm → pt conversion factor.
+@visibleForTesting
+const double kMmToPtForTest = _kMmToPt;
+
+/// Exposed for testing: gradient parameters when [DotsPolaroidElement.gradientRtl]
+/// is `true`. The gradient runs left (85% white) → right (0% white).
+@visibleForTesting
+const pw.LinearGradient kPolaroidGradientForTest = pw.LinearGradient(
+  begin: pw.Alignment.centerLeft,
+  end: pw.Alignment.centerRight,
+  colors: <PdfColor>[
+    PdfColor(1, 1, 1, 0.85),
+    PdfColor(1, 1, 1, 0.00),
+  ],
+);
+
+// ---------------------------------------------------------------------------
 // Public helper
 // ---------------------------------------------------------------------------
 

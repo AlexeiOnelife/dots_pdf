@@ -41,6 +41,10 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
             case DotsSpreadImageElement():
               paths.add(element.assetPath);
             case DotsPolaroidElement():
+              // Defensive arm: polaroid elements are not expected on a
+              // DotsElementsPage, but the sealed switch requires
+              // exhaustiveness. Collect the asset path anyway so the
+              // preload step doesn't silently skip it if one appears.
               paths.add(element.assetPath);
             case DotsTextElement():
               break;
