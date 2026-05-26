@@ -33,6 +33,39 @@ const double _kHeaderFontSize = 7.0;
 const double kHeaderFontSizeForTest = _kHeaderFontSize;
 
 // ---------------------------------------------------------------------------
+// Oval QR element constants (renderer-side; NOT exposed on DotsOvalQrElement)
+// ---------------------------------------------------------------------------
+
+/// Caption font size for [DotsOvalQrElement] in PDF points (8pt).
+const double _kOvalQrCaptionFontSize = 8.0;
+
+/// Line-height multiplier for the QR caption (8pt × 1.2 = 9.6pt leading).
+const double _kOvalQrCaptionLineHeight = 1.2;
+
+/// Caption colour for [DotsOvalQrElement] — grey `#9E9E9D`.
+const PdfColor _kOvalQrCaptionColor = PdfColor(
+  0x9E / 255.0,
+  0x9E / 255.0,
+  0x9D / 255.0,
+);
+
+/// Gap between the bottom of the oval frame and the top of the caption, in mm.
+const double _kOvalQrCaptionGapMm = 3.0;
+
+/// Oval border stroke width in PDF points.
+const double _kOvalBorderWidthPt = 0.5;
+
+/// Oval border colour — same grey as the caption `#9E9E9D`.
+const PdfColor _kOvalBorderColor = PdfColor(
+  0x9E / 255.0,
+  0x9E / 255.0,
+  0x9D / 255.0,
+);
+
+/// Padding from the oval bounding-box edge to the QR side, in mm.
+const double _kQrInsetMm = 4.0;
+
+// ---------------------------------------------------------------------------
 // Polaroid frame constants (renderer-side; NOT exposed on DotsPolaroidElement)
 // ---------------------------------------------------------------------------
 
@@ -200,6 +233,19 @@ Future<pw.Page> buildAlbumSpreadPage({
     if (widget != null) children.add(widget);
   }
 
+  // ── Width warning (photo-arc pages require >= 406 mm spread width) ───────
+  const double kPhotoArcSpreadWidthMm = 406.0;
+  const double minSpreadWidthPt = kPhotoArcSpreadWidthMm * _kMmToPt;
+  if (page.elements
+          .any((e) => e is DotsPhotoCircleElement || e is DotsOvalQrElement) &&
+      format.width < minSpreadWidthPt - 1.0 /* 1 pt tolerance */) {
+    logger.warn(
+      'DotsAlbumSpreadPage.photoArc rendered on a page narrower '
+      'than 406 mm (got ${(format.width / _kMmToPt).toStringAsFixed(2)} mm); '
+      'right-half elements will be clipped.',
+    );
+  }
+
   // ── Crop marks ───────────────────────────────────────────────────────────
   if (drawCropMarks) {
     children.addAll(
@@ -267,15 +313,16 @@ Future<pw.Widget?> _buildElement({
       return _buildDecorativeCircleElement(element);
 
     case DotsPhotoCircleElement():
-      // Photo-circle rendering — implemented in slice 5 PR 2.
-      throw UnimplementedError(
-        'DotsPhotoCircleElement rendering — part of slice 5 PR 2',
+      return _buildPhotoCircleElement(
+        element: element,
+        bytesResolver: bytesResolver,
+        onPhotoFailure: onPhotoFailure,
       );
 
     case DotsOvalQrElement():
-      // Oval QR rendering — implemented in slice 5 PR 2.
-      throw UnimplementedError(
-        'DotsOvalQrElement rendering — part of slice 5 PR 2',
+      return _buildOvalQrElement(
+        element: element,
+        fontResolver: fontResolver,
       );
   }
 }
@@ -451,6 +498,131 @@ pw.Widget _buildDecorativeCircleElement(DotsDecorativeCircleElement element) {
     left: element.x - haloPt,
     top: element.y - haloPt,
     child: pw.Image(memImage, width: canvasPt, height: canvasPt),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Photo-circle element builder (T3.2)
+// ---------------------------------------------------------------------------
+
+/// Builds a [pw.Widget] that clips a decoded photo to a circle of [element.diameter]
+/// and positions it at ([element.x], [element.y]) via [pw.Positioned].
+///
+/// Returns `null` and calls [onPhotoFailure] when the asset cannot be decoded
+/// (same contract as `_buildImage`). The rest of the page continues to render.
+Future<pw.Widget?> _buildPhotoCircleElement({
+  required DotsPhotoCircleElement element,
+  required Future<Uint8List> Function(String) bytesResolver,
+  required void Function(String, Object) onPhotoFailure,
+}) async {
+  final pw.MemoryImage image;
+  try {
+    final bytes = await bytesResolver(element.assetPath);
+    image = pw.MemoryImage(bytes);
+  } catch (error) {
+    onPhotoFailure(element.assetPath, error);
+    return null;
+  }
+
+  return pw.Positioned(
+    left: element.x,
+    top: element.y,
+    child: pw.ClipOval(
+      child: pw.Image(
+        image,
+        width: element.diameter,
+        height: element.diameter,
+        fit: pw.BoxFit.cover,
+      ),
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Oval QR element builder (T3.3)
+// ---------------------------------------------------------------------------
+
+/// Builds a composite [pw.Widget] for [element] positioned at ([element.x],
+/// [element.y]).
+///
+/// The composite is a [pw.Stack] with three layers:
+///   1. An outlined ellipse ([pw.Container] + [pw.BoxDecoration] with
+///      [pw.BoxShape.circle]) sized to [element.ovalWidth] × [element.ovalHeight].
+///   2. A [pw.BarcodeWidget] QR code (medium error correction) inscribed in
+///      the oval, minus [_kQrInsetMm] padding on each side.
+///   3. A centred caption [pw.Text] below the oval at [_kOvalQrCaptionGapMm]
+///      gap, using P22 Mackinac Book [_kOvalQrCaptionFontSize], colour
+///      [_kOvalQrCaptionColor].
+pw.Widget _buildOvalQrElement({
+  required DotsOvalQrElement element,
+  required pw.Font? Function(DotsFontRole) fontResolver,
+}) {
+  final captionFont = fontResolver(DotsFontRole.p22MackinacBook);
+
+  // Inscribed-square QR side: min(ovalWidth, ovalHeight) minus inset on each side.
+  final double qrSidePt = (element.ovalWidth < element.ovalHeight
+          ? element.ovalWidth
+          : element.ovalHeight) -
+      2.0 * _kQrInsetMm * _kMmToPt;
+  final double qrLeftPt = (element.ovalWidth - qrSidePt) / 2.0;
+  final double qrTopPt = (element.ovalHeight - qrSidePt) / 2.0;
+  final double captionTopPt =
+      element.ovalHeight + _kOvalQrCaptionGapMm * _kMmToPt;
+
+  return pw.Positioned(
+    left: element.x,
+    top: element.y,
+    child: pw.Stack(
+      children: [
+        // Oval frame — BoxShape.circle draws an ellipse inscribed in the bbox.
+        pw.Container(
+          width: element.ovalWidth,
+          height: element.ovalHeight,
+          decoration: pw.BoxDecoration(
+            shape: pw.BoxShape.circle,
+            border: pw.Border.all(
+              color: _kOvalBorderColor,
+              width: _kOvalBorderWidthPt,
+            ),
+          ),
+        ),
+        // QR code centred inside the oval.
+        pw.Positioned(
+          left: qrLeftPt,
+          top: qrTopPt,
+          child: pw.SizedBox(
+            width: qrSidePt,
+            height: qrSidePt,
+            child: pw.BarcodeWidget(
+              data: element.qrPayload,
+              barcode: pw.Barcode.qrCode(
+                errorCorrectLevel: pw.BarcodeQRCorrectionLevel.medium,
+              ),
+              drawText: false,
+            ),
+          ),
+        ),
+        // Caption below the oval.
+        pw.Positioned(
+          left: 0,
+          top: captionTopPt,
+          child: pw.SizedBox(
+            width: element.ovalWidth,
+            child: pw.Text(
+              element.caption,
+              style: pw.TextStyle(
+                font: captionFont,
+                fontSize: _kOvalQrCaptionFontSize,
+                color: _kOvalQrCaptionColor,
+                lineSpacing:
+                    _kOvalQrCaptionFontSize * (_kOvalQrCaptionLineHeight - 1),
+              ),
+              textAlign: pw.TextAlign.center,
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }
 

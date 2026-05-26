@@ -57,11 +57,11 @@ Spec: R1, R3, R9, R12. Establishes all compile-time contracts. No render logic.
 
 Spec: R2, R4, R11.
 
-- [ ] 3.1 Add 6 file-private renderer constants to `lib/src/render/album_spread_page.dart`: `_kOvalQrCaptionFontSize`, `_kOvalQrCaptionLineHeight`, `_kOvalQrCaptionColor`, `_kOvalQrCaptionGapMm`, `_kOvalBorderWidthPt`, `_kOvalBorderColor`, `_kQrInsetMm`. Satisfies D2 constants.
-- [ ] 3.2 Implement `_buildPhotoCircleElement` in `album_spread_page.dart` — loads bytes via `bytesResolver`; on null/failure calls `onPhotoFailure(assetPath)` and returns null; on success wraps `pw.Image` in `pw.ClipOval(width: diameter, height: diameter)` inside `pw.Positioned(left: x, top: y)`. Satisfies R2.
-- [ ] 3.3 Implement `_buildOvalQrElement` in `album_spread_page.dart` — `pw.Positioned(left: x, top: y, child: pw.Stack([ovalFrame, qrWidget, captionWidget]))`. Oval frame: `pw.Container(BoxDecoration(shape: BoxShape.circle, border: Border.all(_kOvalBorderColor, _kOvalBorderWidthPt)))`. QR: `pw.BarcodeWidget(BarcodeQRCorrectionLevel.medium, drawText: false)` sized to `qrSidePt` via inscribed-square-minus-inset formula. Caption: `pw.Text` centered, `P22 Mackinac Book`, `_kOvalQrCaptionFontSize`, `_kOvalQrCaptionColor`, positioned at `ovalHeight + _kOvalQrCaptionGapMm * mmToPt`. Satisfies R4.
-- [ ] 3.4 Replace the Phase 2 stubs in `_buildElement` site 1 with the real helpers implemented in 3.2 and 3.3.
-- [ ] 3.5 Add render-time width warning in `buildAlbumSpreadPage` — after elements are collected, before `pw.Page` is built: if any element is `DotsPhotoCircleElement` or `DotsOvalQrElement` AND `format.width < 406 mm − 1 pt`, call `logger.warn(...)`. Satisfies D10 / R11.
+- [x] 3.1 Add 6 file-private renderer constants to `lib/src/render/album_spread_page.dart`: `_kOvalQrCaptionFontSize`, `_kOvalQrCaptionLineHeight`, `_kOvalQrCaptionColor`, `_kOvalQrCaptionGapMm`, `_kOvalBorderWidthPt`, `_kOvalBorderColor`, `_kQrInsetMm`. Satisfies D2 constants.
+- [x] 3.2 Implement `_buildPhotoCircleElement` in `album_spread_page.dart` — loads bytes via `bytesResolver`; on null/failure calls `onPhotoFailure(assetPath)` and returns null; on success wraps `pw.Image` in `pw.ClipOval(width: diameter, height: diameter)` inside `pw.Positioned(left: x, top: y)`. Satisfies R2.
+- [x] 3.3 Implement `_buildOvalQrElement` in `album_spread_page.dart` — `pw.Positioned(left: x, top: y, child: pw.Stack([ovalFrame, qrWidget, captionWidget]))`. Oval frame: `pw.Container(BoxDecoration(shape: BoxShape.circle, border: Border.all(_kOvalBorderColor, _kOvalBorderWidthPt)))`. QR: `pw.BarcodeWidget(BarcodeQRCorrectionLevel.medium, drawText: false)` sized to `qrSidePt` via inscribed-square-minus-inset formula. Caption: `pw.Text` centered, `P22 Mackinac Book`, `_kOvalQrCaptionFontSize`, `_kOvalQrCaptionColor`, positioned at `ovalHeight + _kOvalQrCaptionGapMm * mmToPt`. Satisfies R4.
+- [x] 3.4 Replace the Phase 2 stubs in `_buildElement` site 1 with the real helpers implemented in 3.2 and 3.3.
+- [x] 3.5 Add render-time width warning in `buildAlbumSpreadPage` — after elements are collected, before `pw.Page` is built: if any element is `DotsPhotoCircleElement` or `DotsOvalQrElement` AND `format.width < 406 mm − 1 pt`, call `logger.warn(...)`. Satisfies D10 / R11.
 
 ---
 
@@ -69,9 +69,9 @@ Spec: R2, R4, R11.
 
 Spec: R5, R6, R7, R8, R10.
 
-- [ ] 4.1 Create `lib/src/api/album_photo_arc_content.dart` — `@immutable AlbumPhotoArcContent` with 7 fields (`photoPaths`, `qrPayloadLeft`, `qrPayloadRight`, `title` defaulting to `"Un año lleno de recuerdos"`, `dateSubtitle`, `qrCaptionLeftOverride?`, `qrCaptionRightOverride?`); `const` constructor; `==`/`hashCode` with list equality on `photoPaths`. Dumb container — no validation. Satisfies R5.
-- [ ] 4.2 Add `DotsAlbumSpreadPage.photoArc(...)` named factory to `lib/src/config/dots_template.dart` — (a) `ArgumentError` for boda; (b) `RangeError` if `content.photoPaths.length != kPhotoArcLayout.length`; (c) resolves per-type QR captions via `switch (type)`; (d) builds 10 `DotsPhotoCircleElement` from `kPhotoArcLayout × photoPaths`; (e) builds 2 `DotsOvalQrElement` at gutter positions with constants `_kPhotoArcOvalWidthMm = 50`, `_kPhotoArcOvalHeightMm = 45`; (f) builds title `DotsTextElement` at (19 mm, 43 mm) P22 Mackinac Medium 23pt; (g) builds date subtitle `DotsTextElement` at (19 mm, ≈57.74 mm) P22 Mackinac Book 9pt; (h) populates header trio and footer `'Dots. Memories'`. Satisfies R6, R7, R10.
-- [ ] 4.3 Create `lib/src/api/build_photo_arc_page.dart` — top-level `buildPhotoArcPageFor(type, content, {required int pageNumber, required String contextLabelValue})` with dartdoc caller contract for 406 mm page width; `ArgumentError` for boda (defense-in-depth); delegates to `.photoArc(...)`. Satisfies R8, D9.
+- [x] 4.1 Create `lib/src/api/album_photo_arc_content.dart` — `@immutable AlbumPhotoArcContent` with 7 fields (`photoPaths`, `qrPayloadLeft`, `qrPayloadRight`, `title` defaulting to `"Un año lleno de recuerdos"`, `dateSubtitle`, `qrCaptionLeftOverride?`, `qrCaptionRightOverride?`); `const` constructor; `==`/`hashCode` with list equality on `photoPaths`. Dumb container — no validation. Satisfies R5.
+- [x] 4.2 Add `DotsAlbumSpreadPage.photoArc(...)` named factory to `lib/src/config/dots_template.dart` — (a) `ArgumentError` for boda; (b) `RangeError` if `content.photoPaths.length != kPhotoArcLayout.length`; (c) resolves per-type QR captions via `switch (type)`; (d) builds 10 `DotsPhotoCircleElement` from `kPhotoArcLayout × photoPaths`; (e) builds 2 `DotsOvalQrElement` at gutter positions with constants `_kPhotoArcOvalWidthMm = 50`, `_kPhotoArcOvalHeightMm = 45`; (f) builds title `DotsTextElement` at (19 mm, 43 mm) P22 Mackinac Medium 23pt; (g) builds date subtitle `DotsTextElement` at (19 mm, ≈57.74 mm) P22 Mackinac Book 9pt; (h) populates header trio and footer `'Dots. Memories'`. Satisfies R6, R7, R10.
+- [x] 4.3 Create `lib/src/api/build_photo_arc_page.dart` — top-level `buildPhotoArcPageFor(type, content, {required int pageNumber, required String contextLabelValue})` with dartdoc caller contract for 406 mm page width; `ArgumentError` for boda (defense-in-depth); delegates to `.photoArc(...)`. Satisfies R8, D9.
 
 ---
 
@@ -79,7 +79,7 @@ Spec: R5, R6, R7, R8, R10.
 
 Spec: R12.
 
-- [ ] 5.1 Add imports for `album_photo_arc_content.dart` and `build_photo_arc_page.dart` to `lib/src/config/dots_template.dart` (needed for factory) and ensure `photo_arc_layout.dart` is imported there too.
-- [ ] 5.2 Add two new exports to `lib/dots_pdf.dart`: `export 'src/api/album_photo_arc_content.dart';` and `export 'src/api/build_photo_arc_page.dart';`. Satisfies R12 public API.
-- [ ] 5.3 Run `dart analyze` — zero errors expected. Confirms R9 scenario "sealed switch is exhaustive after slice 5".
-- [ ] 5.4 Run full test suite — all 5 new test files GREEN; all prior slice-1/2/3/4 tests unchanged and passing. Satisfies R12 backwards-compatibility scenario.
+- [x] 5.1 Add imports for `album_photo_arc_content.dart` and `build_photo_arc_page.dart` to `lib/src/config/dots_template.dart` (needed for factory) and ensure `photo_arc_layout.dart` is imported there too.
+- [x] 5.2 Add two new exports to `lib/dots_pdf.dart`: `export 'src/api/album_photo_arc_content.dart';` and `export 'src/api/build_photo_arc_page.dart';`. Satisfies R12 public API.
+- [x] 5.3 Run `dart analyze` — zero errors expected. Confirms R9 scenario "sealed switch is exhaustive after slice 5".
+- [x] 5.4 Run full test suite — all 5 new test files GREEN; all prior slice-1/2/3/4 tests unchanged and passing. Satisfies R12 backwards-compatibility scenario.
