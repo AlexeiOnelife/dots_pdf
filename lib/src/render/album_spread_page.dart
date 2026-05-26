@@ -505,6 +505,21 @@ pw.Widget _buildDecorativeCircleElement(DotsDecorativeCircleElement element) {
 // Photo-circle element builder (T3.2)
 // ---------------------------------------------------------------------------
 
+/// Exposed for testing: delegates to the private [_buildPhotoCircleElement]
+/// so tests can assert that a valid photo yields a [pw.Positioned] whose
+/// immediate child is a [pw.ClipOval] without walking the full page stack.
+@visibleForTesting
+Future<pw.Widget?> buildPhotoCircleElementForTest({
+  required DotsPhotoCircleElement element,
+  required Future<Uint8List> Function(String) bytesResolver,
+  required void Function(String, Object) onPhotoFailure,
+}) =>
+    _buildPhotoCircleElement(
+      element: element,
+      bytesResolver: bytesResolver,
+      onPhotoFailure: onPhotoFailure,
+    );
+
 /// Builds a [pw.Widget] that clips a decoded photo to a circle of [element.diameter]
 /// and positions it at ([element.x], [element.y]) via [pw.Positioned].
 ///

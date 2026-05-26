@@ -35,6 +35,116 @@ DotsOvalQrElement _rightOval(DotsAlbumSpreadPage page) =>
 
 void main() {
   // ──────────────────────────────────────────────────────────────────────────
+  // AlbumPhotoArcContent — model tests (R5)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('AlbumPhotoArcContent — model (R5)', () {
+    test(
+        'constructs with required fields; title defaults to '
+        '"Un año lleno de recuerdos"', () {
+      final c = AlbumPhotoArcContent(
+        photoPaths: _tenPaths(),
+        qrPayloadLeft: 'https://l.example.com',
+        qrPayloadRight: 'https://r.example.com',
+        dateSubtitle: '01/01/2024 | 31/12/2024',
+      );
+      expect(c.title, equals('Un año lleno de recuerdos'));
+      expect(c.qrCaptionLeftOverride, isNull);
+      expect(c.qrCaptionRightOverride, isNull);
+      expect(c.photoPaths.length, equals(10));
+    });
+
+    test('equality: identical instances are equal', () {
+      final a = AlbumPhotoArcContent(
+        photoPaths: _tenPaths(),
+        qrPayloadLeft: 'https://l.example.com',
+        qrPayloadRight: 'https://r.example.com',
+        dateSubtitle: '01/01/2024 | 31/12/2024',
+      );
+      final b = AlbumPhotoArcContent(
+        photoPaths: _tenPaths(),
+        qrPayloadLeft: 'https://l.example.com',
+        qrPayloadRight: 'https://r.example.com',
+        dateSubtitle: '01/01/2024 | 31/12/2024',
+      );
+      expect(a, equals(b));
+      expect(a.hashCode, equals(b.hashCode));
+    });
+
+    test('inequality when qrCaptionLeftOverride differs', () {
+      final a = AlbumPhotoArcContent(
+        photoPaths: _tenPaths(),
+        qrPayloadLeft: 'https://l.example.com',
+        qrPayloadRight: 'https://r.example.com',
+        dateSubtitle: '01/01/2024 | 31/12/2024',
+      );
+      final b = AlbumPhotoArcContent(
+        photoPaths: _tenPaths(),
+        qrPayloadLeft: 'https://l.example.com',
+        qrPayloadRight: 'https://r.example.com',
+        dateSubtitle: '01/01/2024 | 31/12/2024',
+        qrCaptionLeftOverride: 'CUSTOM',
+      );
+      expect(a, isNot(equals(b)));
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Public API exports (R12)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('public API exports (R12)', () {
+    test('DotsPhotoCircleElement exported from lib/dots_pdf.dart', () {
+      // If DotsPhotoCircleElement is not exported the reference below will not
+      // compile — the test failing to compile IS the test failure.
+      const element = DotsPhotoCircleElement(
+        x: 0,
+        y: 0,
+        diameter: 125.98,
+        assetPath: 'a.jpg',
+      );
+      expect(element, isA<DotsElement>());
+    });
+
+    test('DotsOvalQrElement exported from lib/dots_pdf.dart', () {
+      const element = DotsOvalQrElement(
+        x: 0,
+        y: 0,
+        ovalWidth: 73.24,
+        ovalHeight: 122.27,
+        qrPayload: 'https://example.com',
+        caption: 'caption',
+      );
+      expect(element, isA<DotsElement>());
+    });
+
+    test('AlbumPhotoArcContent exported from lib/dots_pdf.dart', () {
+      final content = AlbumPhotoArcContent(
+        photoPaths: _tenPaths(),
+        qrPayloadLeft: 'https://l.example.com',
+        qrPayloadRight: 'https://r.example.com',
+        dateSubtitle: '2024',
+      );
+      expect(content, isA<AlbumPhotoArcContent>());
+    });
+
+    test('buildPhotoArcPageFor exported from lib/dots_pdf.dart', () {
+      final page = buildPhotoArcPageFor(
+        DotsAlbumType.parejas,
+        AlbumPhotoArcContent(
+          photoPaths: _tenPaths(),
+          qrPayloadLeft: 'https://l.example.com',
+          qrPayloadRight: 'https://r.example.com',
+          dateSubtitle: '2024',
+        ),
+        pageNumber: 1,
+        contextLabelValue: 'x',
+      );
+      expect(page, isA<DotsAlbumSpreadPage>());
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
   // buildPhotoArcPageFor — builder contract (R8)
   // ──────────────────────────────────────────────────────────────────────────
 

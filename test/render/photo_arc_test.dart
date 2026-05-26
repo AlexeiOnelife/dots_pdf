@@ -6,7 +6,7 @@ import 'dart:typed_data';
 
 import 'package:dots_pdf/dots_pdf.dart';
 import 'package:dots_pdf/src/render/album_spread_page.dart'
-    show buildAlbumSpreadPage;
+    show buildAlbumSpreadPage, buildPhotoCircleElementForTest;
 import 'package:dots_pdf/src/render/photo_arc_layout.dart'
     show kPhotoArcLayoutForTest;
 import 'package:file/local.dart';
@@ -327,6 +327,29 @@ void main() {
           reason: 'isolate output PDF must be non-empty');
       expect(_hasPdfMagic(bytes), isTrue,
           reason: 'isolate output must start with PDF magic bytes');
+    });
+
+    test('photo circle element wraps decoded image in pw.ClipOval', () async {
+      // Build the photo-circle widget directly via the @visibleForTesting
+      // helper — this is the same code path the page renderer uses.
+      const element = DotsPhotoCircleElement(
+        x: 10.0,
+        y: 20.0,
+        diameter: 125.98,
+        assetPath: 'photo_1.jpg',
+      );
+
+      final widget = await buildPhotoCircleElementForTest(
+        element: element,
+        bytesResolver: (_) async => _onePixelPng(),
+        onPhotoFailure: (_, __) => fail('onPhotoFailure must not be called'),
+      );
+
+      expect(widget, isA<pw.Positioned>());
+      final positioned = widget! as pw.Positioned;
+      // The immediate child of Positioned must be ClipOval.
+      expect(positioned.child, isA<pw.ClipOval>(),
+          reason: 'photo circle element must wrap image in pw.ClipOval');
     });
 
     test('photo decode failure skips element and fires onPhotoFailure',

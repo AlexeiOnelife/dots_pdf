@@ -1287,17 +1287,17 @@ class DotsAlbumSpreadPage extends DotsPage {
         content.qrCaptionRightOverride ?? rightCaption;
 
     // Oval QR geometry constants (mm → pt).
-    const double kOvalWidthMm = 50.0;
-    const double kOvalHeightMm = 45.0;
+    // Source: parejas p.9 / boda p.4 canonical spec dimensions.
+    const double kOvalWidthMm = 25.841;
+    const double kOvalHeightMm = 43.127;
     // Gutter centre at 203 mm; QR centres 27 mm each side.
+    // Left QR centre x = 203 - 27 = 176 mm → top-left x = 176 - 25.841/2 = 163.0795 mm.
+    // Right QR centre x = 203 + 27 = 230 mm → top-left x = 230 - 25.841/2 = 217.0795 mm.
     // Top of QR caption: 20 mm above page bottom (254 mm) → caption top at 234 mm.
-    // Gap between oval bottom and caption top: 3 mm (renderer constant _kOvalQrCaptionGapMm).
-    // Oval top-left y = 234 - 3 - 45 = 186 mm.
-    const double ovalYMm = 186.0;
-    // Left QR centre x = 176 mm → top-left x = 176 - 25 = 151 mm.
-    const double ovalLeftXMm = 151.0;
-    // Right QR centre x = 230 mm → top-left x = 230 - 25 = 205 mm.
-    const double ovalRightXMm = 205.0;
+    // Oval top-left y = 254 - 20 - 43.127 = 190.873 mm (caption-top interpretation).
+    const double ovalYMm = 190.873;
+    const double ovalLeftXMm = 163.0795;
+    const double ovalRightXMm = 217.0795;
 
     // Build 10 photo-circle elements from kPhotoArcLayout.
     final circles = <DotsElement>[
