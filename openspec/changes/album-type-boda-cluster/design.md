@@ -48,7 +48,7 @@ class DotsClusterPhotoElement extends DotsElement {
 - Overloading `DotsImageElement` with optional gradient fields — pollutes a general primitive; failed the sealed-switch hygiene check (existing arms in 5 sites would need to no-op these new fields).
 - Bundled placeholder photos (proposal Q1) — already rejected as visually nonsensical for a wedding library.
 
-**Rationale:** Matches the established pattern from slices 3, 4, and 5 (one sealed subtype per visual primitive). Sentinel `opacityGradientStart == opacityGradientEnd` means "no gradient" — slots 2/3/4 use `(1.0, 1.0)` defaults; slot 1 uses `(0.0, 1.0, bottomToTop)`; slots 5–7 use `(1.0, 0.0, topToBottom)`. The renderer can short-circuit gradient passes when start == end.
+**Rationale:** Matches the established pattern from slices 3, 4, and 5 (one sealed subtype per visual primitive). Sentinel `opacityGradientStart == opacityGradientEnd` means "no gradient" — slots 2/3/4 use `(1.0, 1.0)` defaults; slot 1 uses `(1.0, 0.1, bottomToTop)` (100% → 10%); slots 5/6 use `(1.0, 0.3, topToBottom)` (100% → 30%); slot 7 uses `(1.0, 0.0, topToBottom)` (100% → 0%). The renderer can short-circuit gradient passes when start == end.
 
 ### D2 — `DotsGradientDirection` enum (new, kept separate from slice 3's `gradientRtl`)
 

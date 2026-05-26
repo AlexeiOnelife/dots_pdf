@@ -1566,24 +1566,23 @@ class DotsAlbumSpreadPage extends DotsPage {
 
     // ── 2 title text elements ───────────────────────────────────────────────
     // Line 1: P22 Mackinac Medium 23pt at (19 mm + 203 mm offset, 43 mm).
-    // Line 2: P22 Mackinac Medium Italic 23pt at 27.6pt below line 1.
-    const double titleXMm = 19.0 + rightPageOffsetMm;
-    const double titleYMm = 43.0;
+    // Line 2: P22 Mackinac Medium Italic 23pt, 27.6 pt below line 1.
+    const double titleXPt = (19.0 + rightPageOffsetMm) * _mmToPt;
+    const double titleYPt = 43.0 * _mmToPt;
     const double titleFontSize = 23.0;
-    // 27.6 pt below → convert to mm: 27.6 / _mmToPt
-    const double line2YMm = titleYMm + 27.6 / _mmToPt;
+    const double line2YPt = titleYPt + 27.6;
 
     final textElements = <DotsElement>[
       DotsTextElement(
-        x: titleXMm * _mmToPt,
-        y: titleYMm * _mmToPt,
+        x: titleXPt,
+        y: titleYPt,
         value: content.title,
         fontSize: titleFontSize,
         fontFamily: 'P22 Mackinac Medium',
       ),
       DotsTextElement(
-        x: titleXMm * _mmToPt,
-        y: line2YMm * _mmToPt,
+        x: titleXPt,
+        y: line2YPt,
         value: content.titleItalicLine,
         fontSize: titleFontSize,
         fontFamily: 'P22 Mackinac Medium Italic',
@@ -1592,14 +1591,14 @@ class DotsAlbumSpreadPage extends DotsPage {
 
     // ── 1 body text block ───────────────────────────────────────────────────
     // Inter Book 9pt, 95 mm wide, lineHeight 1.2, left-aligned.
-    // Positioned below the title block; y = 43 mm + 27.6/mmToPt + 27.6/mmToPt + 5 mm gap.
-    const double bodyXMm = 19.0 + rightPageOffsetMm;
-    const double bodyYMm = line2YMm + 27.6 / _mmToPt + 5.0;
+    // Positioned 27.6 pt below line 2 + 5 mm gap.
+    const double bodyXPt = (19.0 + rightPageOffsetMm) * _mmToPt;
+    const double bodyYPt = line2YPt + 27.6 + 5.0 * _mmToPt;
     const double bodyWidthPt = 95.0 * _mmToPt;
 
     final bodyElement = DotsTextBlockElement(
-      x: bodyXMm * _mmToPt,
-      y: bodyYMm * _mmToPt,
+      x: bodyXPt,
+      y: bodyYPt,
       value: content.body,
       fontSize: 9,
       width: bodyWidthPt,

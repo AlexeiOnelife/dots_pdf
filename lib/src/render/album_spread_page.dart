@@ -237,16 +237,21 @@ Future<pw.Page> buildAlbumSpreadPage({
     if (widget != null) children.add(widget);
   }
 
-  // ── Width warning (photo-arc pages require >= 406 mm spread width) ───────
-  const double kPhotoArcSpreadWidthMm = 406.0;
-  const double minSpreadWidthPt = kPhotoArcSpreadWidthMm * _kMmToPt;
-  if (page.elements
-          .any((e) => e is DotsPhotoCircleElement || e is DotsOvalQrElement) &&
+  // ── Width warning (spread pages require >= 406 mm width) ────────────────
+  // Photo-arc (DotsPhotoCircleElement / DotsOvalQrElement) and boda-cluster
+  // (DotsClusterPhotoElement) layouts both span the full 406 mm spread.
+  // Fire once per page — NOT once per element.
+  const double kSpreadWidthMm = 406.0;
+  const double minSpreadWidthPt = kSpreadWidthMm * _kMmToPt;
+  if (page.elements.any((e) =>
+          e is DotsPhotoCircleElement ||
+          e is DotsOvalQrElement ||
+          e is DotsClusterPhotoElement) &&
       format.width < minSpreadWidthPt - 1.0 /* 1 pt tolerance */) {
     logger.warn(
-      'DotsAlbumSpreadPage.photoArc rendered on a page narrower '
-      'than 406 mm (got ${(format.width / _kMmToPt).toStringAsFixed(2)} mm); '
-      'right-half elements will be clipped.',
+      'DotsAlbumSpreadPage rendered on a page narrower than 406 mm '
+      '(got ${(format.width / _kMmToPt).toStringAsFixed(2)} mm); '
+      'page contains elements that may be clipped at format.width < 406 mm.',
     );
   }
 
@@ -335,8 +340,6 @@ Future<pw.Widget?> _buildElement({
         element,
         bytesResolver,
         onPhotoFailure,
-        format,
-        logger,
       );
   }
 }
@@ -590,20 +593,7 @@ Future<pw.Widget?> _buildClusterPhotoElement(
   DotsClusterPhotoElement element,
   Future<Uint8List> Function(String assetPath) bytesResolver,
   void Function(String, Object)? onPhotoFailure,
-  PdfPageFormat format,
-  DotsLogger logger,
 ) async {
-  // ── Spread-width warning (R9) ────────────────────────────────────────────
-  const double kClusterSpreadWidthMm = 406.0;
-  const double minSpreadWidthPt = kClusterSpreadWidthMm * _kMmToPt;
-  if (format.width < minSpreadWidthPt - 1.0 /* 1 pt tolerance */) {
-    logger.warn(
-      'DotsAlbumSpreadPage.bodaCluster rendered on a page narrower '
-      'than 406 mm (got ${(format.width / _kMmToPt).toStringAsFixed(2)} mm); '
-      'cluster elements will be clipped.',
-    );
-  }
-
   try {
     final cacheKey = (
       assetPath: element.assetPath,
