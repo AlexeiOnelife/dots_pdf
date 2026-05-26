@@ -13,15 +13,15 @@ import 'package:meta/meta.dart';
 
 @immutable
 class _PhotoArcAnchor {
-  const _PhotoArcAnchor({
-    required this.xMm,
-    required this.yMm,
-    this.diameterMm = 44.45,
-  });
+  const _PhotoArcAnchor({required this.xMm, required this.yMm});
 
   final double xMm;
   final double yMm;
-  final double diameterMm;
+
+  /// Uniform diameter for every arc photo per slice-1 user decision.
+  /// Not a constructor parameter — the spec locks all 10 circles to
+  /// this value; varying it per-anchor is not supported.
+  double get diameterMm => 44.45;
 }
 
 /// Canonical 10-circle layout for the photo-arc spread page.
@@ -33,17 +33,19 @@ class _PhotoArcAnchor {
 /// This list is library-private — it is consumed by
 /// [DotsAlbumSpreadPage.photoArc] and must NOT be exported from
 /// `lib/dots_pdf.dart`.
+// All 10 anchors use the spec-mandated uniform 44.45 mm diameter (the default
+// on `_PhotoArcAnchor`). Listing it on each entry would be redundant.
 const List<_PhotoArcAnchor> kPhotoArcLayout = <_PhotoArcAnchor>[
-  _PhotoArcAnchor(xMm: 29.59, yMm: 273.28, diameterMm: 44.45),
-  _PhotoArcAnchor(xMm: 376.17, yMm: 273.28, diameterMm: 44.45),
-  _PhotoArcAnchor(xMm: 45.09, yMm: 224.02, diameterMm: 44.45),
-  _PhotoArcAnchor(xMm: 360.66, yMm: 224.02, diameterMm: 44.45),
-  _PhotoArcAnchor(xMm: 77.97, yMm: 180.93, diameterMm: 44.45),
-  _PhotoArcAnchor(xMm: 327.79, yMm: 180.93, diameterMm: 44.45),
-  _PhotoArcAnchor(xMm: 120.96, yMm: 150.11, diameterMm: 44.45),
-  _PhotoArcAnchor(xMm: 284.79, yMm: 150.11, diameterMm: 44.45),
-  _PhotoArcAnchor(xMm: 171.04, yMm: 134.01, diameterMm: 44.45),
-  _PhotoArcAnchor(xMm: 234.72, yMm: 134.01, diameterMm: 44.45),
+  _PhotoArcAnchor(xMm: 29.59, yMm: 273.28),
+  _PhotoArcAnchor(xMm: 376.17, yMm: 273.28),
+  _PhotoArcAnchor(xMm: 45.09, yMm: 224.02),
+  _PhotoArcAnchor(xMm: 360.66, yMm: 224.02),
+  _PhotoArcAnchor(xMm: 77.97, yMm: 180.93),
+  _PhotoArcAnchor(xMm: 327.79, yMm: 180.93),
+  _PhotoArcAnchor(xMm: 120.96, yMm: 150.11),
+  _PhotoArcAnchor(xMm: 284.79, yMm: 150.11),
+  _PhotoArcAnchor(xMm: 171.04, yMm: 134.01),
+  _PhotoArcAnchor(xMm: 234.72, yMm: 134.01),
 ];
 
 // ---------------------------------------------------------------------------
