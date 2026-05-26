@@ -71,6 +71,21 @@ void main() {
       }
     });
 
+    test(
+        'polaroidCollage — header sets both leftPageNumber and rightPageNumber to pageNumber',
+        () {
+      // Harmonization: matches dedication/closing/photoArc convention.
+      // The polaroid collage spread had no page numbers before this fix.
+      final page = DotsAlbumSpreadPage.polaroidCollage(
+        type: DotsAlbumType.individuales,
+        pageNumber: 6,
+        contextLabelValue: '2024',
+        photoPaths: _sixPaths,
+      );
+      expect(page.header.leftPageNumber, equals('6'));
+      expect(page.header.rightPageNumber, equals('6'));
+    });
+
     test('polaroidCollage — additionalSlots extends elements list to 8', () {
       final extraSlot = PolaroidSlotPosition(
         x: 10.0,

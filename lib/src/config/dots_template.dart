@@ -894,7 +894,7 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///     [DotsRotatedTextElement] in Biro Script Plus 12pt at 2°
   ///
   /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
-  ///         rightPageNumber = null (single page — no facing).
+  ///         rightPageNumber = '$pageNumber'.
   /// Footer: wordmark = "Dots. Memories".
   ///
   /// [contextLabelValue] is a pre-resolved string (the caller is responsible
@@ -957,7 +957,7 @@ class DotsAlbumSpreadPage extends DotsPage {
       header: DotsSpreadHeader(
         leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
-        rightPageNumber: null,
+        rightPageNumber: '$pageNumber',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: elements,
@@ -978,7 +978,7 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///   - SUBTITLE: [DotsTextBlockElement] in P22 Mackinac Book 9pt, 2 lines
   ///
   /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
-  ///         rightPageNumber = null.
+  ///         rightPageNumber = '$pageNumber'.
   /// Footer: wordmark = "Dots. Memories".
   factory DotsAlbumSpreadPage.closing({
     required DotsAlbumType type,
@@ -1047,7 +1047,7 @@ class DotsAlbumSpreadPage extends DotsPage {
       header: DotsSpreadHeader(
         leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
-        rightPageNumber: null,
+        rightPageNumber: '$pageNumber',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: elements,
@@ -1072,7 +1072,8 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// `kDefaultPolaroidSlots.length + additionalSlots.length` entries.
   /// A [RangeError] is thrown if the lengths do not match.
   ///
-  /// Header: `centerLabel` = [contextLabelValue].
+  /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
+  ///         rightPageNumber = '$pageNumber'.
   /// Footer: wordmark = "Dots. Memories".
   factory DotsAlbumSpreadPage.polaroidCollage({
     required DotsAlbumType type,
@@ -1121,7 +1122,9 @@ class DotsAlbumSpreadPage extends DotsPage {
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
+        leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: '$pageNumber',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: elements,

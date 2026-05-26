@@ -213,6 +213,13 @@ void main() {
       expect(sig.angleDegrees, equals(2.0));
     });
 
+    test('header sets both leftPageNumber and rightPageNumber to pageNumber', () {
+      // Harmonization: all header-bearing factories set both corners to the
+      // same '$pageNumber' value. Cover is the only header-less exception.
+      expect(page.header.leftPageNumber, equals('5'));
+      expect(page.header.rightPageNumber, equals('5'));
+    });
+
     test('empty signature skips rotated element', () {
       final noSig = DotsAlbumSpreadPage.dedication(
         type: DotsAlbumType.parejas,
@@ -273,6 +280,12 @@ void main() {
     test('parejas closing title fontSize is 20', () {
       final title = parejas.elements.whereType<DotsTextElement>().first;
       expect(title.fontSize, equals(20.0));
+    });
+
+    test('header sets both leftPageNumber and rightPageNumber to pageNumber', () {
+      // Harmonization: matches dedication/polaroidCollage/photoArc convention.
+      expect(parejas.header.leftPageNumber, equals('6'));
+      expect(parejas.header.rightPageNumber, equals('6'));
     });
 
     test('hijos closing title fontSize is 20', () {
