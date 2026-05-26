@@ -1073,7 +1073,9 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// A [RangeError] is thrown if the lengths do not match.
   ///
   /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
-  ///         rightPageNumber = '$pageNumber'.
+  ///         rightPageNumber = '${pageNumber + 1}'. This factory builds a
+  ///         two-page spread; the right page's number is one greater than
+  ///         the left.
   /// Footer: wordmark = "Dots. Memories".
   factory DotsAlbumSpreadPage.polaroidCollage({
     required DotsAlbumType type,
@@ -1124,7 +1126,7 @@ class DotsAlbumSpreadPage extends DotsPage {
       header: DotsSpreadHeader(
         leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
-        rightPageNumber: '$pageNumber',
+        rightPageNumber: '${pageNumber + 1}',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: elements,
@@ -1248,6 +1250,11 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// `x + diameter > pageWidth` will be clipped silently by the PDF viewer.
   ///
   /// Throws a [RangeError] when `content.photoPaths.length != 10`.
+  ///
+  /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
+  ///         rightPageNumber = '${pageNumber + 1}'. This factory builds a
+  ///         two-page spread; the right page's number is one greater than
+  ///         the left.
   factory DotsAlbumSpreadPage.photoArc({
     required DotsAlbumType type,
     required int pageNumber,
@@ -1365,7 +1372,7 @@ class DotsAlbumSpreadPage extends DotsPage {
       header: DotsSpreadHeader(
         leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
-        rightPageNumber: '$pageNumber',
+        rightPageNumber: '${pageNumber + 1}',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: [...circles, ...ovals, ...texts],

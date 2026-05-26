@@ -72,10 +72,11 @@ void main() {
     });
 
     test(
-        'polaroidCollage — header sets both leftPageNumber and rightPageNumber to pageNumber',
+        'polaroidCollage — header sets leftPageNumber=N and rightPageNumber=N+1 (spread convention)',
         () {
-      // Harmonization: matches dedication/closing/photoArc convention.
-      // The polaroid collage spread had no page numbers before this fix.
+      // Spread convention: a polaroid collage occupies TWO physical pages
+      // (left = N, right = N+1). The `pageNumber` field represents the
+      // LEFT page; the right corner shows the next page number.
       final page = DotsAlbumSpreadPage.polaroidCollage(
         type: DotsAlbumType.individuales,
         pageNumber: 6,
@@ -83,7 +84,7 @@ void main() {
         photoPaths: _sixPaths,
       );
       expect(page.header.leftPageNumber, equals('6'));
-      expect(page.header.rightPageNumber, equals('6'));
+      expect(page.header.rightPageNumber, equals('7'));
     });
 
     test('polaroidCollage — additionalSlots extends elements list to 8', () {

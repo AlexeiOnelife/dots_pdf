@@ -150,6 +150,15 @@ void main() {
     test('footer.wordmark equals "Dots. Memories"', () {
       expect(page.footer.wordmark, equals('Dots. Memories'));
     });
+
+    test(
+        'header sets leftPageNumber=N and rightPageNumber=N+1 (spread convention)',
+        () {
+      // Spread convention: photoArc occupies TWO physical pages (left=N,
+      // right=N+1). The `pageNumber` field represents the LEFT page.
+      expect(page.header.leftPageNumber, equals('9'));
+      expect(page.header.rightPageNumber, equals('10'));
+    });
   });
 
   // ──────────────────────────────────────────────────────────────────────────
