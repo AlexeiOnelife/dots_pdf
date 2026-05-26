@@ -232,6 +232,7 @@ Future<pw.Page> buildAlbumSpreadPage({
       logger: logger,
       onPhotoFailure: onPhotoFailure,
       pageNumber: page.pageNumber,
+      format: format,
     );
     if (widget != null) children.add(widget);
   }
@@ -277,6 +278,7 @@ Future<pw.Widget?> _buildElement({
   required DotsLogger logger,
   required void Function(String assetPath, Object error) onPhotoFailure,
   required int pageNumber,
+  required PdfPageFormat format,
 }) async {
   switch (element) {
     case DotsTextElement():
@@ -329,8 +331,12 @@ Future<pw.Widget?> _buildElement({
       );
 
     case DotsClusterPhotoElement():
-      throw UnimplementedError(
-        'DotsClusterPhotoElement rendering — part of slice 6 PR 2',
+      return _buildClusterPhotoElement(
+        element,
+        bytesResolver,
+        onPhotoFailure,
+        format,
+        logger,
       );
   }
 }
@@ -363,6 +369,38 @@ void resetDecorativeCircleCacheForTest() => _circleCache.clear();
 /// produce exactly K rasterizations" can call this after rendering.
 @visibleForTesting
 int decorativeCircleCacheSizeForTest() => _circleCache.length;
+
+// ---------------------------------------------------------------------------
+// Cluster-photo rasterization cache (T3.1)
+// Keyed by (assetPath, widthPt, heightPt, gradientStart, gradientEnd,
+// gradientDirection, gaussianFadeMm). Process-wide; cleared by
+// resetClusterPhotoCacheForTest in tests.
+// ---------------------------------------------------------------------------
+
+typedef _ClusterCacheKey = ({
+  String assetPath,
+  double widthPt,
+  double heightPt,
+  double opacityGradientStart,
+  double opacityGradientEnd,
+  DotsGradientDirection opacityGradientDirection,
+  double gaussianFadeMm,
+});
+
+final Map<_ClusterCacheKey, Uint8List> _clusterPhotoCache = {};
+
+/// Clears the cluster-photo rasterization cache.
+///
+/// Call this in [setUp] when a test needs to observe cache-miss / cache-hit
+/// behaviour or when test isolation requires a clean slate.
+@visibleForTesting
+void resetClusterPhotoCacheForTest() => _clusterPhotoCache.clear();
+
+/// Test-only window into the cluster-photo rasterization cache.
+///
+/// Returns the number of entries currently held.
+@visibleForTesting
+int clusterPhotoCacheSizeForTest() => _clusterPhotoCache.length;
 
 // ---------------------------------------------------------------------------
 // Rasterization pipeline (T3.2)
@@ -433,6 +471,174 @@ Uint8List _rasterizeFadedCircle({
   img.gaussianBlur(image, radius: fadePx.round());
 
   return img.encodePng(image);
+}
+
+// ---------------------------------------------------------------------------
+// Cluster-photo rasterization pipeline (T3.2)
+// Loads, resizes, applies per-pixel opacity gradient, Gaussian edge blur,
+// and encodes as PNG.
+// ---------------------------------------------------------------------------
+
+/// Rasterizes a single cluster photo slot with an opacity gradient and a
+/// Gaussian edge fade.
+///
+/// Steps:
+///   1. Load source bytes via [bytesResolver].
+///   2. Decode with `img.decodeImage`.
+///   3. Resize to target (widthPt × heightPt) at 300 DPI using `img.copyResize`.
+///   4. Apply per-pixel opacity gradient from [element.opacityGradientStart] to
+///      [element.opacityGradientEnd] along [element.opacityGradientDirection].
+///      Short-circuits when start == end (uniform opacity, no gradient pass).
+///   5. Apply Gaussian blur to a [element.gaussianFadeMm] edge band at 300 DPI.
+///   6. Encode as PNG and return the bytes.
+///
+/// On failure, calls [onPhotoFailure] and returns `null`.
+Future<Uint8List?> _rasterizeClusterPhoto(
+  DotsClusterPhotoElement element,
+  Future<Uint8List> Function(String assetPath) bytesResolver, {
+  void Function(String, Object)? onPhotoFailure,
+}) async {
+  const int dpi = 300;
+  const double inchesPerMm = 1.0 / 25.4;
+
+  try {
+    final srcBytes = await bytesResolver(element.assetPath);
+    final srcImage = img.decodeImage(srcBytes);
+    if (srcImage == null) {
+      onPhotoFailure?.call(
+          element.assetPath, StateError('img.decodeImage returned null'));
+      return null;
+    }
+
+    // Convert pt → px at 300 DPI (1 pt = 1/72 inch).
+    final int widthPx = (element.width / 72.0 * dpi).round();
+    final int heightPx = (element.height / 72.0 * dpi).round();
+
+    final resized = img.copyResize(
+      srcImage,
+      width: widthPx,
+      height: heightPx,
+      interpolation: img.Interpolation.linear,
+    );
+
+    // ── Per-pixel opacity gradient pass ─────────────────────────────────────
+    // Short-circuit sentinel: start == end means uniform opacity.
+    if (element.opacityGradientStart != element.opacityGradientEnd) {
+      final double start = element.opacityGradientStart;
+      final double end = element.opacityGradientEnd;
+
+      for (var y = 0; y < heightPx; y++) {
+        for (var x = 0; x < widthPx; x++) {
+          final pixel = resized.getPixel(x, y);
+
+          final double t;
+          switch (element.opacityGradientDirection) {
+            case DotsGradientDirection.topToBottom:
+              t = heightPx > 1 ? y / (heightPx - 1) : 0.0;
+            case DotsGradientDirection.bottomToTop:
+              t = heightPx > 1 ? 1.0 - (y / (heightPx - 1)) : 0.0;
+            case DotsGradientDirection.leftToRight:
+              t = widthPx > 1 ? x / (widthPx - 1) : 0.0;
+            case DotsGradientDirection.rightToLeft:
+              t = widthPx > 1 ? 1.0 - (x / (widthPx - 1)) : 0.0;
+          }
+
+          // Lerp: opacity = start + (end - start) * t
+          final double opacity = start + (end - start) * t;
+          final int newAlpha = (pixel.a * opacity).round().clamp(0, 255);
+          resized.setPixel(
+            x,
+            y,
+            img.ColorRgba8(
+              pixel.r.toInt(),
+              pixel.g.toInt(),
+              pixel.b.toInt(),
+              newAlpha,
+            ),
+          );
+        }
+      }
+    }
+
+    // ── Gaussian edge blur ───────────────────────────────────────────────────
+    final int fadePx = (element.gaussianFadeMm * inchesPerMm * dpi).round();
+    if (fadePx > 0) {
+      img.gaussianBlur(resized, radius: fadePx);
+    }
+
+    return img.encodePng(resized);
+  } catch (e) {
+    onPhotoFailure?.call(element.assetPath, e);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cluster-photo element builder (T3.3)
+// Replaces the UnimplementedError stub from PR 1.
+// ---------------------------------------------------------------------------
+
+/// Builds a [pw.Widget] that positions a rasterized cluster-photo PNG via
+/// [pw.Positioned].
+///
+/// Uses [_clusterPhotoCache] keyed by the element's rendering parameters so
+/// the rasterization runs at most once per unique key per process lifetime.
+///
+/// Returns `null` (and calls [onPhotoFailure]) when the asset cannot be
+/// decoded or the rasterization fails.
+Future<pw.Widget?> _buildClusterPhotoElement(
+  DotsClusterPhotoElement element,
+  Future<Uint8List> Function(String assetPath) bytesResolver,
+  void Function(String, Object)? onPhotoFailure,
+  PdfPageFormat format,
+  DotsLogger logger,
+) async {
+  // ── Spread-width warning (R9) ────────────────────────────────────────────
+  const double kClusterSpreadWidthMm = 406.0;
+  const double minSpreadWidthPt = kClusterSpreadWidthMm * _kMmToPt;
+  if (format.width < minSpreadWidthPt - 1.0 /* 1 pt tolerance */) {
+    logger.warn(
+      'DotsAlbumSpreadPage.bodaCluster rendered on a page narrower '
+      'than 406 mm (got ${(format.width / _kMmToPt).toStringAsFixed(2)} mm); '
+      'cluster elements will be clipped.',
+    );
+  }
+
+  try {
+    final cacheKey = (
+      assetPath: element.assetPath,
+      widthPt: element.width,
+      heightPt: element.height,
+      opacityGradientStart: element.opacityGradientStart,
+      opacityGradientEnd: element.opacityGradientEnd,
+      opacityGradientDirection: element.opacityGradientDirection,
+      gaussianFadeMm: element.gaussianFadeMm,
+    );
+
+    Uint8List? bytes = _clusterPhotoCache[cacheKey];
+    if (bytes == null) {
+      bytes = await _rasterizeClusterPhoto(
+        element,
+        bytesResolver,
+        onPhotoFailure: onPhotoFailure,
+      );
+      if (bytes == null) return null; // bytesResolver failed; onPhotoFailure already invoked
+      _clusterPhotoCache[cacheKey] = bytes;
+    }
+
+    return pw.Positioned(
+      left: element.x,
+      top: element.y,
+      child: pw.Image(
+        pw.MemoryImage(bytes),
+        width: element.width,
+        height: element.height,
+      ),
+    );
+  } catch (e) {
+    onPhotoFailure?.call(element.assetPath, e);
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------

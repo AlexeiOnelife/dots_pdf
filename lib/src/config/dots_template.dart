@@ -1,9 +1,11 @@
 import 'package:meta/meta.dart';
 
+import '../api/album_boda_cluster_content.dart';
 import '../api/album_photo_arc_content.dart';
 import '../api/dots_album_type.dart';
 import '../render/cover_circles.dart';
 import '../render/layout/dots_layout_code.dart';
+import '../render/boda_cluster_layout.dart';
 import '../render/photo_arc_layout.dart';
 import '../render/layout/dots_slot_rect.dart';
 import '../render/polaroid_slot_position.dart';
@@ -1502,6 +1504,119 @@ class DotsAlbumSpreadPage extends DotsPage {
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: [...circles, ...ovals, ...texts],
+    );
+  }
+
+  /// Builds a boda-cluster spread page for [type] at [pageNumber].
+  ///
+  /// The page is the boda p.3 "Antes de empezar el viaje" layout: 7 cluster
+  /// photos, a two-line title (medium + medium italic), and a body block.
+  ///
+  /// Supported type: [DotsAlbumType.boda] only.
+  /// Throws [ArgumentError] for any other type.
+  /// Throws [RangeError] when `content.photoPaths.length != 7`.
+  ///
+  /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
+  ///         rightPageNumber = '${pageNumber + 1}'.
+  /// Footer: wordmark = 'Dots. Memories'.
+  factory DotsAlbumSpreadPage.bodaCluster({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required String contextLabelValue,
+    required AlbumBodaClusterContent content,
+  }) {
+    if (type != DotsAlbumType.boda) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'DotsAlbumSpreadPage.bodaCluster only supports DotsAlbumType.boda.',
+      );
+    }
+
+    if (content.photoPaths.length != kBodaClusterLayout.length) {
+      throw RangeError.value(
+        content.photoPaths.length,
+        'photoPaths.length',
+        'Expected ${kBodaClusterLayout.length} photo paths, '
+            'got ${content.photoPaths.length}.',
+      );
+    }
+
+    // ── 7 cluster photo elements ────────────────────────────────────────────
+    // Coordinates from kBodaClusterLayout are right-page-relative (origin at
+    // right-page gutter). Translate to spread coordinates by adding 203 mm.
+    const double rightPageOffsetMm = 203.0;
+
+    final photoElements = <DotsElement>[
+      for (var i = 0; i < kBodaClusterLayout.length; i++)
+        DotsClusterPhotoElement(
+          x: (kBodaClusterLayout[i].xMm + rightPageOffsetMm) * _mmToPt,
+          y: kBodaClusterLayout[i].yMm * _mmToPt,
+          assetPath: content.photoPaths[i],
+          width: kBodaClusterLayout[i].widthMm * _mmToPt,
+          height: kBodaClusterLayout[i].heightMm * _mmToPt,
+          opacityGradientStart: kBodaClusterLayout[i].opacityGradientStart,
+          opacityGradientEnd: kBodaClusterLayout[i].opacityGradientEnd,
+          opacityGradientDirection:
+              kBodaClusterLayout[i].opacityGradientDirection,
+          gaussianFadeMm: kBodaClusterLayout[i].gaussianFadeMm,
+          bleedTop: kBodaClusterLayout[i].bleedTop,
+        ),
+    ];
+
+    // ── 2 title text elements ───────────────────────────────────────────────
+    // Line 1: P22 Mackinac Medium 23pt at (19 mm + 203 mm offset, 43 mm).
+    // Line 2: P22 Mackinac Medium Italic 23pt at 27.6pt below line 1.
+    const double titleXMm = 19.0 + rightPageOffsetMm;
+    const double titleYMm = 43.0;
+    const double titleFontSize = 23.0;
+    // 27.6 pt below → convert to mm: 27.6 / _mmToPt
+    const double line2YMm = titleYMm + 27.6 / _mmToPt;
+
+    final textElements = <DotsElement>[
+      DotsTextElement(
+        x: titleXMm * _mmToPt,
+        y: titleYMm * _mmToPt,
+        value: content.title,
+        fontSize: titleFontSize,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextElement(
+        x: titleXMm * _mmToPt,
+        y: line2YMm * _mmToPt,
+        value: content.titleItalicLine,
+        fontSize: titleFontSize,
+        fontFamily: 'P22 Mackinac Medium Italic',
+      ),
+    ];
+
+    // ── 1 body text block ───────────────────────────────────────────────────
+    // Inter Book 9pt, 95 mm wide, lineHeight 1.2, left-aligned.
+    // Positioned below the title block; y = 43 mm + 27.6/mmToPt + 27.6/mmToPt + 5 mm gap.
+    const double bodyXMm = 19.0 + rightPageOffsetMm;
+    const double bodyYMm = line2YMm + 27.6 / _mmToPt + 5.0;
+    const double bodyWidthPt = 95.0 * _mmToPt;
+
+    final bodyElement = DotsTextBlockElement(
+      x: bodyXMm * _mmToPt,
+      y: bodyYMm * _mmToPt,
+      value: content.body,
+      fontSize: 9,
+      width: bodyWidthPt,
+      fontFamily: 'Inter',
+      textAlign: DotsTextAlign.left,
+      lineHeight: 1.2,
+    );
+
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: '$pageNumber',
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: '${pageNumber + 1}',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: [...photoElements, ...textElements, bodyElement],
     );
   }
 

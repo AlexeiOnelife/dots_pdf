@@ -1,138 +1,170 @@
 // Tests for buildBodaClusterPageFor builder (R4, R5, R7).
-// RED in PR 1: placeholders — AlbumBodaClusterContent, buildBodaClusterPageFor,
-// and DotsAlbumSpreadPage.bodaCluster are not yet built.
-// They will turn GREEN in PR 2 (T4/T5).
+import 'package:dots_pdf/dots_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+AlbumBodaClusterContent _content7({
+  String body = 'lorem',
+  String title = 'Antes de empezar',
+  String titleItalicLine = 'el viaje',
+}) =>
+    AlbumBodaClusterContent(
+      photoPaths: List.generate(7, (i) => 'photo_$i.jpg'),
+      title: title,
+      titleItalicLine: titleItalicLine,
+      body: body,
+    );
+
+DotsAlbumSpreadPage _buildPage({
+  DotsAlbumType type = DotsAlbumType.boda,
+  AlbumBodaClusterContent? content,
+  int pageNumber = 3,
+  String contextLabelValue = 'Ana & Luis',
+}) =>
+    buildBodaClusterPageFor(
+      type,
+      content ?? _content7(),
+      pageNumber: pageNumber,
+      contextLabelValue: contextLabelValue,
+    );
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
 
 void main() {
   group('buildBodaClusterPageFor — return type (R7) [PR 2]', () {
     test('returns DotsAlbumSpreadPage for DotsAlbumType.boda', () {
-      fail(
-        'PR 2: buildBodaClusterPageFor + AlbumBodaClusterContent not yet '
-        'implemented (T4.3, T4.1). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final result = _buildPage();
+      expect(result, isA<DotsAlbumSpreadPage>());
     });
   });
 
   group('buildBodaClusterPageFor — ArgumentError for non-boda types (R7) [PR 2]', () {
     test('throws ArgumentError for DotsAlbumType.parejas', () {
-      fail(
-        'PR 2: buildBodaClusterPageFor ArgumentError guard not yet '
-        'implemented (T4.3). Will be GREEN after slice 6 PR 2 lands.',
+      expect(
+        () => _buildPage(type: DotsAlbumType.parejas),
+        throwsArgumentError,
       );
     });
 
     test('throws ArgumentError for DotsAlbumType.hijos', () {
-      fail(
-        'PR 2: buildBodaClusterPageFor ArgumentError guard not yet '
-        'implemented (T4.3). Will be GREEN after slice 6 PR 2 lands.',
+      expect(
+        () => _buildPage(type: DotsAlbumType.hijos),
+        throwsArgumentError,
       );
     });
 
     test('throws ArgumentError for DotsAlbumType.individuales', () {
-      fail(
-        'PR 2: buildBodaClusterPageFor ArgumentError guard not yet '
-        'implemented (T4.3). Will be GREEN after slice 6 PR 2 lands.',
+      expect(
+        () => _buildPage(type: DotsAlbumType.individuales),
+        throwsArgumentError,
       );
     });
 
     test('throws ArgumentError for DotsAlbumType.otros', () {
-      fail(
-        'PR 2: buildBodaClusterPageFor ArgumentError guard not yet '
-        'implemented (T4.3). Will be GREEN after slice 6 PR 2 lands.',
+      expect(
+        () => _buildPage(type: DotsAlbumType.otros),
+        throwsArgumentError,
       );
     });
   });
 
   group('buildBodaClusterPageFor — RangeError for wrong photoPaths count (R7) [PR 2]', () {
     test('throws RangeError when photoPaths has 6 entries', () {
-      fail(
-        'PR 2: buildBodaClusterPageFor RangeError guard not yet '
-        'implemented (T4.3). Will be GREEN after slice 6 PR 2 lands.',
+      expect(
+        () => buildBodaClusterPageFor(
+          DotsAlbumType.boda,
+          AlbumBodaClusterContent(
+            photoPaths: List.generate(6, (i) => 'photo_$i.jpg'),
+            body: 'lorem',
+          ),
+          pageNumber: 3,
+          contextLabelValue: 'Test',
+        ),
+        throwsRangeError,
       );
     });
 
     test('throws RangeError when photoPaths has 8 entries', () {
-      fail(
-        'PR 2: buildBodaClusterPageFor RangeError guard not yet '
-        'implemented (T4.3). Will be GREEN after slice 6 PR 2 lands.',
+      expect(
+        () => buildBodaClusterPageFor(
+          DotsAlbumType.boda,
+          AlbumBodaClusterContent(
+            photoPaths: List.generate(8, (i) => 'photo_$i.jpg'),
+            body: 'lorem',
+          ),
+          pageNumber: 3,
+          contextLabelValue: 'Test',
+        ),
+        throwsRangeError,
       );
     });
   });
 
   group('DotsAlbumSpreadPage.bodaCluster — element count (R5) [PR 2]', () {
     test('produces exactly 10 elements', () {
-      fail(
-        'PR 2: DotsAlbumSpreadPage.bodaCluster factory not yet '
-        'implemented (T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final page = _buildPage();
+      expect(page.elements.length, 10);
     });
 
     test('contains exactly 7 DotsClusterPhotoElement instances', () {
-      fail(
-        'PR 2: DotsAlbumSpreadPage.bodaCluster factory not yet '
-        'implemented (T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final page = _buildPage();
+      expect(page.elements.whereType<DotsClusterPhotoElement>().length, 7);
     });
 
     test('contains exactly 2 DotsTextElement instances', () {
-      fail(
-        'PR 2: DotsAlbumSpreadPage.bodaCluster factory not yet '
-        'implemented (T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final page = _buildPage();
+      expect(page.elements.whereType<DotsTextElement>().length, 2);
     });
 
     test('contains exactly 1 DotsTextBlockElement', () {
-      fail(
-        'PR 2: DotsAlbumSpreadPage.bodaCluster factory not yet '
-        'implemented (T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final page = _buildPage();
+      expect(page.elements.whereType<DotsTextBlockElement>().length, 1);
     });
   });
 
   group('DotsAlbumSpreadPage.bodaCluster — content propagation (R5) [PR 2]', () {
     test('default title is "Antes de empezar"', () {
-      fail(
-        'PR 2: AlbumBodaClusterContent + DotsAlbumSpreadPage.bodaCluster '
-        'not yet implemented (T4.1, T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final page = _buildPage();
+      final textElements = page.elements.whereType<DotsTextElement>().toList();
+      expect(textElements.any((e) => e.value == 'Antes de empezar'), isTrue);
     });
 
     test('default titleItalicLine is "el viaje"', () {
-      fail(
-        'PR 2: AlbumBodaClusterContent + DotsAlbumSpreadPage.bodaCluster '
-        'not yet implemented (T4.1, T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final page = _buildPage();
+      final textElements = page.elements.whereType<DotsTextElement>().toList();
+      expect(textElements.any((e) => e.value == 'el viaje'), isTrue);
     });
 
     test('each cluster element assetPath matches photoPaths[i]', () {
-      fail(
-        'PR 2: DotsAlbumSpreadPage.bodaCluster zip logic not yet '
-        'implemented (T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final content = _content7();
+      final page = _buildPage(content: content);
+      final clusterElements =
+          page.elements.whereType<DotsClusterPhotoElement>().toList();
+      for (var i = 0; i < 7; i++) {
+        expect(clusterElements[i].assetPath, content.photoPaths[i]);
+      }
     });
   });
 
   group('DotsAlbumSpreadPage.bodaCluster — header trio (R5) [PR 2]', () {
     test('header.leftPageNumber equals pageNumber as string', () {
-      fail(
-        'PR 2: DotsAlbumSpreadPage.bodaCluster header not yet '
-        'implemented (T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final page = _buildPage(pageNumber: 5);
+      expect(page.header.leftPageNumber, '5');
     });
 
     test('header.rightPageNumber equals pageNumber+1 as string', () {
-      fail(
-        'PR 2: DotsAlbumSpreadPage.bodaCluster header not yet '
-        'implemented (T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final page = _buildPage(pageNumber: 5);
+      expect(page.header.rightPageNumber, '6');
     });
 
     test('header.centerLabel equals contextLabelValue', () {
-      fail(
-        'PR 2: DotsAlbumSpreadPage.bodaCluster header not yet '
-        'implemented (T4.2). Will be GREEN after slice 6 PR 2 lands.',
-      );
+      final page = _buildPage(contextLabelValue: 'Ana & Luis');
+      expect(page.header.centerLabel, 'Ana & Luis');
     });
   });
 }

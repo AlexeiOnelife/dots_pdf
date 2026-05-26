@@ -47,20 +47,20 @@ Chain strategy: feature-branch-chain
 
 ## Phase 3: Rendering Pipeline + Cache (PR 2)
 
-- [ ] 3.1 Add `_ClusterCacheKey` typedef and `_clusterPhotoCache` map to `lib/src/render/album_spread_page.dart` (separate from `_circleCache`); add `resetClusterPhotoCacheForTest()` and `clusterPhotoCacheSizeForTest()` hooks (D6, R3).
-- [ ] 3.2 Implement `_rasterizeClusterPhoto(...)` in `album_spread_page.dart`: decode via `bytesResolver`, resize at 300 DPI, per-pixel opacity gradient along `DotsGradientDirection`, Gaussian edge blur of `gaussianFadeMm` band, encode PNG. Short-circuit gradient pass when `opacityGradientStart == opacityGradientEnd` (D7, R2).
-- [ ] 3.3 Implement `_buildClusterPhotoElement(...)` in `album_spread_page.dart`: cache-key compose → cache lookup → `_rasterizeClusterPhoto` on miss → `pw.MemoryImage` in `pw.Positioned`; on failure call `onPhotoFailure` and return null. Replace UnimplementedError stub from 2.4 (D7, R2).
-- [ ] 3.4 Add spread-width runtime logger warning in `_buildClusterPhotoElement` when `template.pageSize.width < 406 mm` (R9, mirrors slice-5 pattern).
+- [x] 3.1 Add `_ClusterCacheKey` typedef and `_clusterPhotoCache` map to `lib/src/render/album_spread_page.dart` (separate from `_circleCache`); add `resetClusterPhotoCacheForTest()` and `clusterPhotoCacheSizeForTest()` hooks (D6, R3).
+- [x] 3.2 Implement `_rasterizeClusterPhoto(...)` in `album_spread_page.dart`: decode via `bytesResolver`, resize at 300 DPI, per-pixel opacity gradient along `DotsGradientDirection`, Gaussian edge blur of `gaussianFadeMm` band, encode PNG. Short-circuit gradient pass when `opacityGradientStart == opacityGradientEnd` (D7, R2).
+- [x] 3.3 Implement `_buildClusterPhotoElement(...)` in `album_spread_page.dart`: cache-key compose → cache lookup → `_rasterizeClusterPhoto` on miss → `pw.MemoryImage` in `pw.Positioned`; on failure call `onPhotoFailure` and return null. Replace UnimplementedError stub from 2.4 (D7, R2).
+- [x] 3.4 Add spread-width runtime logger warning in `_buildClusterPhotoElement` when `template.pageSize.width < 406 mm` (R9, mirrors slice-5 pattern).
 
 ## Phase 4: Factory + Builder + Content (PR 2)
 
-- [ ] 4.1 Create `lib/src/api/album_boda_cluster_content.dart`: `AlbumBodaClusterContent` with `photoPaths`, `title` (default `'Antes de empezar'`), `titleItalicLine` (default `'el viaje'`), `body`; list equality on `photoPaths`; `==`/`hashCode` (D8, R4).
-- [ ] 4.2 Add `DotsAlbumSpreadPage.bodaCluster(...)` named factory to `lib/src/config/dots_template.dart`: `ArgumentError` for non-boda type, `RangeError` for `photoPaths.length != 7`; zip `photoPaths` against `kBodaClusterLayout`; produce 7 `DotsClusterPhotoElement` + 2 `DotsTextElement` (P22 Mackinac medium/medium-italic, 23pt/27.6pt) + 1 `DotsTextBlockElement` (Inter Book 9pt, 95 mm); set header trio + footer `'Dots. Memories'` (D3, D5, R5, R6).
-- [ ] 4.3 Create `lib/src/api/build_boda_cluster_page.dart`: `buildBodaClusterPageFor(type, content, {pageNumber, contextLabelValue})` with defense-in-depth `ArgumentError` + `RangeError`; delegates to `DotsAlbumSpreadPage.bodaCluster(...)` (D8, R7).
+- [x] 4.1 Create `lib/src/api/album_boda_cluster_content.dart`: `AlbumBodaClusterContent` with `photoPaths`, `title` (default `'Antes de empezar'`), `titleItalicLine` (default `'el viaje'`), `body`; list equality on `photoPaths`; `==`/`hashCode` (D8, R4).
+- [x] 4.2 Add `DotsAlbumSpreadPage.bodaCluster(...)` named factory to `lib/src/config/dots_template.dart`: `ArgumentError` for non-boda type, `RangeError` for `photoPaths.length != 7`; zip `photoPaths` against `kBodaClusterLayout`; produce 7 `DotsClusterPhotoElement` + 2 `DotsTextElement` (P22 Mackinac medium/medium-italic, 23pt/27.6pt) + 1 `DotsTextBlockElement` (Inter Book 9pt, 95 mm); set header trio + footer `'Dots. Memories'` (D3, D5, R5, R6).
+- [x] 4.3 Create `lib/src/api/build_boda_cluster_page.dart`: `buildBodaClusterPageFor(type, content, {pageNumber, contextLabelValue})` with defense-in-depth `ArgumentError` + `RangeError`; delegates to `DotsAlbumSpreadPage.bodaCluster(...)` (D8, R7).
 
 ## Phase 5: Exports + Verification (PR 2)
 
-- [ ] 5.1 Add two export lines to `lib/dots_pdf.dart`: `export 'src/api/album_boda_cluster_content.dart'` and `export 'src/api/build_boda_cluster_page.dart'` (D9, R10).
-- [ ] 5.2 Confirm `DotsGradientDirection` and `DotsClusterPhotoElement` ride existing barrel exports without additional lines (D9).
-- [ ] 5.3 Run full test suite; confirm all prior slice 1–5 tests still pass (R10 backwards-compatibility scenario).
-- [ ] 5.4 Run `dart analyze`; confirm zero warnings/errors.
+- [x] 5.1 Add two export lines to `lib/dots_pdf.dart`: `export 'src/api/album_boda_cluster_content.dart'` and `export 'src/api/build_boda_cluster_page.dart'` (D9, R10).
+- [x] 5.2 Confirm `DotsGradientDirection` and `DotsClusterPhotoElement` ride existing barrel exports without additional lines (D9).
+- [x] 5.3 Run full test suite; confirm all prior slice 1–5 tests still pass (R10 backwards-compatibility scenario).
+- [x] 5.4 Run `dart analyze`; confirm zero warnings/errors.
