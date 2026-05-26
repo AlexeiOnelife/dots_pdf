@@ -32,6 +32,11 @@ const double _kHeaderFontSize = 7.0;
 @visibleForTesting
 const double kHeaderFontSizeForTest = _kHeaderFontSize;
 
+/// Exposed for testing: the [DotsFontRole] used for the header/footer trio
+/// (page numbers, centre label, wordmark).
+@visibleForTesting
+const DotsFontRole kHeaderFontRoleForTest = DotsFontRole.interSemibold;
+
 // ---------------------------------------------------------------------------
 // Oval QR element constants (renderer-side; NOT exposed on DotsOvalQrElement)
 // ---------------------------------------------------------------------------
@@ -163,9 +168,7 @@ Future<pw.Page> buildAlbumSpreadPage({
   final children = <pw.Widget>[];
 
   // ── Header ──────────────────────────────────────────────────────────────
-  // TODO(inter-semibold): use DotsFontRole.interSemibold when the role is
-  // added — D6 follow-up (slice 3+).
-  final headerFont = fontResolver(DotsFontRole.inter);
+  final headerFont = fontResolver(DotsFontRole.interSemibold);
   final headerStyle = pw.TextStyle(
     font: headerFont,
     fontSize: _kHeaderFontSize,

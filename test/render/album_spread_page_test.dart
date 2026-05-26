@@ -7,7 +7,7 @@ import 'dart:typed_data';
 
 import 'package:dots_pdf/dots_pdf.dart';
 import 'package:dots_pdf/src/render/album_spread_page.dart'
-    show buildAlbumSpreadPage, kHeaderFontSizeForTest;
+    show buildAlbumSpreadPage, kHeaderFontRoleForTest, kHeaderFontSizeForTest;
 import 'package:file/local.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
@@ -263,9 +263,10 @@ void main() {
     });
 
     test('AlbumSpreadPage — header labels use Inter Semibold 7pt', () async {
-      // The font role used for header/footer is DotsFontRole.inter at 7pt.
-      // We verify via the fontResolver callback: it is called with DotsFontRole.inter
-      // for header/footer text.
+      // The font role used for header/footer is DotsFontRole.interSemibold at 7pt.
+      // We verify via the fontResolver callback and the exported constant.
+      expect(kHeaderFontRoleForTest, DotsFontRole.interSemibold);
+
       final calledRoles = <DotsFontRole>[];
       const page = DotsAlbumSpreadPage(
         pageNumber: 1,
@@ -287,8 +288,8 @@ void main() {
         onPhotoFailure: _ignorePhotoFailure,
         drawCropMarks: false,
       );
-      // All header/footer text uses DotsFontRole.inter.
-      expect(calledRoles, everyElement(equals(DotsFontRole.inter)));
+      // All header/footer text uses DotsFontRole.interSemibold.
+      expect(calledRoles, everyElement(equals(DotsFontRole.interSemibold)));
     });
 
     test('AlbumSpreadPage — null header fields are omitted without error',
