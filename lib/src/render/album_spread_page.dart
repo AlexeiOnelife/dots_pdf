@@ -327,6 +327,11 @@ Future<pw.Widget?> _buildElement({
         element: element,
         fontResolver: fontResolver,
       );
+
+    case DotsClusterPhotoElement():
+      throw UnimplementedError(
+        'DotsClusterPhotoElement rendering — part of slice 6 PR 2',
+      );
   }
 }
 

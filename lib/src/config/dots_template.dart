@@ -161,6 +161,26 @@ class DotsImageElement extends DotsElement {
       );
 }
 
+/// Gradient direction for elements that support an opacity gradient.
+///
+/// Used by [DotsClusterPhotoElement] to specify which direction the
+/// `opacityGradientStart` → `opacityGradientEnd` ramp runs across the element.
+/// This enum is intentionally kept separate from [DotsPolaroidElement.gradientRtl],
+/// which pre-dates it and uses a simpler bool API.
+enum DotsGradientDirection {
+  /// Opacity gradient runs from the top edge (start) to the bottom edge (end).
+  topToBottom,
+
+  /// Opacity gradient runs from the bottom edge (start) to the top edge (end).
+  bottomToTop,
+
+  /// Opacity gradient runs from the left edge (start) to the right edge (end).
+  leftToRight,
+
+  /// Opacity gradient runs from the right edge (start) to the left edge (end).
+  rightToLeft,
+}
+
 /// Alignment of text within a [DotsTextBlockElement].
 ///
 /// Maps 1-to-1 to `pw.TextAlign` internally; the public API does not
@@ -509,6 +529,112 @@ class DotsOvalQrElement extends DotsElement {
   @override
   int get hashCode =>
       Object.hash(x, y, ovalWidth, ovalHeight, qrPayload, caption);
+}
+
+/// A rectangular photo element with per-photo opacity gradient and Gaussian
+/// edge fade, for use in the boda-cluster spread layout.
+///
+/// Each [DotsClusterPhotoElement] carries its own opacity-gradient parameters
+/// (`opacityGradientStart`, `opacityGradientEnd`, `opacityGradientDirection`)
+/// plus a `gaussianFadeMm` edge-fade width (default `1.764` mm, matching the
+/// decorative-circle convention).
+///
+/// Sentinel semantics: when `opacityGradientStart == opacityGradientEnd` the
+/// renderer short-circuits the gradient pass and renders at uniform opacity.
+///
+/// All geometry fields are in PDF points (1 pt = 1/72 inch). Bleed flags
+/// match the [DotsImageElement] / [DotsPolaroidElement] convention.
+@immutable
+class DotsClusterPhotoElement extends DotsElement {
+  /// Creates a cluster-photo element.
+  const DotsClusterPhotoElement({
+    required super.x,
+    required super.y,
+    required this.assetPath,
+    required this.width,
+    required this.height,
+    this.opacityGradientStart = 1.0,
+    this.opacityGradientEnd = 1.0,
+    this.opacityGradientDirection = DotsGradientDirection.topToBottom,
+    this.gaussianFadeMm = 1.764,
+    this.bleedLeft = false,
+    this.bleedRight = false,
+    this.bleedTop = false,
+    this.bleedBottom = false,
+  });
+
+  /// Path or asset key resolvable by the caller-provided asset loader.
+  final String assetPath;
+
+  /// Render width in PDF points.
+  final double width;
+
+  /// Render height in PDF points.
+  final double height;
+
+  /// Opacity at the gradient start edge (0.0–1.0). Default `1.0`.
+  final double opacityGradientStart;
+
+  /// Opacity at the gradient end edge (0.0–1.0). Default `1.0`.
+  ///
+  /// When equal to [opacityGradientStart], the renderer short-circuits the
+  /// gradient pass (sentinel: no gradient, full uniform opacity).
+  final double opacityGradientEnd;
+
+  /// Which direction the opacity ramp runs across the element.
+  final DotsGradientDirection opacityGradientDirection;
+
+  /// Gaussian edge-fade width in millimetres. Default `1.764` mm.
+  ///
+  /// Kept in mm because the spec authors in mm; the renderer converts to
+  /// pixels at rasterization time (300 DPI).
+  final double gaussianFadeMm;
+
+  /// Whether the element extends into the bleed beyond its left edge.
+  final bool bleedLeft;
+
+  /// Whether the element extends into the bleed beyond its right edge.
+  final bool bleedRight;
+
+  /// Whether the element extends into the bleed above its top edge.
+  final bool bleedTop;
+
+  /// Whether the element extends into the bleed below its bottom edge.
+  final bool bleedBottom;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsClusterPhotoElement &&
+      other.x == x &&
+      other.y == y &&
+      other.assetPath == assetPath &&
+      other.width == width &&
+      other.height == height &&
+      other.opacityGradientStart == opacityGradientStart &&
+      other.opacityGradientEnd == opacityGradientEnd &&
+      other.opacityGradientDirection == opacityGradientDirection &&
+      other.gaussianFadeMm == gaussianFadeMm &&
+      other.bleedLeft == bleedLeft &&
+      other.bleedRight == bleedRight &&
+      other.bleedTop == bleedTop &&
+      other.bleedBottom == bleedBottom;
+
+  @override
+  int get hashCode => Object.hash(
+        x,
+        y,
+        assetPath,
+        width,
+        height,
+        opacityGradientStart,
+        opacityGradientEnd,
+        opacityGradientDirection,
+        gaussianFadeMm,
+        bleedLeft,
+        bleedRight,
+        bleedTop,
+        bleedBottom,
+      );
 }
 
 /// A polaroid-style photo card positioned at ([x], [y]) with explicit
