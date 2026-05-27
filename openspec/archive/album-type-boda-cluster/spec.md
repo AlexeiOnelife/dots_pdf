@@ -1,6 +1,6 @@
 # Specification: album-type-boda-cluster (Slice 6)
 
-**Status:** In Progress
+**Status:** Archived
 **Slice:** 6 (boda p.3 — "Antes de empezar el viaje")
 **Depends on:** slices 1–5 (all archived)
 

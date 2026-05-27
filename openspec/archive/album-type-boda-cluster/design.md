@@ -3,6 +3,7 @@
 **Series:** Album-type body-page closeout — boda p.3 cluster
 **Depends on:** slices 1–5 (all archived). This design picks up slice-1 deferred boda p.3 work.
 **Aligned with:** proposal.md (this folder).
+**Status:** Archived
 
 ---
 
@@ -99,13 +100,13 @@ class _BodaClusterAnchor {
 }
 
 const List<_BodaClusterAnchor> kBodaClusterLayout = <_BodaClusterAnchor>[
-  // Slot 1: 94.6, -7.8, 27.5×33.9, gradient bottomToTop 0→1, bleedTop true
+  // Slot 1: 94.6, -7.8, 27.5×33.9, gradient bottomToTop 1.0→0.1, bleedTop true
   // Slot 2: 86.3, 59.6, 5.0×5.8   (no gradient)
   // Slot 3: 90.0, 31.4, 20.3×24.7 (no gradient)
   // Slot 4: 87.4, 71.3, 12.8×15.2 (no gradient)
-  // Slot 5: 103.1, 88.9, 13.7×16.2, gradient topToBottom 1→0
-  // Slot 6: 90.4, 103.3, 9.0×10.6, gradient topToBottom 1→0
-  // Slot 7: 103.1, 116.6, 7.8×9.2, gradient topToBottom 1→0
+  // Slot 5: 103.1, 88.9, 13.7×16.2, gradient topToBottom 1.0→0.3
+  // Slot 6: 90.4, 103.3, 9.0×10.6, gradient topToBottom 1.0→0.3
+  // Slot 7: 103.1, 116.6, 7.8×9.2, gradient topToBottom 1.0→0.0
 ];
 
 @visibleForTesting

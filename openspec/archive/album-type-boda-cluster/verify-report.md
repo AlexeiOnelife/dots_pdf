@@ -1,13 +1,13 @@
 # Verify Report: album-type-boda-cluster (Slice 6)
 
 **Date:** 2026-05-26
-**Verdict:** PASS WITH WARNINGS
+**Verdict:** PASS WITH WARNINGS (all findings addressed in polish pass)
 
-| Severity | Count |
-|---|---|
-| CRITICAL | 0 |
-| WARNING | 2 |
-| SUGGESTION | 2 |
+| Severity | Count | Status |
+|---|---|---|
+| CRITICAL | 0 | — |
+| WARNING | 2 | Addressed |
+| SUGGESTION | 2 | Addressed |
 
 ### Test Evidence
 
@@ -29,6 +29,8 @@ The warning is emitted once per cluster element (7 times for a full boda p.3 pag
 
 **Fix:** Add `|| e is DotsClusterPhotoElement` to the existing `page.elements.any(...)` guard in `buildAlbumSpreadPage` and remove the per-element check from `_buildClusterPhotoElement`.
 
+**Status:** Fixed in polish pass.
+
 ### W2 (WARNING) — design.md D1 rationale has incorrect sentinel values
 
 Location: `openspec/changes/album-type-boda-cluster/design.md` line 51.
@@ -37,17 +39,23 @@ The D1 rationale states "slot 1 uses `(0.0, 1.0, bottomToTop)`; slots 5-7 use `(
 
 **Fix:** Update design.md D1 rationale to match the actual values shipped.
 
+**Status:** Fixed in polish pass.
+
 ### S1 (SUGGESTION) — Warning message clarity
 
 Location: `album_spread_page.dart:601`.
 
 The per-element warning message says "cluster elements will be clipped" without specifying which elements are actually at risk (only those whose `x + width > pageWidth`). Minor clarity issue.
 
+**Status:** Fixed in polish pass.
+
 ### S2 (SUGGESTION) — Intermediate mm round-trip in factory
 
 Location: `dots_template.dart:1574, 1597`.
 
 The factory uses `27.6 / _mmToPt` to convert pt to mm as an intermediate step before multiplying by `_mmToPt` again. Arithmetic is correct; working in pt throughout would be cleaner. Readability concern only.
+
+**Status:** Fixed in polish pass.
 
 ---
 
@@ -63,7 +71,7 @@ The factory uses `27.6 / _mmToPt` to convert pt to mm as an intermediate step be
 | R6 | PASS | All 7 slot gradient values verified against spec |
 | R7 | PASS | Defense-in-depth ArgumentError + RangeError |
 | R8 | PASS | All 5 exhaustiveness arms confirmed |
-| R9 | PASS (W1 noisiness) | Warning fires but 7× per page instead of 1× |
+| R9 | PASS | Warning fires (fixed noisiness in polish) |
 | R10 | PASS | 544 tests; 2 new exports verified |
 
 ---
@@ -84,4 +92,4 @@ The factory uses `27.6 / _mmToPt` to convert pt to mm as an intermediate step be
 
 ## Verdict
 
-**PASS WITH WARNINGS.** No CRITICAL issues. W1 is a real (though non-blocking) noisy-log issue. W2 is documentation drift. S1 + S2 are minor quality improvements.
+**PASS WITH WARNINGS. All findings addressed in polish pass.** No CRITICAL issues remain. W1 and W2 were documentation/log-noise issues fixed by moving warning guard to page level and updating design.md D1 rationale. S1 and S2 were code-quality improvements made to the implementation. Final state: all 544 tests passing, 0 analyze issues, all 22 task boxes closed.
