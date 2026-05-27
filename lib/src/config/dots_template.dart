@@ -639,6 +639,98 @@ class DotsClusterPhotoElement extends DotsElement {
       );
 }
 
+/// A rectangular photo element with signed rotation and rounded-rect clip,
+/// for use in the boda-halo radial spread layout (boda p.4).
+///
+/// [x] and [y] are the **unrotated** top-left coordinates in PDF points (pt).
+/// [width] and [height] are the unrotated bounding dimensions in pt.
+/// [angleDegrees] is a signed clockwise rotation in degrees; positive = CW.
+/// [cornerRadiusMm] is applied via [pw.ClipRRect]; default 6.0 mm.
+///
+/// This element carries NO white frame (unlike [DotsPolaroidElement]).
+/// The renderer applies:
+///   `pw.Positioned(left: x, top: y)` →
+///   `pw.Transform.rotate(angle: angleDegrees * pi/180, alignment: center)` →
+///   `pw.ClipRRect` → `pw.Image`.
+///
+/// Bleed flags follow the [DotsImageElement] / [DotsPolaroidElement] convention.
+@immutable
+class DotsRotatedPhotoElement extends DotsElement {
+  /// Creates a rotated photo element.
+  const DotsRotatedPhotoElement({
+    required super.x,
+    required super.y,
+    required this.assetPath,
+    required this.width,
+    required this.height,
+    required this.angleDegrees,
+    this.cornerRadiusMm = 6.0,
+    this.bleedLeft = false,
+    this.bleedRight = false,
+    this.bleedTop = false,
+    this.bleedBottom = false,
+  });
+
+  /// Path or asset key resolvable by the caller-provided asset loader.
+  final String assetPath;
+
+  /// Unrotated render width in PDF points.
+  final double width;
+
+  /// Unrotated render height in PDF points.
+  final double height;
+
+  /// Signed rotation angle in degrees. Positive = clockwise.
+  ///
+  /// The renderer converts to radians: `angleDegrees * pi / 180`.
+  final double angleDegrees;
+
+  /// Corner radius in millimetres applied via [pw.ClipRRect]. Default 6.0 mm.
+  final double cornerRadiusMm;
+
+  /// Whether the unrotated rect extends into the bleed beyond its left edge.
+  final bool bleedLeft;
+
+  /// Whether the unrotated rect extends into the bleed beyond its right edge.
+  final bool bleedRight;
+
+  /// Whether the unrotated rect extends into the bleed above its top edge.
+  final bool bleedTop;
+
+  /// Whether the unrotated rect extends into the bleed below its bottom edge.
+  final bool bleedBottom;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsRotatedPhotoElement &&
+      other.x == x &&
+      other.y == y &&
+      other.assetPath == assetPath &&
+      other.width == width &&
+      other.height == height &&
+      other.angleDegrees == angleDegrees &&
+      other.cornerRadiusMm == cornerRadiusMm &&
+      other.bleedLeft == bleedLeft &&
+      other.bleedRight == bleedRight &&
+      other.bleedTop == bleedTop &&
+      other.bleedBottom == bleedBottom;
+
+  @override
+  int get hashCode => Object.hash(
+        x,
+        y,
+        assetPath,
+        width,
+        height,
+        angleDegrees,
+        cornerRadiusMm,
+        bleedLeft,
+        bleedRight,
+        bleedTop,
+        bleedBottom,
+      );
+}
+
 /// A polaroid-style photo card positioned at ([x], [y]) with explicit
 /// [width] and [height] for the outer white frame, a signed rotation
 /// [angleDegrees] around the geometric centre, and an optional
@@ -1616,6 +1708,38 @@ class DotsAlbumSpreadPage extends DotsPage {
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: [...photoElements, ...textElements, bodyElement],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Named constructor — boda-halo spread (stub; body implemented in PR 2)
+  // ---------------------------------------------------------------------------
+
+  /// Builds the "Boda de Nombre&Nombre" radial halo title spread for
+  /// [DotsAlbumType.boda] (boda p.4).
+  ///
+  /// Throws [ArgumentError] for any `type != DotsAlbumType.boda`.
+  /// Throws [RangeError] if `content.photoPaths.length != 10`.
+  ///
+  /// **Implementation deferred to PR 2 (slice 7, phase 4).**
+  /// This declaration exists so the sealed [DotsElement] hierarchy can be
+  /// extended with [DotsRotatedPhotoElement] and all exhaustiveness arms can
+  /// compile in PR 1.
+  factory DotsAlbumSpreadPage.bodaHalo({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required String contextLabelValue,
+    required Object content,
+  }) {
+    if (type != DotsAlbumType.boda) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'DotsAlbumSpreadPage.bodaHalo only supports DotsAlbumType.boda.',
+      );
+    }
+    throw UnimplementedError(
+      'DotsAlbumSpreadPage.bodaHalo body is implemented in slice 7 PR 2.',
     );
   }
 

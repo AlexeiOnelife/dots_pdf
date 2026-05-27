@@ -341,6 +341,12 @@ Future<pw.Widget?> _buildElement({
         bytesResolver,
         onPhotoFailure,
       );
+
+    case DotsRotatedPhotoElement():
+      // Rendering implemented in slice 7 PR 2 (_buildRotatedPhotoElement).
+      throw UnimplementedError(
+        'DotsRotatedPhotoElement rendering — part of slice 7 PR 2',
+      );
   }
 }
 

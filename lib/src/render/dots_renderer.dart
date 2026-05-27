@@ -65,6 +65,11 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
               // DotsElementsPage, but the sealed switch requires
               // exhaustiveness. Collect the asset path anyway.
               paths.add(element.assetPath);
+            case DotsRotatedPhotoElement():
+              // Defensive arm: rotated photo elements are not expected on a
+              // DotsElementsPage, but the sealed switch requires
+              // exhaustiveness. Collect the asset path anyway.
+              paths.add(element.assetPath);
           }
         }
       case DotsLayoutPage():
@@ -91,6 +96,8 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
             case DotsOvalQrElement():
               break; // no-op: QR payloads are strings, not asset paths
             case DotsClusterPhotoElement():
+              paths.add(element.assetPath);
+            case DotsRotatedPhotoElement():
               paths.add(element.assetPath);
           }
         }
@@ -432,6 +439,11 @@ abstract class DotsRenderer {
         return null;
       case DotsClusterPhotoElement():
         // Cluster photo elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently (delegation pattern).
+        return null;
+      case DotsRotatedPhotoElement():
+        // Rotated photo elements are rendered by buildAlbumSpreadPage when they
         // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
         // not valid; skip silently (delegation pattern).
         return null;
