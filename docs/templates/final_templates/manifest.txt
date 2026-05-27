@@ -59,11 +59,3 @@ GENERAL EVENTOS | PDF 12 | Este documento corresponde a la parte inicial del Dot
 GENERAL EVENTOS | PDF 13 | Este documento corresponde a la parte Final del Dotbook Eventos General
   Drive: https://drive.google.com/file/d/1hC-6HyaxV4W_ArBi4CyHt-1Pa_40sjSu/view?usp=drive_link
   Local: pdf13_general_eventos_final.pdf
-
-GENERAL WEB | PDF 14 | Este documento corresponde a la parte inicial del Dotbook General Web
-  Drive: https://drive.google.com/file/d/1vfsAWDjOmMhQd9XxnfYBfRjQEK3aqHBc/view?usp=drive_link
-  Local: pdf14_general_web_inicial.pdf
-
-GENERAL WEB | PDF 15 | Este documento corresponde a la parte final del Dotbook General Web
-  Drive: https://drive.google.com/file/d/1SVBqFzpyFFTctAifHzfpEOpiuyjerLiJ/view?usp=drive_link
-  Local: pdf15_general_web_final.pdf
