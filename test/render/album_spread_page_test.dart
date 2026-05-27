@@ -7,7 +7,7 @@ import 'dart:typed_data';
 
 import 'package:dots_pdf/dots_pdf.dart';
 import 'package:dots_pdf/src/render/album_spread_page.dart'
-    show buildAlbumSpreadPage, kHeaderFontRoleForTest, kHeaderFontSizeForTest;
+    show buildAlbumSpreadPage, kHeaderFontSizeForTest;
 import 'package:file/local.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
@@ -262,34 +262,44 @@ void main() {
       expect(page.footer.wordmark, equals('Dots. Memories'));
     });
 
-    test('AlbumSpreadPage — header labels use Inter Semibold 7pt', () async {
-      // The font role used for header/footer is DotsFontRole.interSemibold at 7pt.
-      // We verify via the fontResolver callback and the exported constant.
-      expect(kHeaderFontRoleForTest, DotsFontRole.interSemibold);
+    // ── R3/W3 re-split — RED placeholders (PR 1) ──────────────────────────
+    // The original 'header labels use Inter Semibold 7pt' test is split into
+    // separate font and geometry assertions as required by R9. The header font
+    // changes to p22MackinacBook (9 pt) and the footer stays interSemibold
+    // (7 pt). These tests are RED in PR 1 because buildAlbumSpreadPage still
+    // uses the old inline chrome path. PR 2 (T7.1) replaces that path with
+    // buildPageChrome, turning all these tests GREEN.
 
-      final calledRoles = <DotsFontRole>[];
-      const page = DotsAlbumSpreadPage(
-        pageNumber: 1,
-        header: DotsSpreadHeader(
-          leftPageNumber: '1',
-          centerLabel: 'label',
-        ),
-        footer: DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      );
-      await buildAlbumSpreadPage(
-        format: _format,
-        page: page,
-        fontResolver: (role) {
-          calledRoles.add(role);
-          return null;
-        },
-        bytesResolver: (path) async => throw StateError('no bytes'),
-        logger: const DotsSilentLogger(),
-        onPhotoFailure: _ignorePhotoFailure,
-        drawCropMarks: false,
-      );
-      // All header/footer text uses DotsFontRole.interSemibold.
-      expect(calledRoles, everyElement(equals(DotsFontRole.interSemibold)));
+    test('album_spread_page — header text uses p22MackinacBook (re-split R3)',
+        () async {
+      // R9: after delegation to buildPageChrome, all header text widgets must
+      // use DotsFontRole.p22MackinacBook (not interSemibold).
+      fail('PR 2: font re-split not yet wired');
+    });
+
+    test('album_spread_page — footer text uses interSemibold (re-split W3)',
+        () async {
+      // R9: the footer wordmark widget must use DotsFontRole.interSemibold at
+      // 7 pt — unchanged from before, but now sourced from buildPageChrome.
+      fail('PR 2: font re-split not yet wired');
+    });
+
+    test('album_spread_page — header Y is 9 mm (regression)', () async {
+      // R2, R9: header top offset must be 9 * _mmToPt (was 8 mm — bug fix).
+      fail('PR 2: regression not yet fixed');
+    });
+
+    test('album_spread_page — footer is bottom-right 8 mm from edge (regression)',
+        () async {
+      // R4, R9: footer must be positioned with right: 8 * _mmToPt and
+      // bottom: 8 * _mmToPt (was page-centered — bug fix).
+      fail('PR 2: regression not yet fixed');
+    });
+
+    test('album_spread_page — cover page has no background widget', () async {
+      // R1: DotsAlbumSpreadPage.cover() pages must NOT receive a #fdfefd
+      // background from buildPageChrome. PR 2 (T7.1) adds a cover guard.
+      fail('PR 2: chrome delegation not yet wired');
     });
 
     test('AlbumSpreadPage — null header fields are omitted without error',
