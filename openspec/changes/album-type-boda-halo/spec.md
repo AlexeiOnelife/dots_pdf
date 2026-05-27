@@ -135,12 +135,15 @@ Right-page slots MUST carry positive `angleDegrees` matching the extracted post-
 AABB table (§2, `extracted_coordinates.md`). Left-page slots MUST carry the corresponding
 negated angles (mirror of R-slots).
 
-The AABB positions stored in the layout are the post-rotation axis-aligned bounding-box
-top-left coordinates derived from the PDF content stream. The element receives these as
-its `(x, y)` fields; the renderer positions the widget at those coordinates and then
-applies the rotation around the geometric center. This is MEDIUM-confidence data
-(accuracy ±0.5 mm); a dartdoc caveat MUST be included on the constant noting the
-MEDIUM confidence and deferred InDesign source verification.
+The layout stores UNROTATED top-left coordinates, pre-computed from the extracted
+post-rotation AABB positions via center-preserving rotation arithmetic (see design D1:
+`center = aabbTL + aabb/2`; `unrotatedTL = center − uniform/2`, where uniform =
+33.5 × 46.4 mm). The element receives the unrotated top-left as its `(x, y)` fields and
+the uniform dimensions as `(width, height)`; the renderer positions the widget at those
+coordinates and applies the rotation around the geometric center, which reproduces the
+original AABB placement. This is MEDIUM-confidence data (accuracy ±0.5 mm); a dartdoc
+caveat MUST be included on the constant noting the MEDIUM confidence and deferred
+InDesign source verification.
 
 Slot R5 and its mirror L5 MUST set `bleedBottom: true` (both extend below the page trim).
 
