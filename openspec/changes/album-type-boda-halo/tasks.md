@@ -64,8 +64,8 @@ Sequential within this phase. PRE-REQUISITE: Phase 1 complete (test files exist)
 
 PRE-REQUISITE: PR 1 merged. Tasks 3.1 and 3.2 are independent and can be authored in parallel.
 
-- [ ] 3.1 Implement `_buildRotatedPhotoElement(element, template, bytesResolver, onPhotoFailure)` in `lib/src/render/album_spread_page.dart`: decode photo via `bytesResolver`; on failure call `onPhotoFailure(assetPath)` and return `null`; wrap in `pw.Positioned(left: element.x, top: element.y)` → `pw.Transform.rotate(angle: element.angleDegrees * pi / 180, alignment: pw.Alignment.center)` → `pw.ClipRRect(horizontalRadius: element.cornerRadiusMm * _kMmToPt, verticalRadius: element.cornerRadiusMm * _kMmToPt)` → `pw.Image(width: element.width, height: element.height, fit: pw.BoxFit.cover)`; replace `UnimplementedError` stub from task 2.4 with this call (D2, R2 scenarios S6–S9).
-- [ ] 3.2 Extend the spread-width `pageSize.width < 406 mm` logger warning in `buildAlbumSpreadPage` to include `DotsRotatedPhotoElement` in the `.any(...)` guard — mirrors slice 5/6 pattern (R8 scenario S32).
+- [x] 3.1 Implement `_buildRotatedPhotoElement(element, template, bytesResolver, onPhotoFailure)` in `lib/src/render/album_spread_page.dart`: decode photo via `bytesResolver`; on failure call `onPhotoFailure(assetPath)` and return `null`; wrap in `pw.Positioned(left: element.x, top: element.y)` → `pw.Transform.rotate(angle: element.angleDegrees * pi / 180, alignment: pw.Alignment.center)` → `pw.ClipRRect(horizontalRadius: element.cornerRadiusMm * _kMmToPt, verticalRadius: element.cornerRadiusMm * _kMmToPt)` → `pw.Image(width: element.width, height: element.height, fit: pw.BoxFit.cover)`; replace `UnimplementedError` stub from task 2.4 with this call (D2, R2 scenarios S6–S9).
+- [x] 3.2 Extend the spread-width `pageSize.width < 406 mm` logger warning in `buildAlbumSpreadPage` to include `DotsRotatedPhotoElement` in the `.any(...)` guard — mirrors slice 5/6 pattern (R8 scenario S32).
 
 ---
 
@@ -73,9 +73,9 @@ PRE-REQUISITE: PR 1 merged. Tasks 3.1 and 3.2 are independent and can be authore
 
 PRE-REQUISITE: Phase 3 tasks complete. Tasks 4.1 and 4.3 can be done in parallel with 4.2 since the content VO and builder don't depend on each other's internals; 4.2 (factory body) depends on 4.1 (content VO) being defined.
 
-- [ ] 4.1 Create `lib/src/api/album_boda_halo_content.dart`: `AlbumBodaHaloContent` immutable value object with `photoPaths` (`List<String>`), `titleLine1` (default `'Boda de'`), `titleLine2` (required), `dateSubtitle` (required), `qrPayloadLeft` (required), `qrPayloadRight` (required), `qrCaptionLeftOverride` (`String?`, default `null`), `qrCaptionRightOverride` (`String?`, default `null`); `==`/`hashCode` with list equality on `photoPaths` (D5, R4 scenarios S15–S17).
-- [ ] 4.2 Complete `DotsAlbumSpreadPage.bodaHalo(...)` factory body in `lib/src/config/dots_template.dart`: throw `ArgumentError` for `type != DotsAlbumType.boda`; throw `RangeError` if `content.photoPaths.length != 10` before constructing any element; zip `content.photoPaths` against `kBodaHaloLayout` indices 0–9; R-slots (0–4): `x = anchor.xMm * _kMmToPt + 203 * _kMmToPt`; L-slots (5–9): `x = anchor.xMm * _kMmToPt`; produce 10 `DotsRotatedPhotoElement` + 2 `DotsOvalQrElement` (left x = 176 mm − ovalWidth/2, right x = 230 mm − ovalWidth/2, y = 190.87 mm, 25.841 × 43.127 mm, caption overrides from content win over defaults) + 3 `DotsTextElement` (title line 1 P22 Mackinac Medium 23 pt at (19 mm, 43 mm); title line 2 same style 5 mm below; date subtitle P22 Mackinac Book 9 pt / 10.8 pt 5 mm below line 2); set `header.leftPageNumber = '$pageNumber'`, `header.rightPageNumber = '${pageNumber + 1}'`, `header.centerLabel = contextLabelValue` (D4, R5 scenarios S18–S24).
-- [ ] 4.3 Create `lib/src/api/build_boda_halo_page.dart`: top-level `buildBodaHaloPageFor(DotsAlbumType type, AlbumBodaHaloContent content, {required int pageNumber, required String contextLabelValue})` with defense-in-depth `ArgumentError` for non-boda type and `RangeError` for `photoPaths.length != 10`; delegates to `DotsAlbumSpreadPage.bodaHalo(...)` (D5, R6 scenarios S25–S27).
+- [x] 4.1 Create `lib/src/api/album_boda_halo_content.dart`: `AlbumBodaHaloContent` immutable value object with `photoPaths` (`List<String>`), `titleLine1` (default `'Boda de'`), `titleLine2` (required), `dateSubtitle` (required), `qrPayloadLeft` (required), `qrPayloadRight` (required), `qrCaptionLeftOverride` (`String?`, default `null`), `qrCaptionRightOverride` (`String?`, default `null`); `==`/`hashCode` with list equality on `photoPaths` (D5, R4 scenarios S15–S17).
+- [x] 4.2 Complete `DotsAlbumSpreadPage.bodaHalo(...)` factory body in `lib/src/config/dots_template.dart`: throw `ArgumentError` for `type != DotsAlbumType.boda`; throw `RangeError` if `content.photoPaths.length != 10` before constructing any element; zip `content.photoPaths` against `kBodaHaloLayout` indices 0–9; R-slots (0–4): `x = anchor.xMm * _kMmToPt + 203 * _kMmToPt`; L-slots (5–9): `x = anchor.xMm * _kMmToPt`; produce 10 `DotsRotatedPhotoElement` + 2 `DotsOvalQrElement` (left x = 176 mm − ovalWidth/2, right x = 230 mm − ovalWidth/2, y = 190.87 mm, 25.841 × 43.127 mm, caption overrides from content win over defaults) + 3 `DotsTextElement` (title line 1 P22 Mackinac Medium 23 pt at (19 mm, 43 mm); title line 2 same style 5 mm below; date subtitle P22 Mackinac Book 9 pt / 10.8 pt 5 mm below line 2); set `header.leftPageNumber = '$pageNumber'`, `header.rightPageNumber = '${pageNumber + 1}'`, `header.centerLabel = contextLabelValue` (D4, R5 scenarios S18–S24).
+- [x] 4.3 Create `lib/src/api/build_boda_halo_page.dart`: top-level `buildBodaHaloPageFor(DotsAlbumType type, AlbumBodaHaloContent content, {required int pageNumber, required String contextLabelValue})` with defense-in-depth `ArgumentError` for non-boda type and `RangeError` for `photoPaths.length != 10`; delegates to `DotsAlbumSpreadPage.bodaHalo(...)` (D5, R6 scenarios S25–S27).
 
 ---
 
@@ -83,9 +83,9 @@ PRE-REQUISITE: Phase 3 tasks complete. Tasks 4.1 and 4.3 can be done in parallel
 
 Sequential; MUST follow phases 3 and 4.
 
-- [ ] 5.1 Add two export lines to `lib/dots_pdf.dart`: `export 'src/api/album_boda_halo_content.dart'` and `export 'src/api/build_boda_halo_page.dart'`; confirm `DotsRotatedPhotoElement` rides the existing `export 'src/config/dots_template.dart'` barrel without an additional line (D7, R9 scenario S34).
-- [ ] 5.2 Run full test suite; confirm all prior slice 1–6 tests pass unchanged (R9 scenario S33).
-- [ ] 5.3 Run `dart analyze`; confirm zero warnings/errors.
+- [x] 5.1 Add two export lines to `lib/dots_pdf.dart`: `export 'src/api/album_boda_halo_content.dart'` and `export 'src/api/build_boda_halo_page.dart'`; confirm `DotsRotatedPhotoElement` rides the existing `export 'src/config/dots_template.dart'` barrel without an additional line (D7, R9 scenario S34).
+- [x] 5.2 Run full test suite; confirm all prior slice 1–6 tests pass unchanged (R9 scenario S33).
+- [x] 5.3 Run `dart analyze`; confirm zero warnings/errors.
 
 ---
 

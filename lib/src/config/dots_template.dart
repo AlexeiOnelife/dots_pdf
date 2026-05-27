@@ -1,8 +1,10 @@
 import 'package:meta/meta.dart';
 
 import '../api/album_boda_cluster_content.dart';
+import '../api/album_boda_halo_content.dart';
 import '../api/album_photo_arc_content.dart';
 import '../api/dots_album_type.dart';
+import '../render/boda_halo_layout.dart';
 import '../render/cover_circles.dart';
 import '../render/layout/dots_layout_code.dart';
 import '../render/boda_cluster_layout.dart';
@@ -1721,15 +1723,19 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// Throws [ArgumentError] for any `type != DotsAlbumType.boda`.
   /// Throws [RangeError] if `content.photoPaths.length != 10`.
   ///
-  /// **Implementation deferred to PR 2 (slice 7, phase 4).**
-  /// This declaration exists so the sealed [DotsElement] hierarchy can be
-  /// extended with [DotsRotatedPhotoElement] and all exhaustiveness arms can
-  /// compile in PR 1.
+  /// Produces exactly 15 elements:
+  ///   - 10 [DotsRotatedPhotoElement] instances from [kBodaHaloLayout].
+  ///   - 2 [DotsOvalQrElement] instances for the gutter QR cards.
+  ///   - 3 [DotsTextElement] instances: title line 1, title line 2, date.
+  ///
+  /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
+  ///         rightPageNumber = '${pageNumber + 1}'.
+  /// Footer: wordmark = 'Dots. Memories'.
   factory DotsAlbumSpreadPage.bodaHalo({
     required DotsAlbumType type,
     required int pageNumber,
     required String contextLabelValue,
-    required Object content,
+    required AlbumBodaHaloContent content,
   }) {
     if (type != DotsAlbumType.boda) {
       throw ArgumentError.value(
@@ -1738,8 +1744,122 @@ class DotsAlbumSpreadPage extends DotsPage {
         'DotsAlbumSpreadPage.bodaHalo only supports DotsAlbumType.boda.',
       );
     }
-    throw UnimplementedError(
-      'DotsAlbumSpreadPage.bodaHalo body is implemented in slice 7 PR 2.',
+
+    if (content.photoPaths.length != 10) {
+      throw RangeError.value(
+        content.photoPaths.length,
+        'photoPaths.length',
+        'Expected 10 photo paths, got ${content.photoPaths.length}.',
+      );
+    }
+
+    // ── 10 rotated photo elements from kBodaHaloLayout ─────────────────────
+    // Indices 0–4 are R-slots (right-page-relative): add 203 mm offset.
+    // Indices 5–9 are L-slots (left-page-relative): no offset.
+    const double rightPageOffsetMm = 203.0;
+    // Uniform unrotated dimensions: 33.5 mm wide × 46.4 mm tall.
+    const double widthPt = 33.5 * _mmToPt;
+    const double heightPt = 46.4 * _mmToPt;
+
+    final photoElements = <DotsElement>[
+      for (var i = 0; i < kBodaHaloLayout.length; i++)
+        DotsRotatedPhotoElement(
+          x: (kBodaHaloLayout[i].xMm +
+                  (i < 5 ? rightPageOffsetMm : 0.0)) *
+              _mmToPt,
+          y: kBodaHaloLayout[i].yMm * _mmToPt,
+          assetPath: content.photoPaths[i],
+          width: widthPt,
+          height: heightPt,
+          angleDegrees: kBodaHaloLayout[i].angleDegrees,
+          bleedBottom: kBodaHaloLayout[i].bleedBottom,
+        ),
+    ];
+
+    // ── 2 oval QR elements at the bottom gutter ─────────────────────────────
+    // Oval dimensions reused from slice 5 (25.841 × 43.127 mm).
+    // Left QR centre x = 176 mm → TL x = 176 − 25.841/2 = 163.0795 mm.
+    // Right QR centre x = 230 mm → TL x = 230 − 25.841/2 = 217.0795 mm.
+    // y = 190.87 mm (caption-top interpretation, same as slice 5).
+    const double kOvalWidthMm = 25.841;
+    const double kOvalHeightMm = 43.127;
+    const double ovalYMm = 190.87;
+    const double ovalLeftXMm = 176.0 - kOvalWidthMm / 2.0;
+    const double ovalRightXMm = 230.0 - kOvalWidthMm / 2.0;
+
+    const String defaultLeftCaption = 'Vuestro álbum en digital';
+    const String defaultRightCaption =
+        'Escanea el QR para volver a ver el álbum y los vídeos';
+
+    final String leftCaption =
+        content.qrCaptionLeftOverride ?? defaultLeftCaption;
+    final String rightCaption =
+        content.qrCaptionRightOverride ?? defaultRightCaption;
+
+    final ovals = <DotsElement>[
+      DotsOvalQrElement(
+        x: ovalLeftXMm * _mmToPt,
+        y: ovalYMm * _mmToPt,
+        ovalWidth: kOvalWidthMm * _mmToPt,
+        ovalHeight: kOvalHeightMm * _mmToPt,
+        qrPayload: content.qrPayloadLeft,
+        caption: leftCaption,
+      ),
+      DotsOvalQrElement(
+        x: ovalRightXMm * _mmToPt,
+        y: ovalYMm * _mmToPt,
+        ovalWidth: kOvalWidthMm * _mmToPt,
+        ovalHeight: kOvalHeightMm * _mmToPt,
+        qrPayload: content.qrPayloadRight,
+        caption: rightCaption,
+      ),
+    ];
+
+    // ── 3 text elements (title line 1, title line 2, date subtitle) ─────────
+    // Title: P22 Mackinac Medium 23pt / 27.6pt leading at (19 mm, 43 mm)
+    // on the left page (no +203 mm offset — boda halo title is left-page only).
+    // Line 2: 27.6 pt below line 1 (23pt × 1.2 leading).
+    // Date: P22 Mackinac Book 9pt, 5 mm below line 2.
+    const double titleXMm = 19.0;
+    const double titleYMm = 43.0;
+    const double titleFontSize = 23.0;
+    const double titleLeadingPt = titleFontSize * 1.2; // 27.6 pt
+    const double line2YPt = titleYMm * _mmToPt + titleLeadingPt;
+    const double dateYPt = line2YPt + titleLeadingPt + 5.0 * _mmToPt;
+
+    final texts = <DotsElement>[
+      DotsTextElement(
+        x: titleXMm * _mmToPt,
+        y: titleYMm * _mmToPt,
+        value: content.titleLine1,
+        fontSize: titleFontSize,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextElement(
+        x: titleXMm * _mmToPt,
+        y: line2YPt,
+        value: content.titleLine2,
+        fontSize: titleFontSize,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextElement(
+        x: titleXMm * _mmToPt,
+        y: dateYPt,
+        value: content.dateSubtitle,
+        fontSize: 9.0,
+        fontFamily: 'P22 Mackinac Book',
+      ),
+    ];
+
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: '$pageNumber',
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: '${pageNumber + 1}',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: [...photoElements, ...ovals, ...texts],
     );
   }
 

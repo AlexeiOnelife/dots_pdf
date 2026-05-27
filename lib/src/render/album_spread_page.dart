@@ -246,7 +246,8 @@ Future<pw.Page> buildAlbumSpreadPage({
   if (page.elements.any((e) =>
           e is DotsPhotoCircleElement ||
           e is DotsOvalQrElement ||
-          e is DotsClusterPhotoElement) &&
+          e is DotsClusterPhotoElement ||
+          e is DotsRotatedPhotoElement) &&
       format.width < minSpreadWidthPt - 1.0 /* 1 pt tolerance */) {
     logger.warn(
       'DotsAlbumSpreadPage rendered on a page narrower than 406 mm '
@@ -343,9 +344,10 @@ Future<pw.Widget?> _buildElement({
       );
 
     case DotsRotatedPhotoElement():
-      // Rendering implemented in slice 7 PR 2 (_buildRotatedPhotoElement).
-      throw UnimplementedError(
-        'DotsRotatedPhotoElement rendering — part of slice 7 PR 2',
+      return _buildRotatedPhotoElement(
+        element: element,
+        bytesResolver: bytesResolver,
+        onPhotoFailure: onPhotoFailure,
       );
   }
 }
@@ -1098,6 +1100,56 @@ Future<pw.Widget?> _buildPolaroidElement({
       angle: angleRadians,
       alignment: pw.Alignment.center,
       child: body,
+    ),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Rotated photo helper (slice 7, T3.1)
+// ---------------------------------------------------------------------------
+
+/// Builds a `pw.Positioned` → `pw.Transform.rotate` → `pw.ClipRRect` →
+/// `pw.Image` widget tree for [element].
+///
+/// The element carries NO white frame (unlike [_buildPolaroidElement]).
+/// Rotation is center-preserving: `pw.Alignment.center` is used so the
+/// rendered AABB matches the original extracted AABB coordinates.
+///
+/// Returns `null` and calls [onPhotoFailure] when the asset cannot be
+/// decoded (same contract as `_buildImage` / `_buildPolaroidElement`).
+Future<pw.Widget?> _buildRotatedPhotoElement({
+  required DotsRotatedPhotoElement element,
+  required Future<Uint8List> Function(String assetPath) bytesResolver,
+  required void Function(String assetPath, Object error) onPhotoFailure,
+}) async {
+  final pw.MemoryImage image;
+  try {
+    final bytes = await bytesResolver(element.assetPath);
+    image = pw.MemoryImage(bytes);
+  } catch (error) {
+    onPhotoFailure(element.assetPath, error);
+    return null;
+  }
+
+  final double angleRadians = element.angleDegrees * pi / 180.0;
+  final double radiusPt = element.cornerRadiusMm * _kMmToPt;
+
+  return pw.Positioned(
+    left: element.x,
+    top: element.y,
+    child: pw.Transform.rotate(
+      angle: angleRadians,
+      alignment: pw.Alignment.center,
+      child: pw.ClipRRect(
+        horizontalRadius: radiusPt,
+        verticalRadius: radiusPt,
+        child: pw.Image(
+          image,
+          width: element.width,
+          height: element.height,
+          fit: pw.BoxFit.cover,
+        ),
+      ),
     ),
   );
 }
