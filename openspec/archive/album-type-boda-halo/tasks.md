@@ -1,10 +1,11 @@
 # Tasks: album-type-boda-halo (Slice 7)
 
-**Status:** Ready for apply
+**Status:** COMPLETED
 **Change:** album-type-boda-halo — boda p.4 radial photo halo title spread
-**Delivery strategy:** ask-on-risk → Chained PRs (feature-branch-chain)
+**Delivery strategy:** Chained PRs (feature-branch-chain)
 **Chain strategy:** feature-branch-chain
 **Base branch:** `add-album-type-layouts` (tracker)
+**Date Completed:** 2026-05-27
 
 ---
 

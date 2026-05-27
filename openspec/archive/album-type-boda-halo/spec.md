@@ -1,6 +1,6 @@
 # Specification: album-type-boda-halo (Slice 7)
 
-**Status:** Draft
+**Status:** Approved
 **Slice:** 7 (boda p.4 — "Boda de Nombre&Nombre" title spread)
 **Depends on:** slices 1–6 (all archived)
 

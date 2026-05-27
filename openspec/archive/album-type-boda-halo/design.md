@@ -2,8 +2,8 @@
 
 **Series:** Album-type body-page closeout — boda p.4 title spread
 **Depends on:** slices 1–6 (all archived). Reuses slice 5's `DotsOvalQrElement` and slice 3's rotation primitive.
-**Aligned with:** proposal.md (this folder); pre-locked decisions Q1–Q7.
-**Status:** Draft (interactive mode — design only, does not advance)
+**Status:** Approved
+**Date Archived:** 2026-05-27
 
 ---
 
