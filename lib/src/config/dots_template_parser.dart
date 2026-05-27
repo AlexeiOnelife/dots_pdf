@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import '../api/dots_album_type.dart';
 import '../render/layout/dots_layout_code.dart';
 import '../render/layout/dots_layout_requirements.dart';
 import '../render/layout/dots_layout_solver.dart';
@@ -40,7 +41,24 @@ class DotsTemplateParser {
   const DotsTemplateParser();
 
   /// Decodes [source] as UTF-8 JSON and parses the resulting tree.
-  DotsTemplate parse(String source) {
+  ///
+  /// The optional [variables] map is applied at parse time to every
+  /// [DotsTextElement] value via per-token [String.replaceAll]. Tokens
+  /// absent from the map are left as literal text. Passing `const {}`
+  /// (the default) is a guaranteed no-op.
+  ///
+  /// Documented token identifiers (reserved for caller use):
+  /// `{NombreDelAlbum}`, `{Protagonistas}`, `{tiempojuntos}`, `{Año}`,
+  /// `{DiadeMesdeAñodeFechaDeInicio}`, `{TítuloDelAlbum}`,
+  /// `{nombre firma}`, `{Nombre}`, `{NOMBRE PROTAS}`.
+  ///
+  /// Convention: for `individuales` albums callers map `{NOMBREHIJO}` to
+  /// the `{Nombre}` value; for `otros` albums they map it to the
+  /// `{Protagonistas}` value.
+  DotsTemplate parse(
+    String source, {
+    Map<String, String> variables = const {},
+  }) {
     final Object? decoded;
     try {
       decoded = jsonDecode(source);
@@ -53,16 +71,42 @@ class DotsTemplateParser {
         pointer: r'$',
       );
     }
-    return parseMap(decoded);
+    return parseMap(decoded, variables: variables);
   }
 
   /// Parses an already-decoded JSON map.
-  DotsTemplate parseMap(Map<String, dynamic> json) {
+  ///
+  /// See [parse] for documentation of the optional [variables] parameter.
+  DotsTemplate parseMap(
+    Map<String, dynamic> json, {
+    Map<String, String> variables = const {},
+  }) {
     final documentId = _requireString(json, 'documentId', r'$');
     final pageSize = _parsePageSize(
       _requireMap(json, 'pageSize', r'$'),
       r'$.pageSize',
     );
+
+    // Parse optional albumType field.
+    final albumTypeRaw = json['albumType'];
+    DotsAlbumType? albumType;
+    if (albumTypeRaw != null) {
+      if (albumTypeRaw is! String) {
+        throw const DotsConfigException(
+          'field "albumType" must be a string',
+          pointer: r'$.albumType',
+        );
+      }
+      try {
+        albumType = DotsAlbumType.values.byName(albumTypeRaw);
+      } on ArgumentError {
+        throw DotsConfigException(
+          'unknown albumType "$albumTypeRaw" '
+          '(expected one of: boda, parejas, hijos, individuales, otros)',
+          pointer: r'$.albumType',
+        );
+      }
+    }
 
     final hasPages = json.containsKey('pages');
     final hasPliegos = json.containsKey('pliegos');
@@ -90,11 +134,12 @@ class DotsTemplateParser {
             pointer: r'$.pliegos[' '$i' ']',
           );
         }
-        pliegos.add(_parsePliego(entry, r'$.pliegos[' '$i' ']'));
+        pliegos.add(_parsePliego(entry, r'$.pliegos[' '$i' ']', variables));
       }
       return DotsTemplate(
         documentId: documentId,
         pageSize: pageSize,
+        albumType: albumType,
         pliegos: List<DotsPliego>.unmodifiable(pliegos),
       );
     }
@@ -109,11 +154,12 @@ class DotsTemplateParser {
           pointer: r'$.pages[' '$i' ']',
         );
       }
-      pages.add(_parsePage(entry, r'$.pages[' '$i' ']'));
+      pages.add(_parsePage(entry, r'$.pages[' '$i' ']', variables));
     }
     return DotsTemplate(
       documentId: documentId,
       pageSize: pageSize,
+      albumType: albumType,
       pages: List<DotsPage>.unmodifiable(pages),
     );
   }
@@ -139,7 +185,11 @@ class DotsTemplateParser {
   /// `pageNumber` on the inner pages of a layout pliego is ignored —
   /// the renderer assigns the final page numbers from the pliego's
   /// position in the template.
-  DotsPliego _parsePliego(Map<String, dynamic> json, String at) {
+  DotsPliego _parsePliego(
+    Map<String, dynamic> json,
+    String at,
+    Map<String, String> variables,
+  ) {
     final pliegoNumber = _requireInt(json, 'pliegoNumber', at);
     final type = _requireString(json, 'type', at);
     switch (type) {
@@ -158,8 +208,8 @@ class DotsTemplateParser {
         };
         return DotsLayoutPliego(
           pliegoNumber: pliegoNumber,
-          left: _parsePage(leftWithPageNum, '$at.left'),
-          right: _parsePage(rightWithPageNum, '$at.right'),
+          left: _parsePage(leftWithPageNum, '$at.left', variables),
+          right: _parsePage(rightWithPageNum, '$at.right', variables),
         );
       case 'spreadImage':
         final spreadWidth = _requireDouble(json, 'spreadWidth', at);
@@ -207,10 +257,27 @@ class DotsTemplateParser {
     );
   }
 
-  DotsPage _parsePage(Map<String, dynamic> json, String at) {
+  DotsPage _parsePage(
+    Map<String, dynamic> json,
+    String at,
+    Map<String, String> variables,
+  ) {
     final pageNumber = _requireInt(json, 'pageNumber', at);
     final hasLayout = json.containsKey('layout');
     final hasElements = json.containsKey('elements');
+    final isAlbumSpread = json['type'] == 'albumSpread';
+
+    if (isAlbumSpread) {
+      if (hasLayout || hasElements) {
+        throw DotsConfigException(
+          'page with "type": "albumSpread" must not also declare '
+          '"layout" or "elements" (ambiguous page)',
+          pointer: at,
+        );
+      }
+      return _parseAlbumSpreadPage(json, at, pageNumber: pageNumber, variables: variables);
+    }
+
     if (hasLayout && hasElements) {
       throw DotsConfigException(
         'page must declare either "layout" or "elements", not both',
@@ -220,13 +287,14 @@ class DotsTemplateParser {
     if (hasLayout) {
       return _parseLayoutPage(json, at, pageNumber: pageNumber);
     }
-    return _parseElementsPage(json, at, pageNumber: pageNumber);
+    return _parseElementsPage(json, at, pageNumber: pageNumber, variables: variables);
   }
 
   DotsElementsPage _parseElementsPage(
     Map<String, dynamic> json,
     String at, {
     required int pageNumber,
+    Map<String, String> variables = const {},
   }) {
     final elementsRaw = _requireList(json, 'elements', at);
     final elements = <DotsElement>[];
@@ -238,10 +306,58 @@ class DotsTemplateParser {
           pointer: '$at.elements[$i]',
         );
       }
-      elements.add(_parseElement(entry, '$at.elements[$i]'));
+      elements.add(_parseElement(entry, '$at.elements[$i]', variables));
     }
     return DotsElementsPage(
       pageNumber: pageNumber,
+      elements: List<DotsElement>.unmodifiable(elements),
+    );
+  }
+
+  DotsAlbumSpreadPage _parseAlbumSpreadPage(
+    Map<String, dynamic> json,
+    String at, {
+    required int pageNumber,
+    Map<String, String> variables = const {},
+  }) {
+    final headerJson = _requireMap(json, 'header', at);
+    final footerJson = _requireMap(json, 'footer', at);
+
+    final header = DotsSpreadHeader(
+      leftPageNumber: _optionalString(headerJson, 'leftPageNumber'),
+      centerLabel: _optionalString(headerJson, 'centerLabel'),
+      rightPageNumber: _optionalString(headerJson, 'rightPageNumber'),
+    );
+
+    final wordmark = _requireString(footerJson, 'wordmark', '$at.footer');
+    final footer = DotsSpreadFooter(wordmark: wordmark);
+
+    // Parse optional elements array.
+    final elements = <DotsElement>[];
+    final elementsRaw = json['elements'];
+    if (elementsRaw != null) {
+      if (elementsRaw is! List) {
+        throw DotsConfigException(
+          'field "elements" must be an array',
+          pointer: '$at.elements',
+        );
+      }
+      for (var i = 0; i < elementsRaw.length; i++) {
+        final entry = elementsRaw[i];
+        if (entry is! Map<String, dynamic>) {
+          throw DotsConfigException(
+            'element entry must be an object',
+            pointer: '$at.elements[$i]',
+          );
+        }
+        elements.add(_parseElement(entry, '$at.elements[$i]', variables));
+      }
+    }
+
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: header,
+      footer: footer,
       elements: List<DotsElement>.unmodifiable(elements),
     );
   }
@@ -395,14 +511,31 @@ class DotsTemplateParser {
     }
   }
 
-  DotsElement _parseElement(Map<String, dynamic> json, String at) {
+  /// Applies per-token substitution to [raw].
+  ///
+  /// Iterates [variables] entries and calls [String.replaceAll] for each
+  /// key-value pair. Returns [raw] unchanged when [variables] is empty.
+  String _substitute(String raw, Map<String, String> variables) {
+    if (variables.isEmpty) return raw;
+    var result = raw;
+    for (final entry in variables.entries) {
+      result = result.replaceAll(entry.key, entry.value);
+    }
+    return result;
+  }
+
+  DotsElement _parseElement(
+    Map<String, dynamic> json,
+    String at,
+    Map<String, String> variables,
+  ) {
     final type = _requireString(json, 'type', at);
     switch (type) {
       case 'text':
         return DotsTextElement(
           x: _requireDouble(json, 'x', at),
           y: _requireDouble(json, 'y', at),
-          value: _requireString(json, 'value', at),
+          value: _substitute(_requireString(json, 'value', at), variables),
           fontSize: _requireDouble(json, 'fontSize', at),
           fontFamily: _optionalString(json, 'fontFamily'),
           colorHex: _optionalString(json, 'color'),

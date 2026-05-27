@@ -36,4 +36,5 @@ flutter:
     - assets/fonts/p22_mackinac/P22Mackinac-MedItalic_22.ttf
     - assets/fonts/inter/Inter-VariableFont_opsz,wght.ttf
     - assets/fonts/inter/Inter-Italic-VariableFont_opsz,wght.ttf
+    - assets/fonts/inter/Inter-SemiBold.ttf
     - assets/fonts/biro_plus/Biro-ScriptPlus-Regular-subset.ttf

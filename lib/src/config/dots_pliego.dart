@@ -194,5 +194,12 @@ DotsPage _withPageNumber(DotsPage page, int pageNumber) {
         photoAssetPaths: page.photoAssetPaths,
         captions: page.captions,
       );
+    case DotsAlbumSpreadPage():
+      return DotsAlbumSpreadPage(
+        pageNumber: pageNumber,
+        header: page.header,
+        footer: page.footer,
+        elements: page.elements,
+      );
   }
 }

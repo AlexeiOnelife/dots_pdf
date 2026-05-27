@@ -75,6 +75,11 @@ enum DotsFontRole {
   /// Inter, italic. Available for callers who need it.
   interItalic,
 
+  /// Inter SemiBold (static 600-weight TTF). Used for the header/footer
+  /// trio — page numbers, centre label, and wordmark — at 7 pt / 8.4 pt
+  /// leading. Inter v4.1 © Rasmus Andersson — SIL OFL 1.1.
+  interSemibold,
+
   /// Biro Script Plus, regular. Used only for the rotated signature
   /// on the dedication page.
   biroScriptPlus,
@@ -124,6 +129,7 @@ class DotsFontBundle {
     required Uint8List p22MackinacMediumItalic,
     required Uint8List inter,
     required Uint8List interItalic,
+    required Uint8List interSemibold,
     required Uint8List biroScriptPlus,
     bool assertSupportedFormats = true,
   }) {
@@ -133,6 +139,7 @@ class DotsFontBundle {
       _assertTrueType(p22MackinacMediumItalic, 'p22MackinacMediumItalic');
       _assertTrueType(inter, 'inter');
       _assertTrueType(interItalic, 'interItalic');
+      _assertTrueType(interSemibold, 'interSemibold');
       _assertTrueType(biroScriptPlus, 'biroScriptPlus');
     }
     return DotsFontBundle._(
@@ -141,6 +148,7 @@ class DotsFontBundle {
       p22MackinacMediumItalic: p22MackinacMediumItalic,
       inter: inter,
       interItalic: interItalic,
+      interSemibold: interSemibold,
       biroScriptPlus: biroScriptPlus,
     );
   }
@@ -151,6 +159,7 @@ class DotsFontBundle {
     required this.p22MackinacMediumItalic,
     required this.inter,
     required this.interItalic,
+    required this.interSemibold,
     required this.biroScriptPlus,
   });
 
@@ -168,6 +177,10 @@ class DotsFontBundle {
 
   /// Inter (variable font, italic).
   final Uint8List interItalic;
+
+  /// Inter SemiBold (static 600-weight TTF).
+  // Inter v4.1 © Rasmus Andersson — SIL OFL 1.1
+  final Uint8List interSemibold;
 
   /// Biro Script Plus, regular.
   final Uint8List biroScriptPlus;
@@ -193,6 +206,7 @@ class DotsFontBundle {
       load('assets/fonts/p22_mackinac/P22Mackinac-MedItalic_22.ttf'),
       load('assets/fonts/inter/Inter-VariableFont_opsz,wght.ttf'),
       load('assets/fonts/inter/Inter-Italic-VariableFont_opsz,wght.ttf'),
+      load('assets/fonts/inter/Inter-SemiBold.ttf'),
       load('assets/fonts/biro_plus/Biro-ScriptPlus-Regular-subset.ttf'),
     ]);
 
@@ -202,7 +216,8 @@ class DotsFontBundle {
       p22MackinacMediumItalic: results[2],
       inter: results[3],
       interItalic: results[4],
-      biroScriptPlus: results[5],
+      interSemibold: results[5],
+      biroScriptPlus: results[6],
     );
   }
 
@@ -219,6 +234,8 @@ class DotsFontBundle {
         return inter;
       case DotsFontRole.interItalic:
         return interItalic;
+      case DotsFontRole.interSemibold:
+        return interSemibold;
       case DotsFontRole.biroScriptPlus:
         return biroScriptPlus;
     }
@@ -230,8 +247,9 @@ class DotsFontBundle {
   ///   - `"P22 Mackinac"`, `"P22 Mackinac Medium"` → medium
   ///   - `"P22 Mackinac Book"` → book
   ///   - `"P22 Mackinac Medium Italic"`, `"P22 Mackinac Italic"` → medium italic
-  ///   - `"Inter"`, `"Inter Book"`, `"Inter Semibold"`, `"Inter Light"` → inter
+  ///   - `"Inter"`, `"Inter Book"`, `"Inter Light"` → inter
   ///   - `"Inter Italic"` → inter italic
+  ///   - `"Inter SemiBold"`, `"Inter Semibold"` → interSemibold
   ///   - `"Biro Script Plus"`, `"Biro"` → biroScriptPlus
   /// Unrecognised strings return `null` and let the caller fall back
   /// to the default font.
@@ -246,6 +264,9 @@ class DotsFontBundle {
       return DotsFontRole.p22MackinacMediumItalic;
     }
     if (f.startsWith('inter italic')) return DotsFontRole.interItalic;
+    // Check semibold before the generic 'inter' catch-all.
+    // Both "Inter SemiBold" and "Inter Semibold" lower-case to 'inter semibold'.
+    if (f == 'inter semibold') return DotsFontRole.interSemibold;
     if (f.startsWith('inter')) return DotsFontRole.inter;
     if (f.startsWith('biro')) return DotsFontRole.biroScriptPlus;
     return null;

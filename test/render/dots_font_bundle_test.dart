@@ -35,6 +35,8 @@ DotsFontBundle _loadRealBundle() {
     inter: _loadProjectFont('fonts/inter/Inter-VariableFont_opsz,wght.ttf'),
     interItalic:
         _loadProjectFont('fonts/inter/Inter-Italic-VariableFont_opsz,wght.ttf'),
+    interSemibold:
+        _loadProjectFont('fonts/inter/Inter-SemiBold.ttf'),
     biroScriptPlus:
         _loadProjectFont('fonts/biro_plus/Biro-ScriptPlus-Regular-subset.ttf'),
   );
@@ -71,6 +73,29 @@ void main() {
       expect(DotsFontBundle.roleFromFamily('Comic Sans'), isNull);
     });
 
+    test('roleFromFamily maps Inter SemiBold variants to interSemibold', () {
+      // Canonical casing from the design spec.
+      expect(
+        DotsFontBundle.roleFromFamily('Inter SemiBold'),
+        DotsFontRole.interSemibold,
+      );
+      // All-lowercase variant (used in JSON templates).
+      expect(
+        DotsFontBundle.roleFromFamily('inter semibold'),
+        DotsFontRole.interSemibold,
+      );
+      // Alternative casing "Inter Semibold" (both S/B variations lower identically).
+      expect(
+        DotsFontBundle.roleFromFamily('Inter Semibold'),
+        DotsFontRole.interSemibold,
+      );
+      // Must NOT fall through to the plain inter catch-all.
+      expect(
+        DotsFontBundle.roleFromFamily('Inter SemiBold'),
+        isNot(DotsFontRole.inter),
+      );
+    });
+
     test('bytesFor returns the matching field per role', () {
       final bundle = DotsFontBundle(
         p22MackinacMedium: Uint8List.fromList(<int>[1]),
@@ -78,6 +103,7 @@ void main() {
         p22MackinacMediumItalic: Uint8List.fromList(<int>[3]),
         inter: Uint8List.fromList(<int>[4]),
         interItalic: Uint8List.fromList(<int>[5]),
+        interSemibold: Uint8List.fromList(<int>[7]),
         biroScriptPlus: Uint8List.fromList(<int>[6]),
         assertSupportedFormats: false,
       );
@@ -92,6 +118,7 @@ void main() {
       );
       expect(bundle.bytesFor(DotsFontRole.inter).single, 4);
       expect(bundle.bytesFor(DotsFontRole.interItalic).single, 5);
+      expect(bundle.bytesFor(DotsFontRole.interSemibold).single, 7);
       expect(bundle.bytesFor(DotsFontRole.biroScriptPlus).single, 6);
     });
 
@@ -112,6 +139,7 @@ void main() {
           p22MackinacMediumItalic: ttfBytes,
           inter: ttfBytes,
           interItalic: ttfBytes,
+          interSemibold: ttfBytes,
           biroScriptPlus: ttfBytes,
         ),
         throwsA(
@@ -136,6 +164,7 @@ void main() {
           p22MackinacMediumItalic: ttfBytes,
           inter: junk,
           interItalic: ttfBytes,
+          interSemibold: ttfBytes,
           biroScriptPlus: ttfBytes,
         ),
         throwsA(isA<DotsConfigException>()),
@@ -153,6 +182,7 @@ void main() {
         p22MackinacMediumItalic: ttfBytes,
         inter: ttfBytes,
         interItalic: ttfBytes,
+        interSemibold: ttfBytes,
         biroScriptPlus: ttfBytes,
       );
     });
@@ -174,7 +204,15 @@ void main() {
       );
       expect(bundle.inter.lengthInBytes, greaterThan(100000));
       expect(bundle.interItalic.lengthInBytes, greaterThan(100000));
+      expect(bundle.interSemibold.lengthInBytes, greaterThan(10000));
       expect(bundle.biroScriptPlus.lengthInBytes, greaterThan(10000));
+    });
+
+    test('bytesFor(interSemibold) returns the same bytes as the field', () {
+      expect(
+        bundle.bytesFor(DotsFontRole.interSemibold),
+        same(bundle.interSemibold),
+      );
     });
 
     test('layout page with bundle renders larger PDF than without', () async {

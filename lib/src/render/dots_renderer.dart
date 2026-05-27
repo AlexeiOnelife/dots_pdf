@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 
 import '../config/dots_template.dart';
 import '../logging/dots_logger.dart';
+import 'album_spread_page.dart';
 import 'asset_loader.dart';
 import 'crop_marks.dart';
 import 'dots_font_bundle.dart';
@@ -39,12 +40,67 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
               paths.add(element.assetPath);
             case DotsSpreadImageElement():
               paths.add(element.assetPath);
+            case DotsPolaroidElement():
+              // Defensive arm: polaroid elements are not expected on a
+              // DotsElementsPage, but the sealed switch requires
+              // exhaustiveness. Collect the asset path anyway so the
+              // preload step doesn't silently skip it if one appears.
+              paths.add(element.assetPath);
             case DotsTextElement():
               break;
+            case DotsRotatedTextElement():
+              break;
+            case DotsTextBlockElement():
+              break;
+            case DotsDecorativeCircleElement():
+              break; // no-op: decorative circles have no asset path
+            case DotsPhotoCircleElement():
+              // Defensive arm: photo-circle elements are not expected on a
+              // DotsElementsPage but collect the asset path if one appears.
+              paths.add(element.assetPath);
+            case DotsOvalQrElement():
+              break; // no-op: QR payloads are strings, not asset paths
+            case DotsClusterPhotoElement():
+              // Defensive arm: cluster photo elements are not expected on a
+              // DotsElementsPage, but the sealed switch requires
+              // exhaustiveness. Collect the asset path anyway.
+              paths.add(element.assetPath);
+            case DotsRotatedPhotoElement():
+              // Defensive arm: rotated photo elements are not expected on a
+              // DotsElementsPage, but the sealed switch requires
+              // exhaustiveness. Collect the asset path anyway.
+              paths.add(element.assetPath);
           }
         }
       case DotsLayoutPage():
         paths.addAll(page.photoAssetPaths);
+      case DotsAlbumSpreadPage():
+        for (final element in page.elements) {
+          switch (element) {
+            case DotsImageElement():
+              paths.add(element.assetPath);
+            case DotsSpreadImageElement():
+              paths.add(element.assetPath);
+            case DotsPolaroidElement():
+              paths.add(element.assetPath);
+            case DotsTextElement():
+              break;
+            case DotsRotatedTextElement():
+              break;
+            case DotsTextBlockElement():
+              break;
+            case DotsDecorativeCircleElement():
+              break; // no-op: decorative circles have no asset path
+            case DotsPhotoCircleElement():
+              paths.add(element.assetPath);
+            case DotsOvalQrElement():
+              break; // no-op: QR payloads are strings, not asset paths
+            case DotsClusterPhotoElement():
+              paths.add(element.assetPath);
+            case DotsRotatedPhotoElement():
+              paths.add(element.assetPath);
+          }
+        }
     }
   }
 
@@ -260,6 +316,22 @@ abstract class DotsRenderer {
         return _buildElementsPage(format, page);
       case DotsLayoutPage():
         return _buildLayoutPage(format, page);
+      case DotsAlbumSpreadPage():
+        return buildAlbumSpreadPage(
+          format: format,
+          page: page,
+          fontResolver: fontFor,
+          bytesResolver: (path) async => assetLoaderFor(path).loadBytes(path),
+          logger: log,
+          onPhotoFailure: (assetPath, error) {
+            log.error(
+              'album-spread photo "$assetPath" could not be rendered; skipping',
+              error,
+            );
+            onPhotoSlotFailure?.call(assetPath, error);
+          },
+          drawCropMarks: drawCropMarks,
+        );
     }
   }
 
@@ -338,6 +410,43 @@ abstract class DotsRenderer {
         return _buildImage(element);
       case DotsSpreadImageElement():
         return _buildSpreadImage(element);
+      case DotsRotatedTextElement():
+        // These element types are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently to keep the sealed switch exhaustive.
+        return null;
+      case DotsTextBlockElement():
+        return null;
+      case DotsPolaroidElement():
+        // Polaroid elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently to keep the sealed switch exhaustive.
+        return null;
+      case DotsDecorativeCircleElement():
+        // Decorative circle elements are rendered by buildAlbumSpreadPage when
+        // they appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they
+        // are not valid; skip silently (delegation pattern).
+        return null;
+      case DotsPhotoCircleElement():
+        // Photo-circle elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently (delegation pattern).
+        return null;
+      case DotsOvalQrElement():
+        // Oval QR elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently (delegation pattern).
+        return null;
+      case DotsClusterPhotoElement():
+        // Cluster photo elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently (delegation pattern).
+        return null;
+      case DotsRotatedPhotoElement():
+        // Rotated photo elements are rendered by buildAlbumSpreadPage when they
+        // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
+        // not valid; skip silently (delegation pattern).
+        return null;
     }
   }
 
