@@ -34,7 +34,7 @@ Decision needed before apply: No (already decided — 2-PR feature-branch-chain)
 
 ### Phase 1 — Test Scaffolding (write all tests RED first)
 
-- [ ] **T1.1** Create `test/render/page_chrome_test.dart` — unit tests for `buildPageChrome` covering every spec scenario. Write a `fontResolver` spy that records `DotsFontRole` calls. Each test calls `buildPageChrome(chrome, format, fontResolver)` and inspects the returned `List<pw.Widget>`. Where `buildPageChrome` does not yet exist, guard with `fail('PR 2: buildPageChrome not implemented')`. Tests to include (one test per name from the acceptance list):
+- [x] **T1.1** Create `test/render/page_chrome_test.dart` — unit tests for `buildPageChrome` covering every spec scenario. Write a `fontResolver` spy that records `DotsFontRole` calls. Each test calls `buildPageChrome(chrome, format, fontResolver)` and inspects the returned `List<pw.Widget>`. Where `buildPageChrome` does not yet exist, guard with `fail('PR 2: buildPageChrome not implemented')`. Tests to include (one test per name from the acceptance list):
   - `buildPageChrome — background is first widget and has color #fdfefd` (R1, R8)
   - `buildPageChrome — header Y is 9 mm from top` (R2)
   - `buildPageChrome — header font is p22MackinacBook at 9 pt` (R2)
@@ -46,7 +46,7 @@ Decision needed before apply: No (already decided — 2-PR feature-branch-chain)
   - `buildPageChrome — suppressHeader omits header text widgets (background remains)` (R5)
   - `buildPageChrome — suppressFooter omits footer widget (background remains)` (R5)
 
-- [ ] **T1.2** Add chrome-presence group to `test/render/layout_page_render_test.dart` — integration tests for renderer wiring. Where `_buildLayoutPage` does not yet inject chrome, guard with `fail('PR 2: chrome wiring not yet implemented')`. Tests to include:
+- [x] **T1.2** Add chrome-presence group to `test/render/layout_page_render_test.dart` — integration tests for renderer wiring. Where `_buildLayoutPage` does not yet inject chrome, guard with `fail('PR 2: chrome wiring not yet implemented')`. Tests to include:
   - `DotsLayoutPage render — chrome present: background + header + footer` (R1, R2, R8)
   - `DotsLayoutPage render — bleedTop slot suppresses header; background present` (R5)
   - `DotsLayoutPage render — bleedBottom slot suppresses footer; background present` (R5)
@@ -54,15 +54,15 @@ Decision needed before apply: No (already decided — 2-PR feature-branch-chain)
   - `DotsElementsPage render — chrome always present unconditionally` (R1, R5)
   - `DotsTemplate — defaultChrome null is backward-compatible; no chrome rendered` (R10)
 
-- [ ] **T1.3** Add `DotsPageChrome` equality/hash group to `test/render/page_chrome_test.dart` (or a new `test/config/dots_page_chrome_test.dart` if preferred) — these tests are GREEN immediately once T2.1 ships the type:
+- [x] **T1.3** Add `DotsPageChrome` equality/hash group to `test/render/page_chrome_test.dart` (or a new `test/config/dots_page_chrome_test.dart` if preferred) — these tests are GREEN immediately once T2.1 ships the type:
   - `DotsPageChrome — equal instances satisfy == and share hashCode` (R6)
   - `DotsPageChrome — differing instances do not satisfy ==` (R6)
 
-- [ ] **T1.4** Add `contentHash` group to `test/config/dots_template_test.dart` — GREEN once T2.2 ships the field:
+- [x] **T1.4** Add `contentHash` group to `test/config/dots_template_test.dart` — GREEN once T2.2 ships the field:
   - `DotsTemplate — defaultChrome participates in contentHash` (R7)
   - `DotsTemplate — identical defaultChrome produces equal contentHash` (R7)
 
-- [ ] **T1.5** Modify `test/render/album_spread_page_test.dart` — re-split the R3/W3 assertions. The existing test at line 265 (`AlbumSpreadPage — header labels use Inter Semibold 7pt`) currently asserts `everyElement(equals(DotsFontRole.interSemibold))` over all resolved roles; this is now FALSE by design. Split into two separate tests:
+- [x] **T1.5** Modify `test/render/album_spread_page_test.dart` — re-split the R3/W3 assertions. The existing test at line 265 (`AlbumSpreadPage — header labels use Inter Semibold 7pt`) currently asserts `everyElement(equals(DotsFontRole.interSemibold))` over all resolved roles; this is now FALSE by design. Split into two separate tests:
   - `album_spread_page — header text uses p22MackinacBook (re-split R3)` — asserts header role is `p22MackinacBook`; guard with `fail('PR 2: font re-split not yet wired')` (R9)
   - `album_spread_page — footer text uses interSemibold (re-split W3)` — asserts footer role is `interSemibold`; guard with `fail('PR 2: font re-split not yet wired')` (R9)
   - `album_spread_page — header Y is 9 mm (regression)` — asserts `top == 9 * mmToPt`; guard with `fail('PR 2: regression not yet fixed')` (R2, R9)
@@ -74,23 +74,23 @@ Decision needed before apply: No (already decided — 2-PR feature-branch-chain)
 
 ### Phase 2 — DotsPageChrome Value Object (GREEN immediately)
 
-- [ ] **T2.1** Modify `lib/src/config/dots_template.dart` — add `@immutable class DotsPageChrome` following the existing `DotsSpreadHeader`/`DotsSpreadFooter` pattern. Six fields (all nullable or bool with default): `pageNumber`, `centerLabel`, `wordmark`, `isLeftPage` (default `true`), `suppressHeader` (default `false`), `suppressFooter` (default `false`). Hand-write `==` and `hashCode` over all six fields. Add full dartdoc on the class and every field (required by `public_member_api_docs` — build failure if omitted). Satisfies R6. Makes T1.3 GREEN.
+- [x] **T2.1** Modify `lib/src/config/dots_template.dart` — add `@immutable class DotsPageChrome` following the existing `DotsSpreadHeader`/`DotsSpreadFooter` pattern. Six fields (all nullable or bool with default): `pageNumber`, `centerLabel`, `wordmark`, `isLeftPage` (default `true`), `suppressHeader` (default `false`), `suppressFooter` (default `false`). Hand-write `==` and `hashCode` over all six fields. Add full dartdoc on the class and every field (required by `public_member_api_docs` — build failure if omitted). Satisfies R6. Makes T1.3 GREEN.
 
-- [ ] **T2.2** Modify `lib/src/config/dots_template.dart` — add nullable `DotsPageChrome? defaultChrome` parameter to the `DotsTemplate` `const` constructor with default `null`; add the corresponding `final` field; add `defaultChrome` to `int get contentHash` at lines 1977–1983 (`Object.hash(documentId, pageSize, albumType, defaultChrome, Object.hashAll(pages), Object.hashAll(pliegos))`). No existing constructor call breaks — the parameter is optional. Add dartdoc on the field. Satisfies R7. Makes T1.4 GREEN.
+- [x] **T2.2** Modify `lib/src/config/dots_template.dart` — add nullable `DotsPageChrome? defaultChrome` parameter to the `DotsTemplate` `const` constructor with default `null`; add the corresponding `final` field; add `defaultChrome` to `int get contentHash` at lines 1977–1983 (`Object.hash(documentId, pageSize, albumType, defaultChrome, Object.hashAll(pages), Object.hashAll(pliegos))`). No existing constructor call breaks — the parameter is optional. Add dartdoc on the field. Satisfies R7. Makes T1.4 GREEN.
 
 ---
 
 ### Phase 3 — Public Export
 
-- [ ] **T3.1** Modify `lib/dots_pdf.dart` — add `DotsPageChrome` to the `show` clause of the existing `export 'src/config/dots_template.dart'` line (or append a separate show if the export is a bare re-export). Confirm dartdoc is present on the symbol (already added in T2.1). Satisfies R6 export requirement. Run `flutter analyze` to confirm no `public_member_api_docs` violations.
+- [x] **T3.1** Modify `lib/dots_pdf.dart` — add `DotsPageChrome` to the `show` clause of the existing `export 'src/config/dots_template.dart'` line (or append a separate show if the export is a bare re-export). Confirm dartdoc is present on the symbol (already added in T2.1). Satisfies R6 export requirement. Run `flutter analyze` to confirm no `public_member_api_docs` violations.
 
 ---
 
 ### Phase 4 — PR 1 Verification
 
-- [ ] **T4.1** Run `flutter analyze` — must be clean. Confirm every new public symbol (`DotsPageChrome`, all its fields, `defaultChrome`) carries dartdoc. Zero new warnings beyond the pre-existing `prefer_initializing_formals` entries.
+- [x] **T4.1** Run `flutter analyze` — must be clean. Confirm every new public symbol (`DotsPageChrome`, all its fields, `defaultChrome`) carries dartdoc. Zero new warnings beyond the pre-existing `prefer_initializing_formals` entries.
 
-- [ ] **T4.2** Run `flutter test` — pre-existing tests (240+) must be GREEN. New tests from T1.1–T1.5 must compile; RED tests must fail with the intentional `fail('PR 2: ...')` messages, not with unexpected errors. Confirm the `DotsPageChrome` equality tests (T1.3) and `contentHash` tests (T1.4) are GREEN.
+- [x] **T4.2** Run `flutter test` — pre-existing tests (240+) must be GREEN. New tests from T1.1–T1.5 must compile; RED tests must fail with the intentional `fail('PR 2: ...')` messages, not with unexpected errors. Confirm the `DotsPageChrome` equality tests (T1.3) and `contentHash` tests (T1.4) are GREEN.
 
 **PR 1 ships here.** Commit and push the feature branch. Open PR targeting `main` (do NOT merge yet — PR 2 depends on this branch and will turn all RED tests GREEN before the feature branch itself merges to main).
 
