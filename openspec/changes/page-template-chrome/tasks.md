@@ -108,7 +108,7 @@ Decision needed before apply: No (already decided — 2-PR feature-branch-chain)
 
 ### Phase 5 — buildPageChrome Helper
 
-- [ ] **T5.1** Create `lib/src/render/page_chrome.dart` — define the module-private constant `_kMmToPt = 2.834645669` and the chrome geometry constants (annotated `@visibleForTesting` where re-exported for test inspection):
+- [x] **T5.1** Create `lib/src/render/page_chrome.dart` — define the module-private constant `_kMmToPt = 2.834645669` and the chrome geometry constants (annotated `@visibleForTesting` where re-exported for test inspection):
   - `_kBackgroundColor = PdfColor(0xFD / 255, 0xFE / 255, 0xFD / 255)` — `#fdfefd`
   - `_kHeaderTopMm = 9.0` — Y from top (fixes bug 1)
   - `_kHeaderBandHeightMm = 3.0`
@@ -120,7 +120,7 @@ Decision needed before apply: No (already decided — 2-PR feature-branch-chain)
   - `_kFooterFontSize = 7.0` (footer stays interSemibold 7 pt)
   - `_kFooterLineHeight = 1.2`
 
-- [ ] **T5.2** Implement `buildPageChrome` in `lib/src/render/page_chrome.dart` with signature:
+- [x] **T5.2** Implement `buildPageChrome` in `lib/src/render/page_chrome.dart` with signature:
   ```
   List<pw.Widget> buildPageChrome(
     DotsPageChrome chrome,
@@ -134,13 +134,13 @@ Decision needed before apply: No (already decided — 2-PR feature-branch-chain)
   3. If `!chrome.suppressFooter` and `chrome.wordmark` is non-null and non-empty: one `pw.Positioned` footer widget with `right: 8*mmToPt`, `bottom: 8*mmToPt`, font `DotsFontRole.interSemibold` at `_kFooterFontSize`, `textAlign: pw.TextAlign.right`. (R4)
   Satisfies R8. Turns T1.1 GREEN.
 
-- [ ] **T5.3** Add import of `page_chrome.dart` in `lib/src/render/dots_renderer.dart` — import the new helper so it is available for T6.1 and T6.2.
+- [x] **T5.3** Add import of `page_chrome.dart` in `lib/src/render/dots_renderer.dart` — import the new helper so it is available for T6.1 and T6.2.
 
 ---
 
 ### Phase 6 — Renderer Wiring
 
-- [ ] **T6.1** Modify `lib/src/render/dots_renderer.dart` — update `_buildLayoutPage` (currently lines 354–392):
+- [x] **T6.1** Modify `lib/src/render/dots_renderer.dart` — update `_buildLayoutPage` (currently lines 354–392):
   - Accept `DotsPageChrome? chrome` as a parameter (passed from `buildPage`).
   - After `solver.solve(...)` produces `slots`, derive suppression flags if `chrome != null`:
     ```
@@ -153,19 +153,19 @@ Decision needed before apply: No (already decided — 2-PR feature-branch-chain)
   - When `chrome == null`, skip all chrome logic — backward-compatible path (R10).
   Satisfies R1, R5. Turns `DotsLayoutPage` render tests (T1.2) GREEN.
 
-- [ ] **T6.2** Modify `lib/src/render/dots_renderer.dart` — update `_buildElementsPage` (currently lines 338–352):
+- [x] **T6.2** Modify `lib/src/render/dots_renderer.dart` — update `_buildElementsPage` (currently lines 338–352):
   - Accept `DotsPageChrome? chrome` as a parameter.
   - Derive `isLeftPage = (page.pageNumber ?? 0) % 2 == 1` (use `DotsElementsPage.pageNumber` if the field exists; verify field name against actual model before writing).
   - Prepend `buildPageChrome(chrome.copyWith(isLeftPage: isLeftPage), format, fontFor)` (or inline construction) to `children` when `chrome != null`. No suppression derivation — elements pages render chrome unconditionally (R5).
   - When `chrome == null`, skip chrome. Satisfies R1, R5. Turns `DotsElementsPage render` test (T1.2) GREEN.
 
-- [ ] **T6.3** Modify `lib/src/render/dots_renderer.dart` — update `buildPage` (lines 309–335) to read `template.defaultChrome` and pass it to both `_buildLayoutPage` and `_buildElementsPage`. The `DotsAlbumSpreadPage` branch already calls `buildAlbumSpreadPage` which will be updated in T7. Satisfies R7 flow. Enables T6.1 and T6.2.
+- [x] **T6.3** Modify `lib/src/render/dots_renderer.dart` — update `buildPage` (lines 309–335) to read `template.defaultChrome` and pass it to both `_buildLayoutPage` and `_buildElementsPage`. The `DotsAlbumSpreadPage` branch already calls `buildAlbumSpreadPage` which will be updated in T7. Satisfies R7 flow. Enables T6.1 and T6.2.
 
 ---
 
 ### Phase 7 — Album-Spread Delegation and Cleanup
 
-- [ ] **T7.1** Modify `lib/src/render/album_spread_page.dart` — delete the inline chrome block (lines 170–224 in the current file: header font setup, three `pw.Positioned` header children, footer child). Replace with:
+- [x] **T7.1** Modify `lib/src/render/album_spread_page.dart` — delete the inline chrome block (lines 170–224 in the current file: header font setup, three `pw.Positioned` header children, footer child). Replace with:
   1. Build a `DotsPageChrome` from the spread page's header/footer:
      - `pageNumber`: `page.header.leftPageNumber ?? page.header.rightPageNumber`
      - `isLeftPage`: `page.header.leftPageNumber != null`
@@ -177,23 +177,23 @@ Decision needed before apply: No (already decided — 2-PR feature-branch-chain)
   3. Import `page_chrome.dart` in this file.
   Satisfies R8 (single chrome site), R9. Turns the album_spread_page re-split tests (T1.5) GREEN.
 
-- [ ] **T7.2** Modify `lib/src/render/album_spread_page.dart` — delete the now-stale constants: `_kHeaderLeftX`, `_kHeaderY`, `_kFooterBottomMarginMm`, `_kHeaderFontSize`, `kHeaderFontSizeForTest`, `kHeaderFontRoleForTest` (lines 18–38). Remove the `_kHeaderLineHeight` constant if it was used only by the deleted block. Do NOT delete `_kMmToPt` if it is used elsewhere in the file (verify before deletion — the footer Y computation at line 213 uses it; after T7.1 this computation moves to `page_chrome.dart`). Verify that the re-split tests in T1.5 no longer import `kHeaderFontRoleForTest`; update their imports to use the equivalent constant from `page_chrome.dart` if one is exported `@visibleForTesting`, or remove the constant-based assertion entirely in favour of spy-based role inspection. Satisfies R8 (old path deleted), R9 cleanup.
+- [x] **T7.2** Modify `lib/src/render/album_spread_page.dart` — delete the now-stale constants: `_kHeaderLeftX`, `_kHeaderY`, `_kFooterBottomMarginMm`, `_kHeaderFontSize`, `kHeaderFontSizeForTest`, `kHeaderFontRoleForTest` (lines 18–38). Remove the `_kHeaderLineHeight` constant if it was used only by the deleted block. Do NOT delete `_kMmToPt` if it is used elsewhere in the file (verify before deletion — the footer Y computation at line 213 uses it; after T7.1 this computation moves to `page_chrome.dart`). Verify that the re-split tests in T1.5 no longer import `kHeaderFontRoleForTest`; update their imports to use the equivalent constant from `page_chrome.dart` if one is exported `@visibleForTesting`, or remove the constant-based assertion entirely in favour of spy-based role inspection. Satisfies R8 (old path deleted), R9 cleanup.
 
 ---
 
 ### Phase 8 — Documentation Fix
 
-- [ ] **T8.1** Modify `docs/templates/SPECS_interior.md` — update the footer alignment description from "center" (or "bottom-center") to "bottom-right, 8 mm from the right edge and 8 mm from the bottom edge." This aligns the spec document with the ground-truth PDF and the `buildPageChrome` implementation. Satisfies R4 (footer spec correctness).
+- [x] **T8.1** Modify `docs/templates/SPECS_interior.md` — update the footer alignment description from "center" (or "bottom-center") to "bottom-right, 8 mm from the right edge and 8 mm from the bottom edge." This aligns the spec document with the ground-truth PDF and the `buildPageChrome` implementation. Satisfies R4 (footer spec correctness).
 
 ---
 
 ### Phase 9 — PR 2 Verification
 
-- [ ] **T9.1** Run `flutter analyze` — must be clean. Confirm no orphaned imports in `album_spread_page.dart`. Confirm no `public_member_api_docs` violations on any new or modified exported symbol. Zero new warnings.
+- [x] **T9.1** Run `flutter analyze` — must be clean. Confirm no orphaned imports in `album_spread_page.dart`. Confirm no `public_member_api_docs` violations on any new or modified exported symbol. Zero new warnings.
 
-- [ ] **T9.2** Run `flutter test` — ALL tests GREEN, including every test written RED in PR 1 phases 1 and 5. Confirm test names match the acceptance list in the spec exactly (copy-paste comparison). Confirm the pre-existing 240+ tests still pass. Satisfies R10 (backward compatibility).
+- [x] **T9.2** Run `flutter test` — ALL tests GREEN, including every test written RED in PR 1 phases 1 and 5. Confirm test names match the acceptance list in the spec exactly (copy-paste comparison). Confirm the pre-existing 240+ tests still pass. Satisfies R10 (backward compatibility).
 
-- [ ] **T9.3** Confirm cover page safety — verify manually (or via the existing cover test) that `DotsAlbumSpreadPage.cover()` pages still render without any `#fdfefd` background. The `buildAlbumSpreadPage` delegation in T7.1 will pass `wordmark: ''` and `pageNumber: null`; `buildPageChrome` will render ONLY the background widget. Confirm this is acceptable per the spec (R1 says cover MUST NOT receive a background from the chrome helper). If the `cover()` factory path must be excluded, add a guard in T7.1 before calling `buildPageChrome` (`if (!page.isCover)` or equivalent — verify the cover discriminator field name in `dots_template.dart`). Update this task accordingly before apply. Satisfies R1 (cover exclusion).
+- [x] **T9.3** Confirm cover page safety — verify manually (or via the existing cover test) that `DotsAlbumSpreadPage.cover()` pages still render without any `#fdfefd` background. The `buildAlbumSpreadPage` delegation in T7.1 will pass `wordmark: ''` and `pageNumber: null`; `buildPageChrome` will render ONLY the background widget. Confirm this is acceptable per the spec (R1 says cover MUST NOT receive a background from the chrome helper). If the `cover()` factory path must be excluded, add a guard in T7.1 before calling `buildPageChrome` (`if (!page.isCover)` or equivalent — verify the cover discriminator field name in `dots_template.dart`). Update this task accordingly before apply. Satisfies R1 (cover exclusion).
 
 **PR 2 ships here.** Merge PR 2 into `page-template-chrome` feature branch. Then merge `page-template-chrome` into `main`. All tests are GREEN on main from this point.
 
