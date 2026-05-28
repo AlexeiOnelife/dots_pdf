@@ -1080,6 +1080,91 @@ class DotsSpreadFooter {
   int get hashCode => wordmark.hashCode;
 }
 
+/// Chrome configuration applied uniformly to every interior page.
+///
+/// Carries the six fields required to render a page's background, header
+/// trio (outer page-number, centre label, and the empty opposite column),
+/// and footer wordmark. All string fields are nullable — absent values are
+/// simply not drawn by [buildPageChrome].
+///
+/// Instances are `const`-constructible and compare by value. The `==` and
+/// `hashCode` implementations cover all six fields so that a [DotsTemplate]
+/// whose [DotsTemplate.defaultChrome] changes produces a different
+/// [DotsTemplate.contentHash].
+@immutable
+class DotsPageChrome {
+  /// Creates a page-chrome configuration.
+  ///
+  /// All parameters are optional. Omitting [pageNumber], [centerLabel], and
+  /// [wordmark] suppresses the corresponding drawn elements while the
+  /// full-bleed background is always rendered.
+  const DotsPageChrome({
+    this.pageNumber,
+    this.centerLabel,
+    this.wordmark,
+    this.isLeftPage = true,
+    this.suppressHeader = false,
+    this.suppressFooter = false,
+  });
+
+  /// Page-number string placed in the outer-left column on a left page, or
+  /// the outer-right column on a right page.
+  ///
+  /// A `null` value omits the page-number slot entirely.
+  final String? pageNumber;
+
+  /// Context-label string placed in the centre column of the header band.
+  ///
+  /// Typically the resolved value of `albumType.contextLabelToken` after
+  /// variable substitution. A `null` value omits the centre slot.
+  final String? centerLabel;
+
+  /// Wordmark string placed in the bottom-right footer corner.
+  ///
+  /// Typically `"Dots. Memories"`. A `null` or empty value suppresses the
+  /// footer entirely.
+  final String? wordmark;
+
+  /// Whether this page is a left (odd) page.
+  ///
+  /// When `true`, [pageNumber] is placed in the outer-left column and the
+  /// outer-right column is empty. When `false`, [pageNumber] appears in the
+  /// outer-right column.
+  final bool isLeftPage;
+
+  /// When `true`, all header text widgets (page-number and centre-label) are
+  /// omitted. The full-bleed background is still rendered.
+  ///
+  /// Set by the renderer when a photo slot bleeds into the header band.
+  final bool suppressHeader;
+
+  /// When `true`, the footer wordmark widget is omitted. The full-bleed
+  /// background is still rendered.
+  ///
+  /// Set by the renderer when a photo slot bleeds into the footer band.
+  final bool suppressFooter;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsPageChrome &&
+      other.pageNumber == pageNumber &&
+      other.centerLabel == centerLabel &&
+      other.wordmark == wordmark &&
+      other.isLeftPage == isLeftPage &&
+      other.suppressHeader == suppressHeader &&
+      other.suppressFooter == suppressFooter;
+
+  @override
+  int get hashCode => Object.hash(
+        pageNumber,
+        centerLabel,
+        wordmark,
+        isLeftPage,
+        suppressHeader,
+        suppressFooter,
+      );
+}
+
 /// An album-spread page whose top and bottom edges carry first-class
 /// structural [header] and [footer] declarations.
 ///
@@ -1922,6 +2007,7 @@ class DotsTemplate {
     required this.documentId,
     required this.pageSize,
     this.albumType,
+    this.defaultChrome,
     this.pages = _emptyPages,
     this.pliegos = _emptyPliegos,
   }) : assert(
@@ -1943,6 +2029,16 @@ class DotsTemplate {
   /// right-page top-center header label token. Defaults to `null` —
   /// absent from templates that do not use album-type spread pages.
   final DotsAlbumType? albumType;
+
+  /// Optional chrome applied to every interior page rendered from this
+  /// template.
+  ///
+  /// When `null` (the default), no background, header, or footer chrome is
+  /// added — preserving backward compatibility with templates authored before
+  /// this field existed. When non-null, [DotsRenderer] derives per-page
+  /// suppression flags from the solved layout slots and forwards a derived
+  /// [DotsPageChrome] to [buildPageChrome].
+  final DotsPageChrome? defaultChrome;
 
   /// Page-level content. Empty when [pliegos] is the source of truth.
   final List<DotsPage> pages;
@@ -1978,6 +2074,7 @@ class DotsTemplate {
         documentId,
         pageSize,
         albumType,
+        defaultChrome,
         Object.hashAll(pages),
         Object.hashAll(pliegos),
       );

@@ -174,4 +174,67 @@ void main() {
       expect(_hasPdfMagic(bytes), isTrue);
     });
   });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // T1.2 — Chrome-presence integration tests (RED in PR 1, GREEN in PR 2)
+  //
+  // These tests are intentional RED placeholders. The renderer wiring that
+  // reads DotsTemplate.defaultChrome and calls buildPageChrome is implemented
+  // in PR 2 (tasks T6.1–T6.3). Each test body calls fail() so the suite
+  // compiles cleanly but the tests fail with the expected PR-2 message.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('Chrome-presence — renderer integration (PR 2 wiring)', () {
+    test('DotsLayoutPage render — chrome present: background + header + footer',
+        () {
+      // R1, R2, R8: when defaultChrome is non-null the rendered page stack
+      // must have a full-bleed #fdfefd background as its first child, header
+      // text widgets, and a footer wordmark widget.
+      // In PR 2: render a DotsLayoutPage with defaultChrome set and walk the
+      // pw.Stack children to assert background color, header positions, and
+      // footer presence.
+      fail('PR 2: chrome wiring not yet implemented');
+    });
+
+    test(
+        'DotsLayoutPage render — bleedTop slot suppresses header; '
+        'background present', () {
+      // R5: a slot with bleedTop:true and yMm < geometry.headerBandMm causes
+      // the renderer to derive suppressHeader:true. The header text widgets
+      // must be absent but the #fdfefd background must still be present.
+      fail('PR 2: chrome wiring not yet implemented');
+    });
+
+    test(
+        'DotsLayoutPage render — bleedBottom slot suppresses footer; '
+        'background present', () {
+      // R5: a slot with bleedBottom:true and yMm+heightMm > liveAreaBottomMm
+      // causes suppressFooter:true. The footer wordmark must be absent but the
+      // background must still be present.
+      fail('PR 2: chrome wiring not yet implemented');
+    });
+
+    test('DotsLayoutPage render — no bleed slots: header and footer both render',
+        () {
+      // R5: when no slots carry bleed flags, both header and footer are present
+      // in addition to the background widget.
+      fail('PR 2: chrome wiring not yet implemented');
+    });
+
+    test('DotsElementsPage render — chrome always present unconditionally', () {
+      // R5: DotsElementsPage always renders chrome (background + header +
+      // footer) unconditionally regardless of element positions.
+      // In PR 2: render with defaultChrome set; assert all three chrome layers.
+      fail('PR 2: chrome wiring not yet implemented');
+    });
+
+    test(
+        'DotsTemplate — defaultChrome null is backward-compatible; '
+        'no chrome rendered', () {
+      // R10: a template with defaultChrome:null must produce a page stack with
+      // no #fdfefd background widget — identical output to pre-change behavior.
+      // In PR 2: render with defaultChrome:null; assert no background in stack.
+      fail('PR 2: chrome wiring not yet implemented');
+    });
+  });
 }
