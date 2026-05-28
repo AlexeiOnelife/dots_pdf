@@ -15,6 +15,7 @@ import 'layout/dots_layout_code.dart';
 import 'layout/dots_layout_solver.dart';
 import 'layout/dots_page_geometry.dart';
 import 'layout/dots_slot_rect.dart';
+import 'page_chrome.dart';
 
 /// Collects every asset path referenced by [pages] and loads their bytes
 /// using a [DotsAssetLoader] backed by [fileSystem] / [tmpDir] /
@@ -311,11 +312,12 @@ abstract class DotsRenderer {
       template.pageSize.width,
       template.pageSize.height,
     );
+    final chrome = template.defaultChrome;
     switch (page) {
       case DotsElementsPage():
-        return _buildElementsPage(format, page);
+        return _buildElementsPage(format, page, chrome);
       case DotsLayoutPage():
-        return _buildLayoutPage(format, page);
+        return _buildLayoutPage(format, page, chrome);
       case DotsAlbumSpreadPage():
         return buildAlbumSpreadPage(
           format: format,
@@ -338,8 +340,25 @@ abstract class DotsRenderer {
   Future<pw.Page> _buildElementsPage(
     PdfPageFormat format,
     DotsElementsPage page,
+    DotsPageChrome? chrome,
   ) async {
     final children = <pw.Widget>[];
+
+    // Chrome is rendered unconditionally on elements pages (no slot-based
+    // suppression — element boxes are in pt, not mm-bleed-flagged).
+    if (chrome != null) {
+      final isLeftPage = page.pageNumber % 2 == 1;
+      final derivedChrome = DotsPageChrome(
+        pageNumber: chrome.pageNumber,
+        centerLabel: chrome.centerLabel,
+        wordmark: chrome.wordmark,
+        isLeftPage: isLeftPage,
+        suppressHeader: chrome.suppressHeader,
+        suppressFooter: chrome.suppressFooter,
+      );
+      children.addAll(buildPageChrome(derivedChrome, format, fontFor));
+    }
+
     for (final element in page.elements) {
       final widget = await _buildElement(element);
       if (widget != null) children.add(widget);
@@ -354,6 +373,7 @@ abstract class DotsRenderer {
   Future<pw.Page> _buildLayoutPage(
     PdfPageFormat format,
     DotsLayoutPage page,
+    DotsPageChrome? chrome,
   ) async {
     // TODO(dots-pdf): make the page geometry pluggable per template;
     // for now the dotbook default is the only supported configuration.
@@ -362,6 +382,23 @@ abstract class DotsRenderer {
     final slots = solver.solve(page.layoutCode, geometry);
 
     final children = <pw.Widget>[];
+
+    // Derive suppression flags from the solved slot list and prepend chrome.
+    if (chrome != null) {
+      final suppressHeader = deriveSuppressHeaderForChrome(slots, geometry);
+      final suppressFooter = deriveSuppressFooterForChrome(slots, geometry);
+      final isLeftPage = page.pageNumber.isOdd;
+      final derivedChrome = DotsPageChrome(
+        pageNumber: chrome.pageNumber,
+        centerLabel: chrome.centerLabel,
+        wordmark: chrome.wordmark,
+        isLeftPage: isLeftPage,
+        suppressHeader: suppressHeader,
+        suppressFooter: suppressFooter,
+      );
+      children.addAll(buildPageChrome(derivedChrome, format, fontFor));
+    }
+
     var photoCursor = 0;
     for (final slot in slots) {
       switch (slot.kind) {
