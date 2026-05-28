@@ -34,13 +34,17 @@ the caller injects (page numbers, album name, dates, milestone titles).
 The same three-element header runs across every interior page; the footer
 is a single wordmark.
 
-| Element                  | Position                       | Style                                       |
-|--------------------------|--------------------------------|---------------------------------------------|
-| Top-left `Nº página`     | inside margin (binding side)   | Inter Semibold 7 pt / 8.4 pt                |
-| Top-center (left page)   | gutter-adjacent on left page   | `{NombreDelAlbum}` — P22 Mackinac book 9 pt / 10.8 pt |
-| Top-center (right page)  | gutter-adjacent on right page  | context label (see below)                   |
-| Top-right `Nº página`    | outside margin                 | Inter Semibold 7 pt / 8.4 pt                |
-| Bottom-center wordmark   | bottom margin                  | "Dots. Memories" — Inter Semibold 7 pt      |
+| Element                  | Position                                  | Style                                              |
+|--------------------------|-------------------------------------------|----------------------------------------------------|
+| Top outer-left `Nº página`  | outer margin (left page), 8 mm in, 9 mm down | P22 Mackinac **book** 9 pt / 10.8 pt              |
+| Top-center (left page)   | left page, gutter-adjacent column, 9 mm down | `{NombreDelAlbum}` — P22 Mackinac **book** 9 pt / 10.8 pt |
+| Top-center (right page)  | right page, gutter-adjacent column, 9 mm down | context label (see below) — P22 Mackinac **book** 9 pt / 10.8 pt |
+| Top outer-right `Nº página` | outer margin (right page), 8 mm in, 9 mm down | P22 Mackinac **book** 9 pt / 10.8 pt              |
+| **Bottom-right** wordmark   | outer margin (right page), 8 mm in, 8 mm up  | "Dots. Memories" — Inter Semibold 7 pt / 8.4 pt   |
+
+> Source of truth: `docs/templates/final_templates/pdf01_general_base.pdf` (page 1). The footer
+> moved from bottom-center to bottom-right; all header labels (page numbers
+> and centre labels alike) use P22 Mackinac *book* 9 pt — not Inter Semibold.
 
 ### Right-page top-center context label, per album type
 
