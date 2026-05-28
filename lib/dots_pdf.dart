@@ -6,13 +6,24 @@
 /// must not be imported by consumers.
 library;
 
+export 'src/api/album_before_you_start_content.dart'
+    show AlbumBeforeYouStartContent;
 export 'src/api/album_boda_cluster_content.dart' show AlbumBodaClusterContent;
+export 'src/api/album_boda_cover_content.dart' show AlbumBodaCoverContent;
 export 'src/api/album_boda_halo_content.dart' show AlbumBodaHaloContent;
 export 'src/api/album_collage_content.dart' show AlbumCollageContent;
 export 'src/api/album_cover_content.dart' show AlbumCoverContent;
+export 'src/api/album_eventos_closing_content.dart'
+    show AlbumEventosClosingContent;
 export 'src/api/album_photo_arc_content.dart' show AlbumPhotoArcContent;
+export 'src/api/album_photo_only_cover_content.dart'
+    show AlbumPhotoOnlyCoverContent;
+export 'src/api/album_qr_spread_content.dart'
+    show AlbumQrSpreadContent, AlbumQrSpreadPlacement;
 export 'src/api/album_simple_content.dart'
     show AlbumSimpleContent, DedicationContent, ClosingContent;
+export 'src/api/album_welcome_journey_content.dart'
+    show AlbumWelcomeJourneyContent;
 export 'src/api/build_boda_cluster_page.dart' show buildBodaClusterPageFor;
 export 'src/api/build_boda_halo_page.dart' show buildBodaHaloPageFor;
 export 'src/api/build_cover_page.dart' show buildCoverPageFor;

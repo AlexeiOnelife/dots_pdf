@@ -330,6 +330,13 @@ class _IsolatePageRenderer {
         // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
         // not valid; skip silently (delegation pattern).
         return null;
+      case DotsUnimplementedElement():
+        // Stub element from a category factory whose body lands in a later
+        // task. Throw with the responsible task in the message so the
+        // failure mode is loud and unambiguous.
+        throw UnimplementedError(
+          '${element.taskId}: ${element.message}',
+        );
     }
   }
 
