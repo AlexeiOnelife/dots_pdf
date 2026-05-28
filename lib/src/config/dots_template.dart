@@ -2010,17 +2010,11 @@ class DotsTemplate {
   const DotsTemplate({
     required this.documentId,
     required this.pageSize,
-    this.category,
+    this.category = DotsAlbumType.generalEventos,
     this.defaultChrome,
-    this.pages = _emptyPages,
     this.pliegos = _emptyPliegos,
-  }) : assert(
-          identical(pages, _emptyPages) ||
-              identical(pliegos, _emptyPliegos),
-          'DotsTemplate accepts pages OR pliegos, not both',
-        );
+  });
 
-  static const List<DotsPage> _emptyPages = <DotsPage>[];
   static const List<DotsPliego> _emptyPliegos = <DotsPliego>[];
 
   /// Stable identifier used for disk paths and cache lookups.
@@ -2029,14 +2023,15 @@ class DotsTemplate {
   /// Page geometry applied to every page.
   final DotsPageSize pageSize;
 
-  /// Optional category that selects mandatory front/back matter and the
-  /// right-page top-center header label token. Renamed from `albumType`
-  /// in Task 2 of the `final-render-refinement` series so the public
-  /// vocabulary matches the JSON field. Defaults to `null` for
-  /// programmatic templates that do not use category-driven spreads;
-  /// JSON callers receive `DotsAlbumType.generalEventos` when the
-  /// `category` JSON field is omitted (parser default — wired in PR 2).
-  final DotsAlbumType? category;
+  /// Category that selects mandatory front/back matter and the
+  /// right-page top-center header label token.
+  ///
+  /// Renamed from `albumType` in Task 2 of the `final-render-refinement`
+  /// series so the public vocabulary matches the JSON field. Non-nullable
+  /// with default [DotsAlbumType.generalEventos] — JSON callers that omit
+  /// the `category` field receive the same default (parser default — wired
+  /// in PR 2).
+  final DotsAlbumType category;
 
   /// Optional chrome applied to every interior page rendered from this
   /// template.
@@ -2048,22 +2043,16 @@ class DotsTemplate {
   /// [DotsPageChrome] to [buildPageChrome].
   final DotsPageChrome? defaultChrome;
 
-  /// Page-level content. Empty when [pliegos] is the source of truth.
-  final List<DotsPage> pages;
-
-  /// Pliego-level (2-page-spread) content. Empty when [pages] is the
-  /// source of truth.
+  /// Pliego-level (2-page-spread) content — the sole input shape for
+  /// renderable templates after Task 2 of the `final-render-refinement`
+  /// series. The page-level `pages` field was removed alongside the JSON
+  /// `pages` key in favour of always going through pliegos.
   final List<DotsPliego> pliegos;
 
-  /// Resolved list of pages the renderer consumes, regardless of
-  /// whether the template was authored page-level or pliego-level.
-  ///
-  /// When [pliegos] is non-empty, each pliego is flattened into its
-  /// two output pages with sequentially assigned page numbers; the
-  /// first pliego becomes pages 1 and 2, the second 3 and 4, and so
-  /// on. When [pages] is non-empty, the list is returned as-is.
+  /// Resolved list of pages the renderer consumes, flattened from
+  /// [pliegos]. The first pliego becomes pages 1 and 2, the second 3 and
+  /// 4, and so on.
   List<DotsPage> get effectivePages {
-    if (pliegos.isEmpty) return pages;
     final result = <DotsPage>[];
     var nextPageNumber = 1;
     for (final pliego in pliegos) {
@@ -2083,7 +2072,6 @@ class DotsTemplate {
         pageSize,
         category,
         defaultChrome,
-        Object.hashAll(pages),
         Object.hashAll(pliegos),
       );
 }
