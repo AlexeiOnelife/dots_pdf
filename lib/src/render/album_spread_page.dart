@@ -10,32 +10,11 @@ import '../config/dots_template.dart';
 import '../logging/dots_logger.dart';
 import 'crop_marks.dart';
 import 'dots_font_bundle.dart';
+import 'page_chrome.dart';
 
 // ---------------------------------------------------------------------------
 // Layout constants
 // ---------------------------------------------------------------------------
-
-/// Canonical top-left X for the left page-number label, in PDF points.
-const double _kHeaderLeftX = 8.0 * _kMmToPt;
-
-/// Y coordinate for all header labels (top of page), in PDF points.
-const double _kHeaderY = 8.0 * _kMmToPt;
-
-/// Y coordinate for the footer wordmark (bottom of page, ~8 mm from bottom).
-/// Computed at runtime from page height — see [buildAlbumSpreadPage].
-const double _kFooterBottomMarginMm = 8.0;
-
-/// Canonical font size for header and footer labels (7pt / 8.4pt leading).
-const double _kHeaderFontSize = 7.0;
-
-/// Exposed for testing: the header/footer font size in PDF points.
-@visibleForTesting
-const double kHeaderFontSizeForTest = _kHeaderFontSize;
-
-/// Exposed for testing: the [DotsFontRole] used for the header/footer trio
-/// (page numbers, centre label, wordmark).
-@visibleForTesting
-const DotsFontRole kHeaderFontRoleForTest = DotsFontRole.interSemibold;
 
 // ---------------------------------------------------------------------------
 // Oval QR element constants (renderer-side; NOT exposed on DotsOvalQrElement)
@@ -88,9 +67,6 @@ const double _kPolaroidFrameTopBorderMm = 5.5;
 /// caption-strip aesthetic (5.5 + 6.5 = 12 mm total vertical border vs
 /// 11 mm horizontal; inner photo is 97 × 122 mm for a 108 × 134 mm outer).
 const double _kPolaroidFrameBottomBorderMm = 6.5;
-
-/// Leading multiplier for header/footer text (8.4 / 7 = 1.2).
-const double _kHeaderLineHeight = 1.2;
 
 /// Millimetres → PDF points (1 pt = 1/72 inch; 1 inch = 25.4 mm).
 const double _kMmToPt = 2.834645669;
@@ -167,61 +143,20 @@ Future<pw.Page> buildAlbumSpreadPage({
 }) async {
   final children = <pw.Widget>[];
 
-  // ── Header ──────────────────────────────────────────────────────────────
-  final headerFont = fontResolver(DotsFontRole.interSemibold);
-  final headerStyle = pw.TextStyle(
-    font: headerFont,
-    fontSize: _kHeaderFontSize,
-    lineSpacing: _kHeaderFontSize * (_kHeaderLineHeight - 1),
-  );
-
+  // ── Chrome (background + header + footer) ────────────────────────────────
+  // Build a DotsPageChrome from the spread page's header/footer and delegate
+  // to the shared buildPageChrome helper. This is the single chrome site (R8).
+  // Cover pages set leftPageNumber/rightPageNumber both null and wordmark ''
+  // so buildPageChrome returns [] — cover stays chrome-free (R1).
   final leftNum = page.header.leftPageNumber;
-  if (leftNum != null && leftNum.isNotEmpty) {
-    children.add(pw.Positioned(
-      left: _kHeaderLeftX,
-      top: _kHeaderY,
-      child: pw.Text(leftNum, style: headerStyle),
-    ));
-  }
-
-  final centerLabel = page.header.centerLabel;
-  if (centerLabel != null && centerLabel.isNotEmpty) {
-    children.add(pw.Positioned(
-      left: 0,
-      right: 0,
-      top: _kHeaderY,
-      child: pw.Text(
-        centerLabel,
-        style: headerStyle,
-        textAlign: pw.TextAlign.center,
-      ),
-    ));
-  }
-
   final rightNum = page.header.rightPageNumber;
-  if (rightNum != null && rightNum.isNotEmpty) {
-    children.add(pw.Positioned(
-      right: _kHeaderLeftX,
-      top: _kHeaderY,
-      child: pw.Text(rightNum, style: headerStyle),
-    ));
-  }
-
-  // ── Footer ───────────────────────────────────────────────────────────────
-  final wordmark = page.footer.wordmark;
-  if (wordmark.isNotEmpty) {
-    final footerY = format.height - _kFooterBottomMarginMm * _kMmToPt;
-    children.add(pw.Positioned(
-      left: 0,
-      right: 0,
-      top: footerY,
-      child: pw.Text(
-        wordmark,
-        style: headerStyle,
-        textAlign: pw.TextAlign.center,
-      ),
-    ));
-  }
+  final spreadChrome = DotsPageChrome(
+    pageNumber: leftNum ?? rightNum,
+    isLeftPage: leftNum != null,
+    centerLabel: page.header.centerLabel,
+    wordmark: page.footer.wordmark,
+  );
+  children.addAll(buildPageChrome(spreadChrome, format, fontResolver));
 
   // ── Elements ─────────────────────────────────────────────────────────────
   for (final element in page.elements) {
