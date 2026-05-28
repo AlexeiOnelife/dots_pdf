@@ -139,7 +139,7 @@ class DotsTemplateParser {
       return DotsTemplate(
         documentId: documentId,
         pageSize: pageSize,
-        albumType: albumType,
+        category: albumType,
         pliegos: List<DotsPliego>.unmodifiable(pliegos),
       );
     }
@@ -159,7 +159,7 @@ class DotsTemplateParser {
     return DotsTemplate(
       documentId: documentId,
       pageSize: pageSize,
-      albumType: albumType,
+      category: albumType,
       pages: List<DotsPage>.unmodifiable(pages),
     );
   }

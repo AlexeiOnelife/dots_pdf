@@ -220,8 +220,8 @@ void main() {
       // Must not throw.
       final template = parser.parse(existingFixture);
 
-      // albumType must be null — no key in JSON.
-      expect(template.albumType, isNull);
+      // category must be null — no albumType key in JSON.
+      expect(template.category, isNull);
 
       // All existing fields must be intact.
       expect(template.documentId, equals('doc_existing'));

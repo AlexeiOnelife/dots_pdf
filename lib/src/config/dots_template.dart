@@ -1041,7 +1041,7 @@ class DotsSpreadHeader {
 
   /// Optional context-label string shown at the top-centre of the spread.
   ///
-  /// Typically the resolved value of `albumType.contextLabelToken` after
+  /// Typically the resolved value of `category.contextLabelToken` after
   /// parse-time variable substitution.
   final String? centerLabel;
 
@@ -1115,7 +1115,7 @@ class DotsPageChrome {
 
   /// Context-label string placed in the centre column of the header band.
   ///
-  /// Typically the resolved value of `albumType.contextLabelToken` after
+  /// Typically the resolved value of `category.contextLabelToken` after
   /// variable substitution. A `null` value omits the centre slot.
   final String? centerLabel;
 
@@ -2010,7 +2010,7 @@ class DotsTemplate {
   const DotsTemplate({
     required this.documentId,
     required this.pageSize,
-    this.albumType,
+    this.category,
     this.defaultChrome,
     this.pages = _emptyPages,
     this.pliegos = _emptyPliegos,
@@ -2029,10 +2029,14 @@ class DotsTemplate {
   /// Page geometry applied to every page.
   final DotsPageSize pageSize;
 
-  /// Optional album type that selects front/back matter and the
-  /// right-page top-center header label token. Defaults to `null` —
-  /// absent from templates that do not use album-type spread pages.
-  final DotsAlbumType? albumType;
+  /// Optional category that selects mandatory front/back matter and the
+  /// right-page top-center header label token. Renamed from `albumType`
+  /// in Task 2 of the `final-render-refinement` series so the public
+  /// vocabulary matches the JSON field. Defaults to `null` for
+  /// programmatic templates that do not use category-driven spreads;
+  /// JSON callers receive `DotsAlbumType.generalEventos` when the
+  /// `category` JSON field is omitted (parser default — wired in PR 2).
+  final DotsAlbumType? category;
 
   /// Optional chrome applied to every interior page rendered from this
   /// template.
@@ -2077,7 +2081,7 @@ class DotsTemplate {
   int get contentHash => Object.hash(
         documentId,
         pageSize,
-        albumType,
+        category,
         defaultChrome,
         Object.hashAll(pages),
         Object.hashAll(pliegos),

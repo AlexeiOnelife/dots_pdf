@@ -31,7 +31,7 @@ void main() {
 }
 ''';
         final template = parser.parse(json);
-        expect(template.albumType, equals(value));
+        expect(template.category, equals(value));
       });
     }
 
@@ -39,7 +39,7 @@ void main() {
 
     test('albumType absent yields null', () {
       final template = parser.parse(_baseJson);
-      expect(template.albumType, isNull);
+      expect(template.category, isNull);
     });
 
     // ---- unknown string raises DotsConfigException ----
