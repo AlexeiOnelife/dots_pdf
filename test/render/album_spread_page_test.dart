@@ -7,7 +7,8 @@ import 'dart:typed_data';
 
 import 'package:dots_pdf/dots_pdf.dart';
 import 'package:dots_pdf/src/render/album_spread_page.dart'
-    show buildAlbumSpreadPage, kHeaderFontSizeForTest;
+    show buildAlbumSpreadPage;
+import 'package:dots_pdf/src/render/page_chrome.dart';
 import 'package:file/local.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
@@ -273,33 +274,127 @@ void main() {
     test('album_spread_page — header text uses p22MackinacBook (re-split R3)',
         () async {
       // R9: after delegation to buildPageChrome, all header text widgets must
-      // use DotsFontRole.p22MackinacBook (not interSemibold).
-      fail('PR 2: font re-split not yet wired');
+      // use DotsFontRole.p22MackinacBook. We record every fontResolver call
+      // during a minimal non-cover spread render — those calls are dominated
+      // by the chrome since the page carries no body elements.
+      final calls = <DotsFontRole>[];
+      const page = DotsAlbumSpreadPage(
+        pageNumber: 5,
+        header: DotsSpreadHeader(
+          leftPageNumber: '5',
+          centerLabel: 'Dotbook',
+        ),
+        footer: DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      );
+      await buildAlbumSpreadPage(
+        format: _format,
+        page: page,
+        fontResolver: (role) {
+          calls.add(role);
+          return null;
+        },
+        bytesResolver: (path) async =>
+            throw StateError('no bytes resolver — path: $path'),
+        logger: const DotsSilentLogger(),
+        onPhotoFailure: _ignorePhotoFailure,
+        drawCropMarks: false,
+      );
+      expect(
+        calls,
+        contains(DotsFontRole.p22MackinacBook),
+        reason: 'header chrome must request p22MackinacBook',
+      );
     });
 
     test('album_spread_page — footer text uses interSemibold (re-split W3)',
         () async {
       // R9: the footer wordmark widget must use DotsFontRole.interSemibold at
       // 7 pt — unchanged from before, but now sourced from buildPageChrome.
-      fail('PR 2: font re-split not yet wired');
+      final calls = <DotsFontRole>[];
+      const page = DotsAlbumSpreadPage(
+        pageNumber: 5,
+        header: DotsSpreadHeader(
+          leftPageNumber: '5',
+          centerLabel: 'Dotbook',
+        ),
+        footer: DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      );
+      await buildAlbumSpreadPage(
+        format: _format,
+        page: page,
+        fontResolver: (role) {
+          calls.add(role);
+          return null;
+        },
+        bytesResolver: (path) async =>
+            throw StateError('no bytes resolver — path: $path'),
+        logger: const DotsSilentLogger(),
+        onPhotoFailure: _ignorePhotoFailure,
+        drawCropMarks: false,
+      );
+      expect(
+        calls,
+        contains(DotsFontRole.interSemibold),
+        reason: 'footer chrome must request interSemibold',
+      );
     });
 
     test('album_spread_page — header Y is 9 mm (regression)', () async {
-      // R2, R9: header top offset must be 9 * _mmToPt (was 8 mm — bug fix).
-      fail('PR 2: regression not yet fixed');
+      // R2, R9: after the migration, every spread-page header is positioned by
+      // buildPageChrome, so the chrome's header-Y constant is the regression
+      // surface. Asserting it pins the 8 mm → 9 mm bug fix.
+      expect(
+        kPageChromeHeaderTopMm,
+        equals(9.0),
+        reason: 'spread chrome delegates to page_chrome; '
+            'header Y must be 9 mm (was 8 mm — bug 1)',
+      );
     });
 
     test('album_spread_page — footer is bottom-right 8 mm from edge (regression)',
         () async {
-      // R4, R9: footer must be positioned with right: 8 * _mmToPt and
-      // bottom: 8 * _mmToPt (was page-centered — bug fix).
-      fail('PR 2: regression not yet fixed');
+      // R4, R9: footer is now positioned by buildPageChrome at right/bottom =
+      // kPageChromeOuterMarginMm (was page-centered — bug 3).
+      expect(
+        kPageChromeOuterMarginMm,
+        equals(8.0),
+        reason: 'spread chrome delegates to page_chrome; '
+            'footer margin must be 8 mm bottom-right (was centered — bug 3)',
+      );
     });
 
     test('album_spread_page — cover page has no background widget', () async {
-      // R1: DotsAlbumSpreadPage.cover() pages must NOT receive a #fdfefd
-      // background from buildPageChrome. PR 2 (T7.1) adds a cover guard.
-      fail('PR 2: chrome delegation not yet wired');
+      // R1: DotsAlbumSpreadPage.cover() sets header all-null + footer
+      // wordmark = '', producing an "empty" DotsPageChrome whose cover guard
+      // in buildPageChrome returns []. Proxy: rendering the cover never
+      // requests interSemibold (the footer's font role), because no chrome
+      // widgets are emitted.
+      final calls = <DotsFontRole>[];
+      final coverPage = DotsAlbumSpreadPage.cover(
+        type: DotsAlbumType.parejas,
+        pageNumber: 1,
+        title: 'Mi Dotbook',
+        dateLine: '2026',
+      );
+      await buildAlbumSpreadPage(
+        format: _format,
+        page: coverPage,
+        fontResolver: (role) {
+          calls.add(role);
+          return null;
+        },
+        bytesResolver: (path) async =>
+            throw StateError('no bytes resolver — path: $path'),
+        logger: const DotsSilentLogger(),
+        onPhotoFailure: _ignorePhotoFailure,
+        drawCropMarks: false,
+      );
+      expect(
+        calls,
+        isNot(contains(DotsFontRole.interSemibold)),
+        reason: 'cover guard must prevent footer chrome '
+            '(interSemibold) from being requested',
+      );
     });
 
     test('AlbumSpreadPage — null header fields are omitted without error',
@@ -568,13 +663,16 @@ void main() {
   });
 
   // ──────────────────────────────────────────────────────────────────────────
-  // W3 — Header font size is 7pt  (R3)
+  // W3 — Chrome font sizes after migration (header 9 pt, footer 7 pt)
   // ──────────────────────────────────────────────────────────────────────────
 
-  group('AlbumSpreadPage — header font size', () {
-    test('AlbumSpreadPage — header font size constant is 7pt', () {
-      expect(kHeaderFontSizeForTest, equals(7.0),
-          reason: 'header/footer labels must be rendered at 7pt');
+  group('AlbumSpreadPage — chrome font sizes', () {
+    test('AlbumSpreadPage — header 9 pt (P22 Mackinac Book), footer 7 pt '
+        '(Inter Semibold)', () {
+      expect(kPageChromeHeaderFontSize, equals(9.0),
+          reason: 'header labels must be rendered at 9pt after the migration');
+      expect(kPageChromeFooterFontSize, equals(7.0),
+          reason: 'footer wordmark must remain at 7pt');
     });
 
     // S3 — header render produces a non-null pw.Page when all fields populated.
