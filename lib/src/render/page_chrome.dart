@@ -94,6 +94,15 @@ List<pw.Widget> buildPageChrome(
   // Return no widgets (not even the background) when every chrome field is
   // null or empty. This is the cover-page contract: DotsAlbumSpreadPage.cover()
   // sets header trio all-null and wordmark to '', so cover pages stay chrome-free.
+  //
+  // CALLER CONTRACT: this empty-chrome path is intended ONLY for cover pages.
+  // A non-cover caller that passes a chrome with all three text fields
+  // null/empty (and would normally expect just the #fdfefd background to
+  // paint) will silently get no background either — which violates R1 for
+  // that page. Producing an all-empty chrome from a non-cover surface is a
+  // caller bug; the renderer derives chrome from `DotsTemplate.defaultChrome`
+  // for layout/elements pages, so this only fires for spread pages that go
+  // through `buildAlbumSpreadPage` with the cover factory.
   final hasPageNumber =
       chrome.pageNumber != null && chrome.pageNumber!.isNotEmpty;
   final hasCenterLabel =

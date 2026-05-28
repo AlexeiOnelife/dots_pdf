@@ -284,13 +284,14 @@ void main() {
     });
 
     test(
-        'DotsLayoutPage render — bleedBottom slot suppresses footer; '
-        'background present', () async {
-      // No catalog layout carries `bleedBottom: true` today, so this
-      // suppression branch is covered at the unit level by
-      // `deriveSuppressFooterForChrome` in page_chrome_test.dart. Here we
-      // smoke-test the no-bleed-bottom path to confirm the renderer still
-      // emits the footer when no slot suppresses it.
+        'DotsLayoutPage render — footer renders when no slot has bleedBottom '
+        '(integration coverage of the non-suppression path)', () async {
+      // Honest scope note: no catalog layout currently carries
+      // `bleedBottom: true`, so the *suppression* branch is unreachable from
+      // the renderer pipeline today. It IS covered at the predicate level by
+      // `deriveSuppressFooterForChrome` in `page_chrome_test.dart`. This
+      // integration test pins the non-suppression path — the footer renders
+      // when no slot bleeds — which is what the renderer actually exercises.
       await _writePixel(fs, '/assets/a.png');
       const tpl = DotsTemplate(
         documentId: 'doc_no_bleedbottom',
