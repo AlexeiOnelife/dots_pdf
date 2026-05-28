@@ -13,11 +13,15 @@ extension DotsAlbumTypeContext on DotsAlbumType {
   /// |----------------|--------------------|
   /// | boda           | `{Protagonistas}`  |
   /// | hijos          | `{Protagonistas}`  |
+  /// | generalEventos | `{Protagonistas}`  |
   /// | parejas        | `{tiempojuntos}`   |
   /// | individuales   | `{Año}`            |
   /// | otros          | `{Año}`            |
   String get contextLabelToken => switch (this) {
-        DotsAlbumType.boda || DotsAlbumType.hijos => '{Protagonistas}',
+        DotsAlbumType.boda ||
+        DotsAlbumType.hijos ||
+        DotsAlbumType.generalEventos =>
+          '{Protagonistas}',
         DotsAlbumType.parejas => '{tiempojuntos}',
         DotsAlbumType.individuales || DotsAlbumType.otros => '{Año}',
       };
@@ -53,4 +57,10 @@ enum DotsAlbumType {
   /// differs only in wording and one extra opacity-gradient overlay on
   /// the polaroid collage spread.
   otros,
+
+  /// General-events album. Four-pliego front matter (opening QR spread,
+  /// photo-only cover, welcome spread, before-you-start spread) and a
+  /// two-pliego back matter (closing QR + eventos closing variant). Body
+  /// pliegos start at pliego 5.
+  generalEventos,
 }

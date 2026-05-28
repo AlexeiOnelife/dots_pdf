@@ -1301,7 +1301,8 @@ class DotsAlbumSpreadPage extends DotsPage {
       DotsAlbumType.parejas ||
       DotsAlbumType.hijos ||
       DotsAlbumType.individuales ||
-      DotsAlbumType.otros =>
+      DotsAlbumType.otros ||
+      DotsAlbumType.generalEventos =>
         20.0,
     };
 
@@ -1568,13 +1569,14 @@ class DotsAlbumSpreadPage extends DotsPage {
     required String contextLabelValue,
     required AlbumPhotoArcContent content,
   }) {
-    // Type guard — boda is not supported.
-    if (type == DotsAlbumType.boda) {
+    // Type guard — boda and generalEventos are not supported here.
+    if (type == DotsAlbumType.boda || type == DotsAlbumType.generalEventos) {
       throw ArgumentError.value(
         type,
         'type',
-        'DotsAlbumSpreadPage.photoArc does not support DotsAlbumType.boda; '
-            "boda's analogue (p.4 radial halo) is not implemented.",
+        'DotsAlbumSpreadPage.photoArc supports parejas, hijos, individuales, '
+            'and otros only. boda uses bodaHalo; generalEventos has its own '
+            'opening QR spread (Task 7).',
       );
     }
 
@@ -1596,7 +1598,9 @@ class DotsAlbumSpreadPage extends DotsPage {
       DotsAlbumType.individuales ||
       DotsAlbumType.otros =>
         'Tu album en digital',
-      DotsAlbumType.boda => '', // unreachable — guarded above
+      DotsAlbumType.boda ||
+      DotsAlbumType.generalEventos =>
+        '', // unreachable — guarded above
     };
     final String leftCaption =
         content.qrCaptionLeftOverride ?? defaultLeftCaption;
