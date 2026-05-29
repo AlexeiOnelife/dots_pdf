@@ -383,7 +383,11 @@ abstract class DotsRenderer {
     // for now the dotbook default is the only supported configuration.
     const DotsLayoutSolver solver = DotsLayoutSolver();
     final geometry = DotsPageGeometry.dotbookDefault();
-    final slots = solver.solve(page.layoutCode, geometry);
+    final slots = solver.solve(
+      page.layoutCode,
+      geometry,
+      isLeftPage: page.pageNumber.isOdd,
+    );
 
     final children = <pw.Widget>[];
 
@@ -772,10 +776,12 @@ abstract class DotsRenderer {
         // L_hito title is 20 pt; everywhere else 11 pt per the spec.
         return layoutCode == DotsLayoutCode.lhito ? 20.0 : 11.0;
       case DotsSlotKind.captionDate:
-        // L_hito date (subtitle) is 9 pt / 10.8 pt — the slot reserves
-        // exactly 10.8 pt of leading, so 11 pt overflows and pw.Text
-        // silently clips. Everywhere else dates are 11 pt.
-        return layoutCode == DotsLayoutCode.lhito ? 9.0 : 11.0;
+        // L_hito SUBTITLE is P22 Mackinac regular 20 pt / 24 pt per the
+        // pdf01_general_base.pdf spec sheet (Task 3 fidelity fix; the
+        // earlier 9 pt was incorrect — that slot is the subtitle of the
+        // milestone page, not a date line). Everywhere else dates are
+        // 11 pt.
+        return layoutCode == DotsLayoutCode.lhito ? 20.0 : 11.0;
       case DotsSlotKind.captionBody:
         return 9.0;
       case DotsSlotKind.photo:

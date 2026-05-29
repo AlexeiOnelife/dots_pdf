@@ -4,9 +4,16 @@ Derived from `Informacion.interiores.dotbook.2 (1).pdf` (73 pages, source
 file is a 1167.87 × 737.008 pt artboard = 412 × 260 mm = two 203 × 254 mm
 pages + 3 mm bleed all around).
 
-Units are millimeters. `AUTO` in the source means "distributed by available
-margin" — the library should compute it from the surrounding fixed
-dimensions, not hard-code a value.
+Units are millimeters.
+
+> **Task 3 update (`general-body-layouts-fidelity`)**: the positioning
+> model is now **outer-edge aligned** — every photo block sits 8 mm
+> from the OUTER (non-binding) trim edge of its page. On a left page
+> the outer edge is the LEFT edge; on a right page, the RIGHT edge.
+> The `DotsLayoutSolver` resolves this per-page via `isLeftPage`. The
+> previous "AUTO = page-centered" convention only matched the printed
+> design for L3.A by coincidence (its block width 186.81 mm leaves an
+> ≈8 mm side margin when centered).
 
 ---
 
@@ -108,7 +115,7 @@ Alternative single-photo variants observed in the source:
 
 - **L2.A — side-by-side**: two **86 × 110 mm** photos in one row, 16 mm
   horizontal gutter, vertically centered (AUTO above and below).
-- **L2.B — stacked vertical (full-bleed pair)**: two **115.5 × 86 mm**
+- **L2.B — stacked vertical (landscape pair)**: two **175 × 107 mm**
   photos stacked with 3 mm vertical gap.
 - **L2.C — small framed pair**: two **65 × 74 mm** with 3 mm gap.
 
@@ -119,7 +126,7 @@ Alternative single-photo variants observed in the source:
 
 ### L4 — Four photos
 
-- **L4.A — 2×2 grid**: four **86 × 110 mm** photos, 3 mm gaps, AUTO
+- **L4.A — 2×2 grid**: four **86 × 86 mm SQUARE** photos, 3 mm gaps, y=71 mm,
   outer margins. (The 2×2 is the most common 4-up layout in the PDF.)
 - **L4.B — 2×2 stacked-pair grid**: same dimensions but rendered across a
   spread (4 photos = 2 per page).
@@ -139,7 +146,7 @@ as an L4 (2×2) + L1 (1 small) hybrid. **Open question.**
 
 ### L7 — Four-pane caption page (collage with text)
 
-- Four **142 × 105 mm** photos in a row with 67 mm caption columns between
+- Four **86 × 110 mm** photos arranged as 2 panes per page with 7.5 mm photo-to-caption gaps; caption columns between
   pairs, 91 mm vertical, with date + body Inter 9 pt under each.
 - Caption: **350 char** body max, P22 Mackinac medium 11 pt for title,
   Inter Book 9 pt for body. "Not every photo needs text to use this
