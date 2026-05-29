@@ -55,6 +55,8 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
               break;
             case DotsDecorativeCircleElement():
               break; // no-op: decorative circles have no asset path
+            case DotsDecorativeRectElement():
+              break; // no-op: decorative rects have no asset path
             case DotsPhotoCircleElement():
               // Defensive arm: photo-circle elements are not expected on a
               // DotsElementsPage but collect the asset path if one appears.
@@ -94,6 +96,8 @@ Future<Map<String, Uint8List>> preloadAssetBytes({
               break;
             case DotsDecorativeCircleElement():
               break; // no-op: decorative circles have no asset path
+            case DotsDecorativeRectElement():
+              break; // no-op: decorative rects have no asset path
             case DotsPhotoCircleElement():
               paths.add(element.assetPath);
             case DotsOvalQrElement():
@@ -469,6 +473,11 @@ abstract class DotsRenderer {
         return null;
       case DotsDecorativeCircleElement():
         // Decorative circle elements are rendered by buildAlbumSpreadPage when
+        // they appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they
+        // are not valid; skip silently (delegation pattern).
+        return null;
+      case DotsDecorativeRectElement():
+        // Decorative rect elements are rendered by buildAlbumSpreadPage when
         // they appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they
         // are not valid; skip silently (delegation pattern).
         return null;
