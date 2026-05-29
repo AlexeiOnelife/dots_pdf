@@ -177,24 +177,26 @@ void main() {
     DotsTextBlockElement eyebrow(DotsAlbumSpreadPage page) =>
         page.elements.whereType<DotsTextBlockElement>().first;
 
-    test('buildCoverPageFor — parejas eyebrow resolves to DOTBOOK', () {
+    test(
+        'buildCoverPageFor — parejas eyebrow is "DOTBOOK DE {PROTAGONISTA}" '
+        '(Task 4 fix)', () {
       final page = buildCoverPageFor(
         DotsAlbumType.parejas,
         const AlbumCoverContent(title: 'T', dateLine: 'D'),
         pageNumber: 1,
       );
-      expect(eyebrow(page).value, equals('DOTBOOK'));
+      expect(eyebrow(page).value, equals('DOTBOOK DE {PROTAGONISTA}'));
     });
 
     test(
-        'buildCoverPageFor — hijos eyebrow resolves to DOTBOOK DE {NOMBREHIJO}',
-        () {
+        'buildCoverPageFor — hijos eyebrow is "DOTBOOK DE {PROTAGONISTA}" '
+        '(Task 4 fix)', () {
       final page = buildCoverPageFor(
         DotsAlbumType.hijos,
         const AlbumCoverContent(title: 'T', dateLine: 'D'),
         pageNumber: 1,
       );
-      expect(eyebrow(page).value, equals('DOTBOOK DE {NOMBREHIJO}'));
+      expect(eyebrow(page).value, equals('DOTBOOK DE {PROTAGONISTA}'));
     });
 
     test('buildCoverPageFor — eyebrowOverride wins over per-type default', () {
@@ -280,16 +282,15 @@ void main() {
           pageP.elements.whereType<DotsTextBlockElement>().toList();
       final textsH =
           pageH.elements.whereType<DotsTextBlockElement>().toList();
-      // Text position geometry must match; only value of index-0 (eyebrow) differs.
-      for (var i = 1; i < textsP.length; i++) {
+      // After the Task 4 fix, every text element (eyebrow included) shares
+      // the same factory default for both parejas and hijos. Per-type
+      // differentiation now lives in the variables-map substitution at
+      // JSON parse time, not in the factory's canonical template.
+      for (var i = 0; i < textsP.length; i++) {
         expect(textsP[i].x, equals(textsH[i].x));
         expect(textsP[i].y, equals(textsH[i].y));
-        expect(textsP[i].value, equals(textsH[i].value),
-            reason: 'title and date text must be identical for both types',);
+        expect(textsP[i].value, equals(textsH[i].value));
       }
-      // Eyebrow text values differ.
-      expect(textsP[0].value, isNot(equals(textsH[0].value)),
-          reason: 'eyebrow text must differ between parejas and hijos',);
     });
   });
 

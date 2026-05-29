@@ -62,27 +62,28 @@ void main() {
       expect(result, isA<DotsAlbumSpreadPage>());
     });
 
-    test('buildCoverPageFor — parejas default eyebrow resolves to DOTBOOK',
-        () {
+    test(
+        'buildCoverPageFor — parejas default eyebrow is '
+        '"DOTBOOK DE {PROTAGONISTA}" (Task 4 fix)', () {
       final page = buildCoverPageFor(
         DotsAlbumType.parejas,
         const AlbumCoverContent(title: 'T', dateLine: 'D'),
         pageNumber: 1,
       );
       final eyebrow = page.elements.whereType<DotsTextBlockElement>().first;
-      expect(eyebrow.value, equals('DOTBOOK'));
+      expect(eyebrow.value, equals('DOTBOOK DE {PROTAGONISTA}'));
     });
 
     test(
-        'buildCoverPageFor — hijos default eyebrow resolves to DOTBOOK DE {NOMBREHIJO}',
-        () {
+        'buildCoverPageFor — hijos default eyebrow is '
+        '"DOTBOOK DE {PROTAGONISTA}" (Task 4 fix)', () {
       final page = buildCoverPageFor(
         DotsAlbumType.hijos,
         const AlbumCoverContent(title: 'T', dateLine: 'D'),
         pageNumber: 1,
       );
       final eyebrow = page.elements.whereType<DotsTextBlockElement>().first;
-      expect(eyebrow.value, equals('DOTBOOK DE {NOMBREHIJO}'));
+      expect(eyebrow.value, equals('DOTBOOK DE {PROTAGONISTA}'));
     });
 
     test('buildCoverPageFor — eyebrowOverride wins for both types', () {
@@ -182,9 +183,11 @@ void main() {
         expect(textsP[i].y, equals(textsH[i].y));
         expect(textsP[i].value, equals(textsH[i].value));
       }
-      // Eyebrow (index 0) values must differ between parejas and hijos.
-      expect(textsP[0].value, isNot(equals(textsH[0].value)),
-          reason: 'eyebrow must differ between parejas and hijos');
+      // Eyebrow (index 0): after the Task 4 fix, BOTH types resolve to the
+      // same canonical template `"DOTBOOK DE {PROTAGONISTA}"` — the per-
+      // type difference is in the caller's variables-map substitution, not
+      // in the factory default.
+      expect(textsP[0].value, equals(textsH[0].value));
     });
   });
 

@@ -33,6 +33,7 @@ class AlbumQrSpreadContent {
     required this.qrPayload,
     required this.placement,
     this.captionOverride,
+    this.bottomTextOverride,
   });
 
   /// Payload encoded into the QR code on the spread.
@@ -44,13 +45,26 @@ class AlbumQrSpreadContent {
   /// Optional override for the fixed caption beside the QR block.
   final String? captionOverride;
 
+  /// Optional override for the bottom variable text line — the
+  /// `"{Protagonistas}, disfruta de está última experiencia."` line at
+  /// the foot of the left page in the closing QR spread. When `null`,
+  /// the factory composes the line from the caller's `contextLabelValue`.
+  /// Applies only to the closing placement.
+  final String? bottomTextOverride;
+
   @override
   bool operator ==(Object other) =>
       other is AlbumQrSpreadContent &&
       other.qrPayload == qrPayload &&
       other.placement == placement &&
-      other.captionOverride == captionOverride;
+      other.captionOverride == captionOverride &&
+      other.bottomTextOverride == bottomTextOverride;
 
   @override
-  int get hashCode => Object.hash(qrPayload, placement, captionOverride);
+  int get hashCode => Object.hash(
+        qrPayload,
+        placement,
+        captionOverride,
+        bottomTextOverride,
+      );
 }

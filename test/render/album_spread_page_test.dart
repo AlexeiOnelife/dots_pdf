@@ -127,12 +127,13 @@ void main() {
       expect(sig.angleDegrees, equals(2.0));
     });
 
-    test('AlbumSpreadPage — dedication body is constrained to 102 mm width',
+    test('AlbumSpreadPage — dedication body is constrained to 120 mm width',
         () {
       final page = _dedicationPage(DotsAlbumType.parejas);
       final body = page.elements.whereType<DotsTextBlockElement>().first;
-      // 102 mm × 2.834645669 pt/mm ≈ 289.13 pt.
-      expect(body.width, closeTo(102.0 * _mmToPt, 0.01));
+      // 120 mm × 2.834645669 pt/mm ≈ 340.16 pt. Width corrected in Task 4
+      // (`pareja-hijos-fidelity`) against pdf02 p.5 / pdf08 p.5.
+      expect(body.width, closeTo(120.0 * _mmToPt, 0.01));
     });
   });
 

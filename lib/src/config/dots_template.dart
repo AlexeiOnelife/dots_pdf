@@ -1258,28 +1258,30 @@ class DotsAlbumSpreadPage extends DotsPage {
     required String body,
     required String signature,
   }) {
-    // Canonical element positions (top-left page coordinate frame, in pt).
-    // x=0, y=0 is the top-left corner of the page trim.  Exact coordinates
-    // are the single source of truth; the renderer places Positioned widgets
-    // at these values directly.
-    const double titleX = 0;
-    const double titleY = 60 * _mmToPt; // ~170 pt from top
-    const double bodyX = 0;
-    const double bodyY = 90 * _mmToPt; // below title
-    const double signatureX = 0;
-    const double signatureY = 160 * _mmToPt; // below body block
-    const double bodyWidthPt = 102.0 * _mmToPt; // ~289.13 pt
+    // Canonical element positions corrected against pdf02 p.5 / pdf08 p.5
+    // (Task 4 fidelity work):
+    //   - text x = 50.53 mm from the (right-page) trim left edge.
+    //   - body width = 120 mm (was 102 mm — too narrow).
+    //   - y values stay near the previous defaults until the relative-y
+    //     refinement lands (deferred follow-up: title→body 6.5 mm gap,
+    //     body→signature 8 mm gap).
+    const double textX = 50.53 * _mmToPt;
+    const double titleY = 60 * _mmToPt;
+    const double bodyY = 90 * _mmToPt;
+    const double signatureY = 160 * _mmToPt;
+    const double bodyWidthMm = 120;
+    const double bodyWidthPt = bodyWidthMm * _mmToPt;
 
     final elements = <DotsElement>[
       DotsTextElement(
-        x: titleX,
+        x: textX,
         y: titleY,
         value: title,
         fontSize: 23,
         fontFamily: 'P22 Mackinac Medium',
       ),
       DotsTextBlockElement(
-        x: bodyX,
+        x: textX,
         y: bodyY,
         value: body,
         fontSize: 9,
@@ -1293,7 +1295,7 @@ class DotsAlbumSpreadPage extends DotsPage {
       ),
       if (signature.isNotEmpty)
         DotsRotatedTextElement(
-          x: signatureX,
+          x: textX,
           y: signatureY,
           value: signature,
           fontSize: 12,
@@ -1350,19 +1352,20 @@ class DotsAlbumSpreadPage extends DotsPage {
         20.0,
     };
 
-    // Canonical element positions (pt, top-left page coordinate frame).
-    // Photo slot: 66×86 mm centred horizontally; pageWidth ~575 pt → offset.
-    // These are reasonable layout defaults — the renderer places them as-is.
-    const double pageWidthPt = 575.43; // dotbook default (203mm)
-    const double photoWidthPt = 66.0 * _mmToPt; // ~187.09 pt
-    const double photoHeightPt = 86.0 * _mmToPt; // ~243.78 pt
-    const double photoX = (pageWidthPt - photoWidthPt) / 2.0; // centred
-    const double photoY = 60.0 * _mmToPt;
-    const double titleX = 0;
-    const double titleY = photoY + photoHeightPt + 10.0 * _mmToPt;
-    const double subtitleX = 0;
-    final double subtitleY = titleY + titleFontSize * 1.5;
-    const double subtitleWidthPt = 102.0 * _mmToPt;
+    // Canonical element positions corrected against pdf03 p.3 / pdf09 p.3
+    // (Task 4 fidelity work):
+    //   - photo 66×86 mm centred horizontally at y=71.534 mm.
+    //   - title  at x=44 mm width=115 mm; y = photo_bottom + 5 mm.
+    //   - subtitle at x=44 mm width=115 mm; y = title_bottom + 5 mm.
+    const double pageWidthPt = 575.43; // dotbook default (203 mm).
+    const double photoWidthPt = 66.0 * _mmToPt;
+    const double photoHeightPt = 86.0 * _mmToPt;
+    const double photoX = (pageWidthPt - photoWidthPt) / 2.0;
+    const double photoY = 71.534 * _mmToPt;
+    const double textBoxX = 44.0 * _mmToPt;
+    const double textBoxWidthPt = 115.0 * _mmToPt;
+    const double titleY = photoY + photoHeightPt + 5.0 * _mmToPt;
+    final double subtitleY = titleY + titleFontSize * 1.2 + 5.0 * _mmToPt;
 
     final elements = <DotsElement>[
       if (photoPath != null)
@@ -1374,18 +1377,18 @@ class DotsAlbumSpreadPage extends DotsPage {
           height: photoHeightPt,
         ),
       DotsTextElement(
-        x: titleX,
+        x: textBoxX,
         y: titleY,
         value: title,
         fontSize: titleFontSize,
         fontFamily: 'P22 Mackinac Medium',
       ),
       DotsTextBlockElement(
-        x: subtitleX,
+        x: textBoxX,
         y: subtitleY,
         value: subtitle,
         fontSize: 9,
-        width: subtitleWidthPt,
+        width: textBoxWidthPt,
         fontFamily: 'P22 Mackinac Book',
         colorHex: '#1e1e1e',
         textAlign: DotsTextAlign.center,
@@ -1497,8 +1500,14 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///
   /// The eyebrow is resolved as follows:
   ///   - [eyebrowOverride] wins when non-null.
-  ///   - [DotsAlbumType.parejas] default → `"DOTBOOK"`.
-  ///   - [DotsAlbumType.hijos]   default → `"DOTBOOK DE {NOMBREHIJO}"`.
+  ///   - [DotsAlbumType.parejas] default → `"DOTBOOK DE {PROTAGONISTA}"`.
+  ///   - [DotsAlbumType.hijos]   default → `"DOTBOOK DE {PROTAGONISTA}"`.
+  ///
+  /// The eyebrow token `{PROTAGONISTA}` is resolved by the caller's
+  /// variables map at parse time. The literal eyebrow text was corrected
+  /// in Task 4 of `final-render-refinement` against
+  /// `pdf02_pareja_inicial.pdf` p.2 and `pdf08_hijos_inicial.pdf` p.2;
+  /// both PDFs use the same eyebrow format.
   ///
   /// [header] and [footer] are set so that no page-number trio or wordmark
   /// appears on the cover (header trio is all-null; footer wordmark is empty).
@@ -1510,9 +1519,13 @@ class DotsAlbumSpreadPage extends DotsPage {
     String? eyebrowOverride,
   }) {
     // Resolve per-type eyebrow; throw for unsupported types.
+    // Both parejas and hijos use the same eyebrow text per the PDF spec
+    // sheet (pdf02 p.2 + pdf08 p.2); the {PROTAGONISTA} token is
+    // resolved by the variables-map at JSON parse time.
     final String defaultEyebrow = switch (type) {
-      DotsAlbumType.parejas => 'DOTBOOK',
-      DotsAlbumType.hijos => 'DOTBOOK DE {NOMBREHIJO}',
+      DotsAlbumType.parejas ||
+      DotsAlbumType.hijos =>
+        'DOTBOOK DE {PROTAGONISTA}',
       _ => throw ArgumentError.value(
           type,
           'type',
@@ -1521,10 +1534,6 @@ class DotsAlbumSpreadPage extends DotsPage {
         ),
     };
     final String eyebrow = eyebrowOverride ?? defaultEyebrow;
-
-    // Page geometry (203 × 254 mm in PDF points).
-    const double pageWidthPt = 203.0 * _mmToPt;
-    const double pageHeightPt = 254.0 * _mmToPt;
 
     // ── 14 decorative circles from kCoverCircleLayout ────────────────────────
     final circles = kCoverCircleLayout
@@ -1544,36 +1553,43 @@ class DotsAlbumSpreadPage extends DotsPage {
         .toList();
 
     // ── 3 text elements (eyebrow / title / date) ─────────────────────────────
-    // Positions derived from D8: block centred at pageHeight/2.
-    const double eyebrowY = pageHeightPt / 2 - 12.0 * _mmToPt;
-    const double titleY = pageHeightPt / 2;
-    const double dateY = pageHeightPt / 2 + 18.0 * _mmToPt;
+    // PDF coordinates (pdf02 p.2 / pdf08 p.2 annotations):
+    // - text box 120 mm wide, x = (203 - 120) / 2 = 41.5 mm
+    // - eyebrow y = 110.249 mm
+    // - title y   ≈ 119 mm (eyebrow_bottom + small gap)
+    // - date y    ≈ 130.7 mm (title_bottom + 5 mm gap)
+    const double textBoxWidthMm = 120;
+    const double textBoxWidthPt = textBoxWidthMm * _mmToPt;
+    const double textBoxXPt = (203.0 - textBoxWidthMm) / 2 * _mmToPt;
+    const double eyebrowY = 110.249 * _mmToPt;
+    const double titleY = 119.0 * _mmToPt;
+    const double dateY = 130.7 * _mmToPt;
 
     final texts = <DotsElement>[
       DotsTextBlockElement(
-        x: 0,
+        x: textBoxXPt,
         y: eyebrowY,
         value: eyebrow,
         fontSize: 9,
-        width: pageWidthPt,
+        width: textBoxWidthPt,
         fontFamily: 'Inter',
         textAlign: DotsTextAlign.center,
       ),
       DotsTextBlockElement(
-        x: 0,
+        x: textBoxXPt,
         y: titleY,
         value: title,
         fontSize: 23,
-        width: pageWidthPt,
+        width: textBoxWidthPt,
         fontFamily: 'P22 Mackinac Medium',
         textAlign: DotsTextAlign.center,
       ),
       DotsTextBlockElement(
-        x: 0,
+        x: textBoxXPt,
         y: dateY,
         value: dateLine,
         fontSize: 9,
-        width: pageWidthPt,
+        width: textBoxWidthPt,
         fontFamily: 'Inter',
         textAlign: DotsTextAlign.center,
       ),
@@ -2040,32 +2056,222 @@ class DotsAlbumSpreadPage extends DotsPage {
     );
   }
 
-  /// "Busca un lugar tranquilo / Más allá del papel" instruction spread
-  /// — shared by `parejas`, `hijos`, `individuales`, `otros`, and
-  /// `generalEventos`. Body lands in Task 4; today the renderer throws
-  /// `UnimplementedError('Task 4: beforeYouStart')`.
+  /// "Antes de empezar el viaje" instruction spread — two pages spanning
+  /// 0..406 mm in spread coordinates, paired with a 10-slot photo grid
+  /// (5 slots per page) and per-category instruction copy.
+  ///
+  /// Body landed in Task 4 of `final-render-refinement` against
+  /// `pdf02_pareja_inicial.pdf` pp.8–9 (parejas) and
+  /// `pdf08_hijos_inicial.pdf` pp.8–9 (hijos). The factory currently
+  /// supports `parejas` and `hijos` only — other categories still throw
+  /// at render time (their bodies land in Tasks 5 and 7).
   factory DotsAlbumSpreadPage.beforeYouStart({
     required DotsAlbumType type,
     required int pageNumber,
     required AlbumBeforeYouStartContent content,
     String contextLabelValue = '',
   }) {
-    // Reference content so the parameter is not flagged "unused".
-    final _ = content.titleOverride;
+    // Per-category instruction copy (canonical, NOT editable by caller).
+    final (
+      String leftTitleL1,
+      String leftTitleL2,
+      String leftBody,
+      String q1Title,
+      String q1Body,
+      String q2Title,
+      String q2Body,
+    ) = switch (type) {
+      DotsAlbumType.parejas => (
+          'Antes de empezar',
+          'el viaje',
+          'Encontrad un espacio donde podáis estar en calma. Sentaos. '
+              'Respirad despacio. Dejad que el silencio os encuentre, '
+              'aunque sea por un instante… En ese pequeño respiro, el '
+              'tiempo se abre y con ello comienza vuestro viaje al '
+              'pasado. Sentid. Dejaos llevar. Ese es el único objetivo.',
+          'Buscad vuestro momento',
+          'Cada recuerdo necesita su propio espacio. Tomad el tiempo '
+              'para revisar las fotografías sin prisa.',
+          'Escuchad vuestra historia',
+          'Las imágenes contienen voces, gestos, instantes que sólo '
+              'vosotros recordáis. Escuchadlas con atención.',
+        ),
+      DotsAlbumType.hijos => (
+          'Antes de empezar',
+          'el viaje',
+          'Piensa que esto no son solo fotos. Son momentos. La historia '
+              'de cómo ocurrió. Reviviéndola tal y como fue, en ese '
+              'instante. Volviendo a ver y escuchar a tus seres '
+              'queridos… Cierra los ojos un instante. Respira despacio. '
+              'Y vuelve allí.',
+          'Busca un lugar tranquilo',
+          'Encuentra el espacio donde puedas concentrarte sin '
+              'interrupciones. Las memorias merecen tu atención plena.',
+          'Escucha los momentos especiales',
+          'Cada foto guarda una historia silenciosa. Deja que esos '
+              'pequeños detalles vuelvan a ti.',
+        ),
+      _ => throw ArgumentError.value(
+          type,
+          'type',
+          'DotsAlbumSpreadPage.beforeYouStart currently supports '
+              'DotsAlbumType.parejas and DotsAlbumType.hijos only; '
+              'other categories land in Tasks 5 and 7.',
+        ),
+    };
+
+    // Layout constants (mm) — verified against pdf02 p.8/9 + pdf08 p.8/9.
+    const double slotWidthMm = 35;
+    const double slotHeightMm = 46;
+    const double slotYMm = 36;
+    const List<double> slotXLeftPageMm = [8, 43, 78, 113, 148];
+
+    // Left-page text block.
+    const double leftTitleXMm = 54.083;
+    const double leftTitleYMm = 96.2;
+    const double leftTitleWidthMm = 95;
+    const double leftBodyYMm = 120.3;
+
+    // Right-page text (spread coords = right-page-local x + 203).
+    const double rightProtagonistXMm = 203 + 69.168;
+    const double rightProtagonistYMm = 210.8;
+    const double rightCtaYMm = 219;
+    const double rightTextWidthMm = 65;
+
+    // Per-page Q1/Q2 cluster below the slots.
+    const double clusterXMm = 55.309;
+    const double clusterYNumberMm = 89.5; // slot_bottom (36+46=82) + 7.5 mm.
+    const double clusterYTitleMm = 101.5; // number_bottom + small gap.
+    const double clusterYBodyMm = 113.5; // title_bottom + 5 mm.
+    const double clusterWidthMm = 93;
+
+    final elements = <DotsElement>[
+      // ── Left-page photo slots ──────────────────────────────────────
+      for (int i = 0; i < 5; i++)
+        DotsImageElement(
+          x: slotXLeftPageMm[i] * _mmToPt,
+          y: slotYMm * _mmToPt,
+          assetPath: content.photoPaths[i],
+          width: slotWidthMm * _mmToPt,
+          height: slotHeightMm * _mmToPt,
+        ),
+      // ── Right-page photo slots (spread coords x += 203) ────────────
+      for (int i = 0; i < 5; i++)
+        DotsImageElement(
+          x: (203 + slotXLeftPageMm[i]) * _mmToPt,
+          y: slotYMm * _mmToPt,
+          assetPath: content.photoPaths[5 + i],
+          width: slotWidthMm * _mmToPt,
+          height: slotHeightMm * _mmToPt,
+        ),
+      // ── Left-page title L1 + L2 ────────────────────────────────────
+      DotsTextElement(
+        x: leftTitleXMm * _mmToPt,
+        y: leftTitleYMm * _mmToPt,
+        value: content.titleOverride ?? leftTitleL1,
+        fontSize: 27,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextElement(
+        x: leftTitleXMm * _mmToPt,
+        // L2 sits on the next line (27pt × ~1.15 lh ≈ 31pt ≈ 10.94 mm).
+        y: (leftTitleYMm + 10.94) * _mmToPt,
+        value: leftTitleL2,
+        fontSize: 27,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      // ── Left-page body block ───────────────────────────────────────
+      DotsTextBlockElement(
+        x: leftTitleXMm * _mmToPt,
+        y: leftBodyYMm * _mmToPt,
+        value: content.bodyOverride ?? leftBody,
+        fontSize: 9,
+        width: leftTitleWidthMm * _mmToPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.2,
+      ),
+      // ── Right-page protagonist label ───────────────────────────────
+      DotsTextElement(
+        x: rightProtagonistXMm * _mmToPt,
+        y: rightProtagonistYMm * _mmToPt,
+        value: contextLabelValue.isEmpty ? '{PROTAGONISTA}' : contextLabelValue,
+        fontSize: 9,
+        fontFamily: 'Inter',
+      ),
+      // ── Right-page CTA ─────────────────────────────────────────────
+      const DotsTextBlockElement(
+        x: rightProtagonistXMm * _mmToPt,
+        y: rightCtaYMm * _mmToPt,
+        value: 'Pasad la página para empezar esta experiencia',
+        fontSize: 15,
+        width: rightTextWidthMm * _mmToPt,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      // ── Q1 cluster (below left-page slots) ─────────────────────────
+      const DotsTextElement(
+        x: clusterXMm * _mmToPt,
+        y: clusterYNumberMm * _mmToPt,
+        value: 'Q1',
+        fontSize: 23,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextElement(
+        x: clusterXMm * _mmToPt,
+        y: clusterYTitleMm * _mmToPt,
+        value: q1Title,
+        fontSize: 23,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextBlockElement(
+        x: clusterXMm * _mmToPt,
+        y: clusterYBodyMm * _mmToPt,
+        value: q1Body,
+        fontSize: 9,
+        width: clusterWidthMm * _mmToPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.2,
+      ),
+      // ── Q2 cluster (below right-page slots; spread coords) ─────────
+      const DotsTextElement(
+        x: (203 + clusterXMm) * _mmToPt,
+        y: clusterYNumberMm * _mmToPt,
+        value: 'Q2',
+        fontSize: 23,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextElement(
+        x: (203 + clusterXMm) * _mmToPt,
+        y: clusterYTitleMm * _mmToPt,
+        value: q2Title,
+        fontSize: 23,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextBlockElement(
+        x: (203 + clusterXMm) * _mmToPt,
+        y: clusterYBodyMm * _mmToPt,
+        value: q2Body,
+        fontSize: 9,
+        width: clusterWidthMm * _mmToPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.2,
+      ),
+    ];
+
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
-        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
-        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+        rightPageNumber: '${pageNumber + 1}',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: const [
-        DotsUnimplementedElement(
-          taskId: 'Task 4',
-          message: 'beforeYouStart factory body not yet implemented',
-        ),
-      ],
+      elements: elements,
     );
   }
 
@@ -2128,9 +2334,14 @@ class DotsAlbumSpreadPage extends DotsPage {
   }
 
   /// "Porque algunos recuerdos merecen seguir vivos" closing QR spread
-  /// — shared by ALL six categories as the penultimate pliego. Body
-  /// lands in Task 5; today the renderer throws
-  /// `UnimplementedError('Task 5: closingQrSpread')`.
+  /// — shared by ALL six categories as the penultimate pliego.
+  ///
+  /// Body landed in Task 4 of `final-render-refinement` against
+  /// `pdf03_pareja_final.pdf` p.1–2 and `pdf09_hijos_final.pdf` p.1–2.
+  /// The LEFT page carries the title, body, QR block, QR caption, and
+  /// bottom variable text; the RIGHT page is intentionally chrome-only
+  /// (the decorative-circle scatter from the PDFs lacks annotated
+  /// diameters and is deferred to a follow-up task).
   factory DotsAlbumSpreadPage.closingQrSpread({
     required DotsAlbumType type,
     required int pageNumber,
@@ -2138,21 +2349,103 @@ class DotsAlbumSpreadPage extends DotsPage {
     String contextLabelValue = '',
   }) {
     assert(content.placement == AlbumQrSpreadPlacement.closing);
+
+    // Layout constants (mm) — verified against pdf03 p.1.
+    const double titleXMm = 30;
+    const double titleYMm = 50.892;
+    const double titleWidthMm = 143;
+    const double bodyXMm = 30;
+    const double bodyYMm = 71.346;
+    const double bodyWidthMm = 92;
+    const double qrXMm = 30;
+    const double qrYMm = 94.081;
+    const double qrSizeMm = 27;
+    const double qrCaptionXMm = 62; // 30 + 27 + 5 gap.
+    const double qrCaptionYMm = 94.081;
+    const double qrCaptionWidthMm = 36.178;
+    const double bottomXMm = 30;
+    const double bottomYMm = 229.42;
+    const double bottomWidthMm = 143;
+
+    final String bottomText = content.bottomTextOverride ??
+        (contextLabelValue.isEmpty
+            ? '{Protagonistas}, disfruta de está última experiencia.'
+            : '$contextLabelValue, disfruta de está última experiencia.');
+    final String qrCaption =
+        content.captionOverride ?? 'Escanea el QR y vuelve a esta etapa siempre que quieras.';
+
+    final elements = <DotsElement>[
+      // Title.
+      const DotsTextBlockElement(
+        x: titleXMm * _mmToPt,
+        y: titleYMm * _mmToPt,
+        value: 'Porque algunos recuerdos merecen seguir vivos',
+        fontSize: 23,
+        width: titleWidthMm * _mmToPt,
+        fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.087, // 25 / 23.
+      ),
+      // Body — fixed canonical copy.
+      const DotsTextBlockElement(
+        x: bodyXMm * _mmToPt,
+        y: bodyYMm * _mmToPt,
+        value: 'Las fotografías capturan momentos. Las palabras los hacen '
+            'vivir. En este álbum, ambos viajan juntos para que el tiempo '
+            'no los borre.',
+        fontSize: 9,
+        width: bodyWidthMm * _mmToPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.2,
+      ),
+      // QR block. The PDF shows a SQUARE 27×27 mm block; we use the
+      // existing oval QR element with equal width/height as a temporary
+      // approximation. A follow-up task replaces this with a true
+      // square-frame variant.
+      DotsOvalQrElement(
+        x: qrXMm * _mmToPt,
+        y: qrYMm * _mmToPt,
+        ovalWidth: qrSizeMm * _mmToPt,
+        ovalHeight: qrSizeMm * _mmToPt,
+        qrPayload: content.qrPayload,
+        caption: '', // caption rendered separately to the right of the QR.
+      ),
+      // QR caption — to the right of the QR block.
+      DotsTextBlockElement(
+        x: qrCaptionXMm * _mmToPt,
+        y: qrCaptionYMm * _mmToPt,
+        value: qrCaption,
+        fontSize: 9,
+        width: qrCaptionWidthMm * _mmToPt,
+        fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.2,
+      ),
+      // Bottom variable text — `{Protagonistas}, disfruta de está…`.
+      DotsTextBlockElement(
+        x: bottomXMm * _mmToPt,
+        y: bottomYMm * _mmToPt,
+        value: bottomText,
+        fontSize: 9,
+        width: bottomWidthMm * _mmToPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.2,
+      ),
+    ];
+
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
-        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
-        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+        rightPageNumber: '${pageNumber + 1}',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: const [
-        DotsUnimplementedElement(
-          taskId: 'Task 5',
-          message: 'closingQrSpread factory body not yet implemented '
-              '(shared across all categories)',
-        ),
-      ],
+      elements: elements,
     );
   }
 
