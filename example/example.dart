@@ -46,99 +46,96 @@ Future<void> main() async {
   const DotsTemplate template = DotsTemplate(
     documentId: 'demo_2026',
     pageSize: DotsPageSize(width: 209 * mm, height: 260 * mm),
-    pages: <DotsPage>[
-      // Page 1 — explicit-element page with a text greeting and a
-      // remote image. Note: when `assetPath` starts with http:// or
-      // https://, the renderer downloads it into the per-document
-      // tmp/ directory, reads the bytes, and lets the orchestration
-      // layer wipe the file at the end of the run.
-      DotsElementsPage(
-        pageNumber: 1,
-        elements: <DotsElement>[
-          DotsTextElement(
-            x: 72,
-            y: 72,
-            value: 'Hello, dots_pdf!',
-            fontSize: 24,
-          ),
-          DotsImageElement(
-            assetPath: 'https://example.com/photo.jpg',
-            x: 72,
-            y: 120,
-            width: 200,
-            height: 150,
-            bleedRight: true,
-          ),
-        ],
+    pliegos: <DotsPliego>[
+      // Pliego 1 — Page 1 + Page 2. Page 1 is an explicit-element page
+      // with text + remote image. Page 2 is a layout-driven L4.A grid.
+      DotsLayoutPliego(
+        pliegoNumber: 1,
+        left: DotsElementsPage(
+          pageNumber: 1,
+          elements: <DotsElement>[
+            DotsTextElement(
+              x: 72,
+              y: 72,
+              value: 'Hello, dots_pdf!',
+              fontSize: 24,
+            ),
+            DotsImageElement(
+              assetPath: 'https://example.com/photo.jpg',
+              x: 72,
+              y: 120,
+              width: 200,
+              height: 150,
+              bleedRight: true,
+            ),
+          ],
+        ),
+        right: DotsLayoutPage(
+          pageNumber: 2,
+          layoutCode: DotsLayoutCode.l4a,
+          photoAssetPaths: <String>[
+            'https://example.com/p1.jpg',
+            'https://example.com/p2.jpg',
+            '/local/p3.jpg',
+            '/local/p4.jpg',
+          ],
+        ),
       ),
 
-      // Page 2 — layout-driven page using the L4.A grid (four 86×110 mm
-      // photos in a 2×2 grid). The library positions the photo slots
-      // by calling the layout solver; the caller only supplies the
-      // photo asset paths in row-major order.
-      DotsLayoutPage(
-        pageNumber: 2,
-        layoutCode: DotsLayoutCode.l4a,
-        photoAssetPaths: <String>[
-          'https://example.com/p1.jpg',
-          'https://example.com/p2.jpg',
-          '/local/p3.jpg', // local-path images still work
-          '/local/p4.jpg',
-        ],
+      // Pliego 2 — Page 3 (hito milestone with QR) + Page 4 (left half of
+      // a spread image).
+      DotsLayoutPliego(
+        pliegoNumber: 2,
+        left: DotsLayoutPage(
+          pageNumber: 3,
+          layoutCode: DotsLayoutCode.lhito,
+          captions: <DotsSlotKind, String>{
+            DotsSlotKind.captionTitle: 'A milestone worth remembering',
+            DotsSlotKind.captionDate: 'May 17, 2026',
+            DotsSlotKind.captionBody:
+                'Body copy up to 800 chars per the spec.',
+            DotsSlotKind.qrCard: 'https://onelife.example/album/123',
+          },
+        ),
+        right: DotsElementsPage(
+          pageNumber: 4,
+          elements: <DotsElement>[
+            DotsSpreadImageElement(
+              x: 0,
+              y: 0,
+              assetPath: 'https://example.com/panorama.jpg',
+              spreadWidth: 1184,
+              height: 689,
+              half: DotsSpreadHalf.left,
+              bleedTop: true,
+              bleedBottom: true,
+              bleedOuter: true,
+            ),
+          ],
+        ),
       ),
 
-      // Page 3 — milestone (hito) text page with a real QR code.
-      //
-      // The `qr` caption key is a URL string; the library renders an
-      // actual QR matrix into the QR slot using the pdf package's
-      // BarcodeWidget (medium error correction).
-      DotsLayoutPage(
-        pageNumber: 3,
-        layoutCode: DotsLayoutCode.lhito,
-        captions: <DotsSlotKind, String>{
-          DotsSlotKind.captionTitle: 'A milestone worth remembering',
-          DotsSlotKind.captionDate: 'May 17, 2026',
-          DotsSlotKind.captionBody:
-              'Body copy up to 800 chars per the spec.',
-          DotsSlotKind.qrCard: 'https://onelife.example/album/123',
-        },
-      ),
-
-      // Pages 4 + 5 — a 2-page pair carrying a single image that spans
-      // the spread. Caller declares the SAME image twice with matching
-      // `half: left | right`; the renderer clips and offsets so the
-      // two halves stitch at the binding.
-      DotsElementsPage(
-        pageNumber: 4,
-        elements: <DotsElement>[
-          DotsSpreadImageElement(
-            x: 0,
-            y: 0,
-            assetPath: 'https://example.com/panorama.jpg',
-            spreadWidth: 1184,
-            height: 689,
-            half: DotsSpreadHalf.left,
-            bleedTop: true,
-            bleedBottom: true,
-            bleedOuter: true,
-          ),
-        ],
-      ),
-      DotsElementsPage(
-        pageNumber: 5,
-        elements: <DotsElement>[
-          DotsSpreadImageElement(
-            x: 0,
-            y: 0,
-            assetPath: 'https://example.com/panorama.jpg',
-            spreadWidth: 1184,
-            height: 689,
-            half: DotsSpreadHalf.right,
-            bleedTop: true,
-            bleedBottom: true,
-            bleedOuter: true,
-          ),
-        ],
+      // Pliego 3 — Page 5 (right half of the spread image) + a blank
+      // facing page.
+      DotsLayoutPliego(
+        pliegoNumber: 3,
+        left: DotsElementsPage(
+          pageNumber: 5,
+          elements: <DotsElement>[
+            DotsSpreadImageElement(
+              x: 0,
+              y: 0,
+              assetPath: 'https://example.com/panorama.jpg',
+              spreadWidth: 1184,
+              height: 689,
+              half: DotsSpreadHalf.right,
+              bleedTop: true,
+              bleedBottom: true,
+              bleedOuter: true,
+            ),
+          ],
+        ),
+        right: DotsElementsPage(pageNumber: 6, elements: <DotsElement>[]),
       ),
     ],
   );
@@ -197,7 +194,7 @@ Future<void> main() async {
   // supplier). The wrap dimensions, spine width, bleed, and hinch are
   // all derived from `DotsCoverGeometry`.
   final DotsCoverGeometry coverGeometry = DotsCoverGeometry(
-    pageCount: template.pages.length.isEven ? template.pages.length : 4,
+    pageCount: template.effectivePages.length.isEven ? template.effectivePages.length : 4,
     paperSubstrate: DotsPaperSubstrate.uncoated150,
     supplier: DotsSupplier.europa,
   );

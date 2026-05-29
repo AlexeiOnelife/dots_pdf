@@ -5,14 +5,19 @@ String _templateWithText(String value) => '''
 {
   "documentId": "doc_1",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "pages": [
-    {
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
       "pageNumber": 1,
       "elements": [
         { "type": "text", "value": "$value", "x": 0, "y": 0, "fontSize": 12 }
       ]
-    }
-  ]
+    },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
 
@@ -20,25 +25,30 @@ String _templateWithTwoTexts(String v1, String v2) => '''
 {
   "documentId": "doc_1",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "pages": [
-    {
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
       "pageNumber": 1,
       "elements": [
         { "type": "text", "value": "$v1", "x": 0, "y": 0, "fontSize": 12 },
         { "type": "text", "value": "$v2", "x": 0, "y": 20, "fontSize": 12 }
       ]
-    }
-  ]
+    },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
 
 DotsTextElement _firstText(DotsTemplate template) {
-  final page = template.pages.single as DotsElementsPage;
+  final page = template.effectivePages.first as DotsElementsPage;
   return page.elements.whereType<DotsTextElement>().first;
 }
 
 List<DotsTextElement> _allTexts(DotsTemplate template) {
-  final page = template.pages.single as DotsElementsPage;
+  final page = template.effectivePages.first as DotsElementsPage;
   return page.elements.whereType<DotsTextElement>().toList();
 }
 

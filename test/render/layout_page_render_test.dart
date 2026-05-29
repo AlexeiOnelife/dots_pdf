@@ -49,13 +49,17 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_l1',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -79,8 +83,10 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_l4a',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l4a,
             photoAssetPaths: [
@@ -90,7 +96,9 @@ void main() {
               '/assets/d.png',
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -107,8 +115,10 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_hito',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.lhito,
             captions: <DotsSlotKind, String>{
@@ -118,7 +128,9 @@ void main() {
               DotsSlotKind.qrCard: 'https://example.com/album',
             },
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -141,8 +153,10 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_bad_slot',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l4a,
             photoAssetPaths: [
@@ -152,7 +166,9 @@ void main() {
               '/assets/bad.png',
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -211,24 +227,32 @@ void main() {
         documentId: 'doc_chrome_present',
         pageSize: _dotbookPageSize,
         defaultChrome: chrome,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       const noChrome = DotsTemplate(
         documentId: 'doc_chrome_present_baseline',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       final bytesWithChrome = await generateAndRead(withChrome);
       final bytesNoChrome = await generateAndRead(noChrome);
@@ -251,25 +275,33 @@ void main() {
         documentId: 'doc_bleedtop_suppress',
         pageSize: _dotbookPageSize,
         defaultChrome: chrome,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1b,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       const noBleed = DotsTemplate(
         documentId: 'doc_bleedtop_baseline',
         pageSize: _dotbookPageSize,
         defaultChrome: chrome,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       final bytesSuppressed = await generateAndRead(bleedTopL1b);
       final bytesFull = await generateAndRead(noBleed);
@@ -297,13 +329,17 @@ void main() {
         documentId: 'doc_no_bleedbottom',
         pageSize: _dotbookPageSize,
         defaultChrome: chrome,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       final bytes = await generateAndRead(tpl);
       expect(_hasPdfMagic(bytes), isTrue);
@@ -317,24 +353,32 @@ void main() {
         documentId: 'doc_no_bleed',
         pageSize: _dotbookPageSize,
         defaultChrome: chrome,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       const tplNoChrome = DotsTemplate(
         documentId: 'doc_no_bleed_baseline',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       final withChrome = await generateAndRead(tpl);
       final baseline = await generateAndRead(tplNoChrome);
@@ -351,22 +395,30 @@ void main() {
         documentId: 'doc_elements_chrome',
         pageSize: _dotbookPageSize,
         defaultChrome: chrome,
-        pages: [
-          DotsElementsPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
             pageNumber: 1,
             elements: [],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       const tplNoChrome = DotsTemplate(
         documentId: 'doc_elements_baseline',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsElementsPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
             pageNumber: 1,
             elements: [],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       final withChrome = await generateAndRead(tpl);
       final baseline = await generateAndRead(tplNoChrome);
@@ -390,13 +442,17 @@ void main() {
         documentId: 'doc_no_chrome_compat',
         pageSize: _dotbookPageSize,
         // defaultChrome omitted → null
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
       final bytes = await generateAndRead(tpl);
       expect(_hasPdfMagic(bytes), isTrue);

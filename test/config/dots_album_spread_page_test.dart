@@ -85,8 +85,11 @@ void main() {
 {
   "documentId": "doc_1",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "pages": [
-    {
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
       "pageNumber": 1,
       "type": "albumSpread",
       "header": {
@@ -95,13 +98,15 @@ void main() {
         "rightPageNumber": "02"
       },
       "footer": { "wordmark": "Dots. Memories" }
-    }
-  ]
+    },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
       final template = parser.parse(json);
-      expect(template.pages, hasLength(1));
-      final page = template.pages.single;
+      expect(template.effectivePages, hasLength(2));
+      final page = template.effectivePages.first;
       expect(page, isA<DotsAlbumSpreadPage>());
       final spreadPage = page as DotsAlbumSpreadPage;
       expect(spreadPage.header.leftPageNumber, equals('01'));
@@ -116,15 +121,20 @@ void main() {
 {
   "documentId": "doc_1",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "pages": [
-    {
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
       "pageNumber": 1,
       "type": "albumSpread",
       "elements": [],
       "header": { "wordmark": "X" },
       "footer": { "wordmark": "Y" }
-    }
-  ]
+    },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
       expect(
@@ -140,15 +150,20 @@ void main() {
 {
   "documentId": "doc_1",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "pages": [
-    {
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
       "pageNumber": 1,
       "type": "albumSpread",
       "layout": "l1",
       "header": {},
       "footer": { "wordmark": "X" }
-    }
-  ]
+    },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
       expect(

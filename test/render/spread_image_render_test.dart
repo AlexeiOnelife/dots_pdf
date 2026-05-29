@@ -40,40 +40,46 @@ void main() {
         const baselineTemplate = DotsTemplate(
           documentId: 'doc_no_spread',
           pageSize: DotsPageSize(width: 400, height: 300),
-          pages: [
-            DotsElementsPage(pageNumber: 1, elements: []),
-            DotsElementsPage(pageNumber: 2, elements: []),
+          pliegos: [
+            DotsLayoutPliego(
+              pliegoNumber: 1,
+              left: DotsElementsPage(pageNumber: 1, elements: []),
+              right: DotsElementsPage(pageNumber: 2, elements: []),
+            ),
           ],
         );
         const spreadTemplate = DotsTemplate(
           documentId: 'doc_spread',
           pageSize: DotsPageSize(width: 400, height: 300),
-          pages: [
-            DotsElementsPage(
-              pageNumber: 1,
-              elements: [
-                DotsSpreadImageElement(
-                  x: 0,
-                  y: 0,
-                  assetPath: '/assets/spread.png',
-                  spreadWidth: 800,
-                  height: 300,
-                  half: DotsSpreadHalf.left,
-                ),
-              ],
-            ),
-            DotsElementsPage(
-              pageNumber: 2,
-              elements: [
-                DotsSpreadImageElement(
-                  x: 0,
-                  y: 0,
-                  assetPath: '/assets/spread.png',
-                  spreadWidth: 800,
-                  height: 300,
-                  half: DotsSpreadHalf.right,
-                ),
-              ],
+          pliegos: [
+            DotsLayoutPliego(
+              pliegoNumber: 1,
+              left: DotsElementsPage(
+                pageNumber: 1,
+                elements: [
+                  DotsSpreadImageElement(
+                    x: 0,
+                    y: 0,
+                    assetPath: '/assets/spread.png',
+                    spreadWidth: 800,
+                    height: 300,
+                    half: DotsSpreadHalf.left,
+                  ),
+                ],
+              ),
+              right: DotsElementsPage(
+                pageNumber: 2,
+                elements: [
+                  DotsSpreadImageElement(
+                    x: 0,
+                    y: 0,
+                    assetPath: '/assets/spread.png',
+                    spreadWidth: 800,
+                    height: 300,
+                    half: DotsSpreadHalf.right,
+                  ),
+                ],
+              ),
             ),
           ],
         );
@@ -129,32 +135,35 @@ void main() {
         const template = DotsTemplate(
           documentId: 'doc_url_spread',
           pageSize: DotsPageSize(width: 400, height: 300),
-          pages: [
-            DotsElementsPage(
-              pageNumber: 1,
-              elements: [
-                DotsSpreadImageElement(
-                  x: 0,
-                  y: 0,
-                  assetPath: 'https://example.com/wide.png',
-                  spreadWidth: 800,
-                  height: 300,
-                  half: DotsSpreadHalf.left,
-                ),
-              ],
-            ),
-            DotsElementsPage(
-              pageNumber: 2,
-              elements: [
-                DotsSpreadImageElement(
-                  x: 0,
-                  y: 0,
-                  assetPath: 'https://example.com/wide.png',
-                  spreadWidth: 800,
-                  height: 300,
-                  half: DotsSpreadHalf.right,
-                ),
-              ],
+          pliegos: [
+            DotsLayoutPliego(
+              pliegoNumber: 1,
+              left: DotsElementsPage(
+                pageNumber: 1,
+                elements: [
+                  DotsSpreadImageElement(
+                    x: 0,
+                    y: 0,
+                    assetPath: 'https://example.com/wide.png',
+                    spreadWidth: 800,
+                    height: 300,
+                    half: DotsSpreadHalf.left,
+                  ),
+                ],
+              ),
+              right: DotsElementsPage(
+                pageNumber: 2,
+                elements: [
+                  DotsSpreadImageElement(
+                    x: 0,
+                    y: 0,
+                    assetPath: 'https://example.com/wide.png',
+                    spreadWidth: 800,
+                    height: 300,
+                    half: DotsSpreadHalf.right,
+                  ),
+                ],
+              ),
             ),
           ],
         );

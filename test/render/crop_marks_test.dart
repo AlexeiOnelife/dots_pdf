@@ -14,8 +14,12 @@ void main() {
     const template = DotsTemplate(
       documentId: 'crop_test',
       pageSize: DotsPageSize(width: 200, height: 300),
-      pages: [
-        DotsElementsPage(pageNumber: 1, elements: []),
+      pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(pageNumber: 1, elements: []),
+          right: DotsElementsPage(pageNumber: 2, elements: []),
+        ),
       ],
     );
 

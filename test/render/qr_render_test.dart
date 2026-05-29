@@ -31,11 +31,15 @@ Future<Uint8List> _renderHito({
   final template = DotsTemplate(
     documentId: documentId,
     pageSize: _dotbookPageSize,
-    pages: <DotsPage>[
-      DotsLayoutPage(
-        pageNumber: 1,
-        layoutCode: DotsLayoutCode.lhito,
-        captions: captions,
+    pliegos: <DotsPliego>[
+      DotsLayoutPliego(
+        pliegoNumber: 1,
+        left: DotsLayoutPage(
+          pageNumber: 1,
+          layoutCode: DotsLayoutCode.lhito,
+          captions: captions,
+        ),
+        right: const DotsElementsPage(pageNumber: 2, elements: []),
       ),
     ],
   );

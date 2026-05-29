@@ -10,13 +10,18 @@ void main() {
       {
         "documentId": "doc_1",
         "pageSize": { "width": 595.0, "height": 842.0 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "elements": [
               { "type": "text", "value": "hi", "x": 10, "y": 20, "fontSize": 12 },
               { "type": "image", "assetPath": "a.png", "x": 0, "y": 0, "width": 50, "height": 50 }
             ]
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
@@ -26,8 +31,8 @@ void main() {
 
       expect(template.documentId, 'doc_1');
       expect(template.pageSize, const DotsPageSize(width: 595, height: 842));
-      expect(template.pages, hasLength(1));
-      final page = template.pages.single as DotsElementsPage;
+      expect(template.effectivePages, hasLength(2));
+      final page = template.effectivePages.first as DotsElementsPage;
       expect(page.elements, hasLength(2));
       expect(page.elements.first, isA<DotsTextElement>());
       expect(page.elements.last, isA<DotsImageElement>());
@@ -35,7 +40,7 @@ void main() {
 
     test('throws DotsConfigException on missing documentId', () {
       const json = '''
-      { "pageSize": { "width": 1, "height": 1 }, "pages": [] }
+      { "pageSize": { "width": 1, "height": 1 }, "pliegos": [] }
       ''';
       expect(
         () => parser.parse(json),
@@ -48,8 +53,13 @@ void main() {
       {
         "documentId": "d",
         "pageSize": { "width": 1, "height": 1 },
-        "pages": [
-          { "pageNumber": 1, "elements": [ { "type": "rectangle", "x": 0, "y": 0 } ] }
+        "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [ { "type": "rectangle", "x": 0, "y": 0 } ] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
         ]
       }
       ''';
@@ -77,8 +87,13 @@ void main() {
       {
         "documentId": "doc_1",
         "pageSize": { "width": 100, "height": 200 },
-        "pages": [
-          { "pageNumber": 1, "elements": [] }
+        "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
         ]
       }
       ''';
@@ -92,15 +107,20 @@ void main() {
       {
         "documentId": "d",
         "pageSize": { "width": 1, "height": 1 },
-        "pages": [
-          { "pageNumber": 1, "elements": [
+        "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [
             { "type": "image", "assetPath": "a.png",
               "x": 0, "y": 0, "width": 10, "height": 10 }
-          ] }
+          ] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
         ]
       }
       ''';
-      final page = parser.parse(json).pages.single as DotsElementsPage;
+      final page = parser.parse(json).effectivePages.first as DotsElementsPage;
       final image = page.elements.single as DotsImageElement;
       expect(image.bleedTop, isFalse);
       expect(image.bleedBottom, isFalse);
@@ -113,16 +133,21 @@ void main() {
       {
         "documentId": "d",
         "pageSize": { "width": 1, "height": 1 },
-        "pages": [
-          { "pageNumber": 1, "elements": [
+        "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [
             { "type": "image", "assetPath": "a.png",
               "x": 0, "y": 0, "width": 10, "height": 10,
               "bleedTop": true, "bleedRight": true }
-          ] }
+          ] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
         ]
       }
       ''';
-      final page = parser.parse(json).pages.single as DotsElementsPage;
+      final page = parser.parse(json).effectivePages.first as DotsElementsPage;
       final image = page.elements.single as DotsImageElement;
       expect(image.bleedTop, isTrue);
       expect(image.bleedRight, isTrue);
@@ -135,11 +160,16 @@ void main() {
       {
         "documentId": "d",
         "pageSize": { "width": 1, "height": 1 },
-        "pages": [
-          { "pageNumber": 1, "elements": [
+        "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [
             { "type": "image", "assetPath": "a.png",
               "x": 0, "y": 0, "width": 10, "height": 10 }
-          ] }
+          ] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
         ]
       }
       ''';
@@ -147,12 +177,17 @@ void main() {
       {
         "documentId": "d",
         "pageSize": { "width": 1, "height": 1 },
-        "pages": [
-          { "pageNumber": 1, "elements": [
+        "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [
             { "type": "image", "assetPath": "a.png",
               "x": 0, "y": 0, "width": 10, "height": 10,
               "bleedTop": true }
-          ] }
+          ] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
         ]
       }
       ''';
@@ -167,10 +202,15 @@ void main() {
       {
         "documentId": "doc_1",
         "pageSize": { "width": 100, "height": 200 },
-        "pages": [
-          { "pageNumber": 1, "elements": [
+        "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [
             { "type": "text", "value": "a", "x": 0, "y": 0, "fontSize": 10 }
-          ] }
+          ] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
         ]
       }
       ''';
@@ -178,10 +218,15 @@ void main() {
       {
         "documentId": "doc_1",
         "pageSize": { "width": 100, "height": 200 },
-        "pages": [
-          { "pageNumber": 1, "elements": [
+        "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [
             { "type": "text", "value": "b", "x": 0, "y": 0, "fontSize": 10 }
-          ] }
+          ] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
         ]
       }
       ''';
@@ -202,15 +247,20 @@ void main() {
 {
   "documentId": "doc_existing",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "pages": [
-    {
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
       "pageNumber": 1,
       "elements": [
         { "type": "text", "value": "hello world", "x": 10, "y": 20, "fontSize": 12 },
         { "type": "image", "assetPath": "a.png", "x": 0, "y": 0, "width": 50, "height": 50 }
       ]
-    }
-  ]
+    },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
 
@@ -220,13 +270,13 @@ void main() {
       // Must not throw.
       final template = parser.parse(existingFixture);
 
-      // category must be null — no albumType key in JSON.
-      expect(template.category, isNull);
+      // category defaults to generalEventos when omitted in JSON.
+      expect(template.category, equals(DotsAlbumType.generalEventos));
 
       // All existing fields must be intact.
       expect(template.documentId, equals('doc_existing'));
-      expect(template.pages, hasLength(1));
-      final page = template.pages.single as DotsElementsPage;
+      expect(template.effectivePages, hasLength(2));
+      final page = template.effectivePages.first as DotsElementsPage;
       expect(page.elements, hasLength(2));
       final text = page.elements.first as DotsTextElement;
       // Literal text must be unchanged (no substitution with empty map).
@@ -239,7 +289,7 @@ void main() {
       // Calling parseMap without the variables argument (default const {})
       // must leave all DotsTextElement.value strings as-is.
       final template = parser.parse(existingFixture);
-      final page = template.pages.single as DotsElementsPage;
+      final page = template.effectivePages.first as DotsElementsPage;
       final text = page.elements.first as DotsTextElement;
       expect(text.value, equals('hello world'));
     });
