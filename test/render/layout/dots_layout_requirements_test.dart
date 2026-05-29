@@ -23,7 +23,7 @@ void main() {
       const solver = DotsLayoutSolver();
       final geometry = DotsPageGeometry.dotbookDefault();
       for (final code in DotsLayoutCode.values) {
-        final slots = solver.solve(code, geometry);
+        final slots = solver.solve(code, geometry, isLeftPage: true);
         final photoSlots =
             slots.where((s) => s.kind == DotsSlotKind.photo).length;
         expect(

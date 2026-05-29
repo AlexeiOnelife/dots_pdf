@@ -15,328 +15,395 @@ const DotsLayoutSolver _solver = DotsLayoutSolver();
 List<DotsSlotRect> _photos(List<DotsSlotRect> slots) =>
     slots.where((DotsSlotRect s) => s.kind == DotsSlotKind.photo).toList();
 
-/// Verifies the full block of [slots] is vertically centered within the
-/// live area: live-area space above the first slot equals live-area
-/// space below the last slot, within [_tolMm].
-void _expectLiveAreaCentered(
-  List<DotsSlotRect> slots,
-  DotsPageGeometry geometry,
-) {
-  expect(slots, isNotEmpty);
-  // Compute the bounding box of all slots.
-  double minY = double.infinity;
-  double maxY = double.negativeInfinity;
-  for (final DotsSlotRect s in slots) {
-    if (s.yMm < minY) minY = s.yMm;
-    final double bottom = s.yMm + s.heightMm;
-    if (bottom > maxY) maxY = bottom;
-  }
-  final double topMargin = minY - geometry.liveAreaTopMm;
-  final double bottomMargin = geometry.liveAreaBottomMm - maxY;
-  expect(
-    (topMargin - bottomMargin).abs(),
-    lessThan(_tolMm),
-    reason: 'top margin $topMargin mm should equal bottom margin '
-        '$bottomMargin mm',
-  );
-}
-
-/// Verifies horizontal centering of a single slot on the page.
-void _expectPageHorizontallyCentered(
+void _expectOuterAligned(
   DotsSlotRect slot,
-  DotsPageGeometry geometry,
-) {
-  final double leftMargin = slot.xMm;
-  final double rightMargin =
-      geometry.pageWidthMm - (slot.xMm + slot.widthMm);
+  DotsPageGeometry geometry, {
+  required bool isLeftPage,
+}) {
+  final double expectedX = isLeftPage
+      ? geometry.outerMarginMm
+      : geometry.pageWidthMm - geometry.outerMarginMm - slot.widthMm;
   expect(
-    (leftMargin - rightMargin).abs(),
+    (slot.xMm - expectedX).abs(),
     lessThan(_tolMm),
-    reason: 'left $leftMargin mm should equal right $rightMargin mm',
+    reason: 'slot x=$slot.xMm should equal outer-aligned x=$expectedX '
+        '(isLeftPage=$isLeftPage)',
   );
 }
 
 void main() {
-  group('DotsLayoutCode.l1 (1 photo, 142 x 189)', () {
-    test('emits one centered photo slot at spec dimensions', () {
-      final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l1, g);
-      expect(slots, hasLength(1));
-      expect(slots.single.kind, DotsSlotKind.photo);
-      expect(slots.single.widthMm, 142);
-      expect(slots.single.heightMm, 189);
-      expect(slots.single.bleedTop, isFalse);
-      expect(slots.single.bleedBottom, isFalse);
-      expect(slots.single.bleedLeft, isFalse);
-      expect(slots.single.bleedRight, isFalse);
-      _expectPageHorizontallyCentered(slots.single, g);
-      _expectLiveAreaCentered(slots, g);
+  // ---------------------------------------------------------------------
+  // Helper unit test — the outer-edge alignment formula is the single
+  // shared positioning rule across every photo layout.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutSolver.outerAlignedX', () {
+    final DotsPageGeometry g = _geometry();
+
+    test('left page: returns outerMarginMm regardless of block width', () {
+      expect(
+        DotsLayoutSolver.outerAlignedXForTest(g, 142, isLeftPage: true),
+        equals(g.outerMarginMm),
+      );
+      expect(
+        DotsLayoutSolver.outerAlignedXForTest(g, 86, isLeftPage: true),
+        equals(g.outerMarginMm),
+      );
+    });
+
+    test('right page: returns pageWidth - outerMargin - blockWidth', () {
+      expect(
+        DotsLayoutSolver.outerAlignedXForTest(g, 142, isLeftPage: false),
+        equals(g.pageWidthMm - g.outerMarginMm - 142),
+      );
+      expect(
+        DotsLayoutSolver.outerAlignedXForTest(g, 86, isLeftPage: false),
+        equals(g.pageWidthMm - g.outerMarginMm - 86),
+      );
     });
   });
 
-  group('DotsLayoutCode.l1a (1 photo, 113 x 152)', () {
-    test('emits one centered photo slot at spec dimensions', () {
+  // ---------------------------------------------------------------------
+  // L1 — 142×189 mm photo with captionDate + captionBody above the photo.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l1 (142×189 + captions)', () {
+    test('left page: photo at outer-left + caption stack above', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l1a, g);
-      expect(slots, hasLength(1));
-      expect(slots.single.widthMm, 113);
-      expect(slots.single.heightMm, 152);
-      _expectPageHorizontallyCentered(slots.single, g);
-      _expectLiveAreaCentered(slots, g);
+      final slots = _solver.solve(DotsLayoutCode.l1, g, isLeftPage: true);
+      expect(slots, hasLength(3));
+      expect(slots[0].kind, DotsSlotKind.photo);
+      expect(slots[0].widthMm, 142);
+      expect(slots[0].heightMm, 189);
+      expect((slots[0].yMm - 57).abs(), lessThan(_tolMm));
+      _expectOuterAligned(slots[0], g, isLeftPage: true);
+      expect(slots[1].kind, DotsSlotKind.captionDate);
+      expect(slots[2].kind, DotsSlotKind.captionBody);
+      // Caption stack sits above the photo (lower y values).
+      expect(slots[1].yMm, lessThan(slots[0].yMm));
+      expect(slots[2].yMm, lessThan(slots[1].yMm));
+    });
+
+    test('right page: photo mirrored to outer-right', () {
+      final DotsPageGeometry g = _geometry();
+      final slots = _solver.solve(DotsLayoutCode.l1, g, isLeftPage: false);
+      _expectOuterAligned(slots[0], g, isLeftPage: false);
     });
   });
 
-  group('DotsLayoutCode.l1b (1 photo, 175 x 238, edge-bleed)', () {
-    test('emits one oversized slot with bleed flags', () {
+  // ---------------------------------------------------------------------
+  // L1A — 113×152 mm photo with side caption column (82 mm).
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l1a (113×152 + side caption)', () {
+    test('left page: photo at outer-left, caption to the right (binding side)',
+        () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l1b, g);
-      expect(slots, hasLength(1));
-      final DotsSlotRect slot = slots.single;
-      expect(slot.kind, DotsSlotKind.photo);
+      final slots = _solver.solve(DotsLayoutCode.l1a, g, isLeftPage: true);
+      expect(slots, hasLength(3));
+      expect(slots[0].kind, DotsSlotKind.photo);
+      expect(slots[0].widthMm, 113);
+      expect(slots[0].heightMm, 152);
+      expect((slots[0].yMm - 33.5).abs(), lessThan(_tolMm));
+      _expectOuterAligned(slots[0], g, isLeftPage: true);
+      // Caption column is 82 mm wide and sits to the binding side of
+      // the photo (right of the photo on a left page).
+      expect(slots[1].kind, DotsSlotKind.captionDate);
+      expect(slots[1].widthMm, 82);
+      expect(slots[1].xMm, greaterThan(slots[0].xMm + slots[0].widthMm - _tolMm));
+    });
+
+    test('right page: caption column flips to the left of the photo', () {
+      final DotsPageGeometry g = _geometry();
+      final slots = _solver.solve(DotsLayoutCode.l1a, g, isLeftPage: false);
+      // Caption column sits LEFT of the photo on a right page.
+      expect(slots[1].xMm, lessThan(slots[0].xMm));
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // L1B — 175×238 mm full-outer-bleed.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l1b (175×238 outer-bleed)', () {
+    test('left page: bleeds top + bottom + LEFT (the outer edge)', () {
+      final DotsPageGeometry g = _geometry();
+      final slot =
+          _solver.solve(DotsLayoutCode.l1b, g, isLeftPage: true).single;
       expect(slot.widthMm, 175);
       expect(slot.heightMm, 238);
+      expect((slot.yMm - 8).abs(), lessThan(_tolMm));
       expect(slot.bleedTop, isTrue);
       expect(slot.bleedBottom, isTrue);
       expect(slot.bleedLeft, isTrue);
+      expect(slot.bleedRight, isFalse);
+      _expectOuterAligned(slot, g, isLeftPage: true);
+    });
+
+    test('right page: bleeds top + bottom + RIGHT (the outer edge)', () {
+      final DotsPageGeometry g = _geometry();
+      final slot =
+          _solver.solve(DotsLayoutCode.l1b, g, isLeftPage: false).single;
+      expect(slot.bleedLeft, isFalse);
       expect(slot.bleedRight, isTrue);
-      _expectPageHorizontallyCentered(slot, g);
-      // Vertically centered on the FULL page (not the live area) because
-      // the slot bleeds top + bottom.
-      final double topMargin = slot.yMm;
-      final double bottomMargin =
-          g.pageHeightMm - (slot.yMm + slot.heightMm);
-      expect((topMargin - bottomMargin).abs(), lessThan(_tolMm));
+      _expectOuterAligned(slot, g, isLeftPage: false);
     });
   });
 
-  group('DotsLayoutCode.l1c (1 photo, 175 x 196)', () {
-    test('emits one centered photo slot at spec dimensions', () {
+  // ---------------------------------------------------------------------
+  // L1C — 175×196 mm photo at y=23 mm.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l1c (175×196 at y=23)', () {
+    test('photo at outer-left and y=23', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l1c, g);
-      expect(slots, hasLength(1));
-      expect(slots.single.widthMm, 175);
-      expect(slots.single.heightMm, 196);
-      _expectPageHorizontallyCentered(slots.single, g);
-      _expectLiveAreaCentered(slots, g);
+      final slot =
+          _solver.solve(DotsLayoutCode.l1c, g, isLeftPage: true).single;
+      expect(slot.widthMm, 175);
+      expect(slot.heightMm, 196);
+      expect((slot.yMm - 23).abs(), lessThan(_tolMm));
+      _expectOuterAligned(slot, g, isLeftPage: true);
     });
   });
 
-  group('DotsLayoutCode.l1d (1 photo, 107 x 107)', () {
-    test('emits one centered square slot at spec dimensions', () {
+  // ---------------------------------------------------------------------
+  // L1D — 107×107 mm square (PDF-unconfirmed, outer-aligned applied).
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l1d (107×107 square)', () {
+    test('photo at outer-left, vertically centered', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l1d, g);
-      expect(slots, hasLength(1));
-      expect(slots.single.widthMm, 107);
-      expect(slots.single.heightMm, 107);
-      _expectPageHorizontallyCentered(slots.single, g);
-      _expectLiveAreaCentered(slots, g);
+      final slot =
+          _solver.solve(DotsLayoutCode.l1d, g, isLeftPage: true).single;
+      expect(slot.widthMm, 107);
+      expect(slot.heightMm, 107);
+      _expectOuterAligned(slot, g, isLeftPage: true);
     });
   });
 
-  group('DotsLayoutCode.l1e (1 photo, 107 x 152)', () {
-    test('emits one centered photo slot at spec dimensions', () {
+  // ---------------------------------------------------------------------
+  // L1E — 107×152 mm + side caption (PDF-unconfirmed, by analogy with L1A).
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l1e (107×152 + side caption)', () {
+    test('photo at outer-left with caption column to the right', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l1e, g);
-      expect(slots, hasLength(1));
-      expect(slots.single.widthMm, 107);
-      expect(slots.single.heightMm, 152);
-      _expectPageHorizontallyCentered(slots.single, g);
-      _expectLiveAreaCentered(slots, g);
+      final slots = _solver.solve(DotsLayoutCode.l1e, g, isLeftPage: true);
+      expect(slots, hasLength(3));
+      expect(slots[0].widthMm, 107);
+      expect(slots[0].heightMm, 152);
+      _expectOuterAligned(slots[0], g, isLeftPage: true);
+      expect(slots[1].kind, DotsSlotKind.captionDate);
+      expect(slots[1].widthMm, 82);
     });
   });
 
-  group('DotsLayoutCode.l2a (2 photos, 86 x 110, 16 mm gutter)', () {
-    test('emits two side-by-side photo slots with a 16 mm gap', () {
+  // ---------------------------------------------------------------------
+  // L2A — 2× 86×110 mm side-by-side with 16 mm gutter.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l2a (2× 86×110, 16 mm gutter)', () {
+    test('two photos side-by-side, block outer-left aligned', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l2a, g);
+      final slots = _solver.solve(DotsLayoutCode.l2a, g, isLeftPage: true);
       expect(slots, hasLength(2));
-      expect(slots.first.widthMm, 86);
-      expect(slots.first.heightMm, 110);
+      expect(slots[0].widthMm, 86);
+      expect(slots[0].heightMm, 110);
+      // Block (2*86 + 16 = 188 mm) outer-aligned at 8 mm from left.
+      expect((slots[0].xMm - g.outerMarginMm).abs(), lessThan(_tolMm));
       final double gap = slots[1].xMm - (slots[0].xMm + slots[0].widthMm);
       expect((gap - 16).abs(), lessThan(_tolMm));
-      // Both slots share the same y.
       expect(slots[0].yMm, slots[1].yMm);
-      // Block is horizontally centered.
-      final double blockWidth =
-          (slots[1].xMm + slots[1].widthMm) - slots[0].xMm;
-      final double leftMargin = slots[0].xMm;
-      final double rightMargin = g.pageWidthMm -
-          (slots[0].xMm + blockWidth);
-      expect((leftMargin - rightMargin).abs(), lessThan(_tolMm));
-      _expectLiveAreaCentered(slots, g);
     });
   });
 
-  group('DotsLayoutCode.l2b (2 photos, 115.5 x 86, 3 mm v-gap)', () {
-    test('emits two stacked photos with 3 mm gap', () {
+  // ---------------------------------------------------------------------
+  // L2B — 175×107 mm landscape × 2 stacked, y=29 mm top.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l2b (175×107 landscape stacked)', () {
+    test('two landscape photos stacked vertically with 3 mm gap', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l2b, g);
+      final slots = _solver.solve(DotsLayoutCode.l2b, g, isLeftPage: true);
       expect(slots, hasLength(2));
-      expect(slots.first.widthMm, 115.5);
-      expect(slots.first.heightMm, 86);
+      expect(slots[0].widthMm, 175);
+      expect(slots[0].heightMm, 107);
+      expect((slots[0].yMm - 29).abs(), lessThan(_tolMm));
       final double gap = slots[1].yMm - (slots[0].yMm + slots[0].heightMm);
       expect((gap - 3).abs(), lessThan(_tolMm));
-      _expectPageHorizontallyCentered(slots[0], g);
-      _expectPageHorizontallyCentered(slots[1], g);
-      _expectLiveAreaCentered(slots, g);
+      _expectOuterAligned(slots[0], g, isLeftPage: true);
+      _expectOuterAligned(slots[1], g, isLeftPage: true);
     });
   });
 
-  group('DotsLayoutCode.l2c (2 photos, 65 x 74, 3 mm gap)', () {
-    test('emits two stacked photos with 3 mm gap', () {
+  // ---------------------------------------------------------------------
+  // L2C — 65×74 mm × 2 stacked.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l2c (65×74 stacked)', () {
+    test('two stacked photos, block outer-aligned', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l2c, g);
+      final slots = _solver.solve(DotsLayoutCode.l2c, g, isLeftPage: true);
       expect(slots, hasLength(2));
-      expect(slots.first.widthMm, 65);
-      expect(slots.first.heightMm, 74);
+      expect(slots[0].widthMm, 65);
+      expect(slots[0].heightMm, 74);
+      _expectOuterAligned(slots[0], g, isLeftPage: true);
       final double gap = slots[1].yMm - (slots[0].yMm + slots[0].heightMm);
       expect((gap - 3).abs(), lessThan(_tolMm));
-      _expectLiveAreaCentered(slots, g);
     });
   });
 
-  group('DotsLayoutCode.l3a (3 photos, 60.27 x 82, 3 mm gaps)', () {
-    test('emits three photos in a row with 3 mm horizontal gaps', () {
+  // ---------------------------------------------------------------------
+  // L3A — 3× 60.27×82 mm row at y=86.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l3a (3× 60.27×82 at y=86)', () {
+    test('three photos in a row with 3 mm gaps, y=86', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l3a, g);
+      final slots = _solver.solve(DotsLayoutCode.l3a, g, isLeftPage: true);
       expect(slots, hasLength(3));
-      expect(slots.first.widthMm, 60.27);
-      expect(slots.first.heightMm, 82);
+      expect(slots[0].widthMm, 60.27);
+      expect(slots[0].heightMm, 82);
+      expect((slots[0].yMm - 86).abs(), lessThan(_tolMm));
+      // Block width = 60.27 * 3 + 3 * 2 = 186.81; outer-aligned at 8 mm.
+      expect((slots[0].xMm - g.outerMarginMm).abs(), lessThan(_tolMm));
       for (int i = 1; i < 3; i++) {
         final double gap =
             slots[i].xMm - (slots[i - 1].xMm + slots[i - 1].widthMm);
-        expect(
-          (gap - 3).abs(),
-          lessThan(_tolMm),
-          reason: 'gap between slot ${i - 1} and $i should be 3 mm',
-        );
-        expect(slots[i].yMm, slots[i - 1].yMm);
+        expect((gap - 3).abs(), lessThan(_tolMm));
       }
-      _expectLiveAreaCentered(slots, g);
     });
   });
 
-  group('DotsLayoutCode.l4a (4 photos, 86 x 110, 2 x 2, 3 mm gaps)', () {
-    test('emits four photos in a 2x2 grid with 3 mm gaps', () {
+  // ---------------------------------------------------------------------
+  // L4A — 86×86 mm SQUARE × 2×2 at y=71.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l4a (86×86 SQUARE 2×2 grid at y=71)', () {
+    test('left page: four squares with 3 mm gaps starting y=71', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l4a, g);
+      final slots = _solver.solve(DotsLayoutCode.l4a, g, isLeftPage: true);
       expect(slots, hasLength(4));
-      expect(slots.first.widthMm, 86);
-      expect(slots.first.heightMm, 110);
-      // Slots are top-left, top-right, bottom-left, bottom-right.
-      final double hGapTop =
-          slots[1].xMm - (slots[0].xMm + slots[0].widthMm);
-      final double hGapBottom =
-          slots[3].xMm - (slots[2].xMm + slots[2].widthMm);
-      final double vGapLeft =
-          slots[2].yMm - (slots[0].yMm + slots[0].heightMm);
-      final double vGapRight =
-          slots[3].yMm - (slots[1].yMm + slots[1].heightMm);
-      expect((hGapTop - 3).abs(), lessThan(_tolMm));
-      expect((hGapBottom - 3).abs(), lessThan(_tolMm));
-      expect((vGapLeft - 3).abs(), lessThan(_tolMm));
-      expect((vGapRight - 3).abs(), lessThan(_tolMm));
-      _expectLiveAreaCentered(slots, g);
+      expect(slots[0].widthMm, 86);
+      expect(slots[0].heightMm, 86);
+      expect((slots[0].yMm - 71).abs(), lessThan(_tolMm));
+      // Top-left photo outer-aligned at 8 mm from left.
+      expect((slots[0].xMm - g.outerMarginMm).abs(), lessThan(_tolMm));
+      // 3 mm gaps everywhere.
+      expect((slots[1].xMm - (slots[0].xMm + 86) - 3).abs(), lessThan(_tolMm));
+      expect((slots[2].yMm - (slots[0].yMm + 86) - 3).abs(), lessThan(_tolMm));
+    });
+
+    test('right page: grid mirrors so the OUTER-right column is at the trim',
+        () {
+      final DotsPageGeometry g = _geometry();
+      final slots = _solver.solve(DotsLayoutCode.l4a, g, isLeftPage: false);
+      // Block width = 86 * 2 + 3 = 175. Outer-right (right edge of block)
+      // sits at pageWidth - outerMargin = 203 - 8 = 195.
+      final double rightEdge = slots[1].xMm + slots[1].widthMm;
+      expect(
+        (rightEdge - (g.pageWidthMm - g.outerMarginMm)).abs(),
+        lessThan(_tolMm),
+      );
     });
   });
 
-  group('DotsLayoutCode.l4b (per-page slice: 2 photos, 86 x 110)', () {
-    test('emits two side-by-side photos with 3 mm gap', () {
+  // ---------------------------------------------------------------------
+  // L4B — 86×110 mm × 2 stacked vertically, canonical y=23.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l4b (86×110 stacked, y=23 canonical)', () {
+    test('two stacked photos starting y=23, outer-aligned', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l4b, g);
+      final slots = _solver.solve(DotsLayoutCode.l4b, g, isLeftPage: true);
       expect(slots, hasLength(2));
-      expect(slots.first.widthMm, 86);
-      expect(slots.first.heightMm, 110);
-      final double gap = slots[1].xMm - (slots[0].xMm + slots[0].widthMm);
+      expect(slots[0].widthMm, 86);
+      expect(slots[0].heightMm, 110);
+      expect((slots[0].yMm - 23).abs(), lessThan(_tolMm));
+      _expectOuterAligned(slots[0], g, isLeftPage: true);
+      final double gap = slots[1].yMm - (slots[0].yMm + slots[0].heightMm);
       expect((gap - 3).abs(), lessThan(_tolMm));
-      _expectLiveAreaCentered(slots, g);
     });
   });
 
-  group('DotsLayoutCode.l6a (per-page slice: 3 photos, 86 x 110)', () {
-    test('emits three photos in a 2+1 arrangement with 3 mm gaps', () {
+  // ---------------------------------------------------------------------
+  // L6A — 2+1 arrangement, 86×110 mm.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l6a (2+1 arrangement, 86×110)', () {
+    test('three photos in a 2+1 arrangement, outer-aligned', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l6a, g);
+      final slots = _solver.solve(DotsLayoutCode.l6a, g, isLeftPage: true);
       expect(slots, hasLength(3));
-      expect(slots.first.widthMm, 86);
-      expect(slots.first.heightMm, 110);
-      // Top row: slot[0] and slot[1] share y, 3 mm horizontal gap.
+      expect(slots[0].widthMm, 86);
+      expect(slots[0].heightMm, 110);
+      // Top row outer-aligned at 8 mm.
+      expect((slots[0].xMm - g.outerMarginMm).abs(), lessThan(_tolMm));
       expect(slots[0].yMm, slots[1].yMm);
-      final double topGap =
-          slots[1].xMm - (slots[0].xMm + slots[0].widthMm);
-      expect((topGap - 3).abs(), lessThan(_tolMm));
-      // Bottom photo sits 3 mm below the top row.
-      final double rowGap =
-          slots[2].yMm - (slots[0].yMm + slots[0].heightMm);
-      expect((rowGap - 3).abs(), lessThan(_tolMm));
-      _expectLiveAreaCentered(slots, g);
+      // Bottom photo also outer-aligned.
+      expect((slots[2].xMm - g.outerMarginMm).abs(), lessThan(_tolMm));
     });
   });
 
-  group('DotsLayoutCode.l7 (per-page slice: 2 panes, 142 x 105)', () {
-    test('emits two photo slots plus caption slots per pane', () {
+  // ---------------------------------------------------------------------
+  // L7 — 86×110 panes with 7.5 mm photo-to-caption gap.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l7 (86×110 panes + captions)', () {
+    test('two panes, each with photo + captionDate + captionBody', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l7, g);
-      final List<DotsSlotRect> photos = _photos(slots);
+      final slots = _solver.solve(DotsLayoutCode.l7, g, isLeftPage: true);
+      final photos = _photos(slots);
       expect(photos, hasLength(2));
-      expect(photos.first.widthMm, 142);
-      expect(photos.first.heightMm, 105);
+      expect(photos[0].widthMm, 86);
+      expect(photos[0].heightMm, 110);
+      _expectOuterAligned(photos[0], g, isLeftPage: true);
       // Caption-related slots follow their photo in the list.
-      expect(slots.first.kind, DotsSlotKind.photo);
+      expect(slots[0].kind, DotsSlotKind.photo);
       expect(slots[1].kind, DotsSlotKind.captionDate);
       expect(slots[2].kind, DotsSlotKind.captionBody);
-      _expectLiveAreaCentered(slots, g);
+      // 7.5 mm photo-to-date gap.
+      final double gap = slots[1].yMm - (slots[0].yMm + slots[0].heightMm);
+      expect((gap - 7.5).abs(), lessThan(_tolMm));
     });
   });
 
-  group('DotsLayoutCode.l8 (per-page slice: 2 top + 1 bottom)', () {
-    test('emits two top photos with 3 mm gap + one bottom photo', () {
+  // ---------------------------------------------------------------------
+  // L8 — 2× 86×110 top + 1× 175×115.5 bottom.
+  // ---------------------------------------------------------------------
+  group('DotsLayoutCode.l8 (2× top + 1× bottom)', () {
+    test('left page: top row + bottom slab, outer-aligned', () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots = _solver.solve(DotsLayoutCode.l8, g);
+      final slots = _solver.solve(DotsLayoutCode.l8, g, isLeftPage: true);
       expect(slots, hasLength(3));
-      expect(slots.first.widthMm, 86);
-      expect(slots.first.heightMm, 110);
+      expect(slots[0].widthMm, 86);
+      expect(slots[0].heightMm, 110);
       expect(slots[2].widthMm, 175);
       expect(slots[2].heightMm, 115.5);
-      // Top row 3 mm horizontal gap.
-      final double topGap =
-          slots[1].xMm - (slots[0].xMm + slots[0].widthMm);
-      expect((topGap - 3).abs(), lessThan(_tolMm));
-      // 3 mm vertical row gap between top row and bottom.
-      final double rowGap =
-          slots[2].yMm - (slots[0].yMm + slots[0].heightMm);
-      expect((rowGap - 3).abs(), lessThan(_tolMm));
-      _expectLiveAreaCentered(slots, g);
+      // Top row block outer-aligned at 8 mm from left.
+      expect((slots[0].xMm - g.outerMarginMm).abs(), lessThan(_tolMm));
+      // Bottom slab outer-aligned at 8 mm from left.
+      expect((slots[2].xMm - g.outerMarginMm).abs(), lessThan(_tolMm));
+    });
+
+    test('right page: bottom slab right-edge sits at pageWidth - 8 mm', () {
+      final DotsPageGeometry g = _geometry();
+      final slots = _solver.solve(DotsLayoutCode.l8, g, isLeftPage: false);
+      final double bottomRight = slots[2].xMm + slots[2].widthMm;
+      expect(
+        (bottomRight - (g.pageWidthMm - g.outerMarginMm)).abs(),
+        lessThan(_tolMm),
+      );
     });
   });
 
+  // ---------------------------------------------------------------------
+  // L_hito — milestone text page (centered, NOT outer-aligned).
+  // ---------------------------------------------------------------------
   group('DotsLayoutCode.lhito (milestone, no photo)', () {
-    test('emits title + date + body + qrCard, no photo slot', () {
+    test('emits title + subtitle + body + qrCard, 149 mm title/subtitle width',
+        () {
       final DotsPageGeometry g = _geometry();
-      final List<DotsSlotRect> slots =
-          _solver.solve(DotsLayoutCode.lhito, g);
+      final slots = _solver.solve(DotsLayoutCode.lhito, g, isLeftPage: true);
       expect(slots, hasLength(4));
       expect(_photos(slots), isEmpty);
       expect(slots[0].kind, DotsSlotKind.captionTitle);
-      expect(slots[1].kind, DotsSlotKind.captionDate);
+      expect(slots[1].kind, DotsSlotKind.captionDate); // subtitle slot.
       expect(slots[2].kind, DotsSlotKind.captionBody);
       expect(slots[3].kind, DotsSlotKind.qrCard);
-      // Body width per spec.
+      // Title and subtitle widths corrected to 149 mm.
+      expect(slots[0].widthMm, 149);
+      expect(slots[1].widthMm, 149);
+      // Body remains 122 mm and QR container 130 mm.
       expect(slots[2].widthMm, 122);
-      // QR card width per spec.
       expect(slots[3].widthMm, 130);
-      // Whole stack vertically centered in live area: distance from
-      // live-area top to first slot equals distance from last slot to
-      // live-area bottom.
-      final double topMargin = slots.first.yMm - g.liveAreaTopMm;
-      final double bottomMargin = g.liveAreaBottomMm -
-          (slots.last.yMm + slots.last.heightMm);
-      expect((topMargin - bottomMargin).abs(), lessThan(_tolMm));
-      // All text slots horizontally centered.
-      _expectPageHorizontallyCentered(slots[0], g);
-      _expectPageHorizontallyCentered(slots[1], g);
-      _expectPageHorizontallyCentered(slots[2], g);
-      _expectPageHorizontallyCentered(slots[3], g);
+      // Subtitle height grows to 2 lines of 24 pt leading.
+      expect(slots[1].heightMm, slots[0].heightMm);
     });
   });
 }

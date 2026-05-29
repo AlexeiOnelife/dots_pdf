@@ -456,7 +456,10 @@ class DotsTemplateParser {
     final geometry = DotsPageGeometry.dotbookDefault();
     final List<DotsSlotRect> slots;
     try {
-      slots = solver.solve(layoutCode, geometry);
+      // Parser validation calls the solver canonically as a left page —
+      // it only validates that dimensions fit; per-page x parity is
+      // resolved at render time by the renderer/isolate call sites.
+      slots = solver.solve(layoutCode, geometry, isLeftPage: true);
     } on StateError catch (e) {
       throw DotsConfigException(
         'layout "${layoutCode.name}" does not fit the configured '
