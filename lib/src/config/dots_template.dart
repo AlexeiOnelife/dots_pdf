@@ -2107,9 +2107,11 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///
   /// Body landed in Task 4 of `final-render-refinement` against
   /// `pdf02_pareja_inicial.pdf` pp.8–9 (parejas) and
-  /// `pdf08_hijos_inicial.pdf` pp.8–9 (hijos). The factory currently
-  /// supports `parejas` and `hijos` only — other categories still throw
-  /// at render time (their bodies land in Tasks 5 and 7).
+  /// `pdf08_hijos_inicial.pdf` pp.8–9 (hijos). Task 7 extended the
+  /// switch with a `generalEventos` arm against `pdf12_general_eventos_inicial.pdf`
+  /// p.2 — generalEventos uses the simpler "(01)/(02) chapter cluster"
+  /// layout without the parejas/hijos left-page main title or right-page
+  /// protagonist + CTA. `individuales`, `otros`, and `boda` still throw.
   factory DotsAlbumSpreadPage.beforeYouStart({
     required DotsAlbumType type,
     required int pageNumber,
@@ -2117,14 +2119,25 @@ class DotsAlbumSpreadPage extends DotsPage {
     String contextLabelValue = '',
   }) {
     // Per-category instruction copy (canonical, NOT editable by caller).
+    //
+    // `hasLeftMainTitle` toggles the left-page 27pt "Antes de empezar /
+    // el viaje" stack + the left-page body block (parejas/hijos only).
+    // `hasRightFurniture` toggles the right-page protagonist label + CTA
+    // (parejas/hijos only). `q1Marker` / `q2Marker` are the number labels
+    // above each cluster — "Q1"/"Q2" for parejas/hijos, "(01)"/"(02)"
+    // for generalEventos.
     final (
       String leftTitleL1,
       String leftTitleL2,
       String leftBody,
+      String q1Marker,
       String q1Title,
       String q1Body,
+      String q2Marker,
       String q2Title,
       String q2Body,
+      bool hasLeftMainTitle,
+      bool hasRightFurniture,
     ) = switch (type) {
       DotsAlbumType.parejas => (
           'Antes de empezar',
@@ -2134,12 +2147,16 @@ class DotsAlbumSpreadPage extends DotsPage {
               'aunque sea por un instante… En ese pequeño respiro, el '
               'tiempo se abre y con ello comienza vuestro viaje al '
               'pasado. Sentid. Dejaos llevar. Ese es el único objetivo.',
+          'Q1',
           'Buscad vuestro momento',
           'Cada recuerdo necesita su propio espacio. Tomad el tiempo '
               'para revisar las fotografías sin prisa.',
+          'Q2',
           'Escuchad vuestra historia',
           'Las imágenes contienen voces, gestos, instantes que sólo '
               'vosotros recordáis. Escuchadlas con atención.',
+          true,
+          true,
         ),
       DotsAlbumType.hijos => (
           'Antes de empezar',
@@ -2149,19 +2166,50 @@ class DotsAlbumSpreadPage extends DotsPage {
               'instante. Volviendo a ver y escuchar a tus seres '
               'queridos… Cierra los ojos un instante. Respira despacio. '
               'Y vuelve allí.',
+          'Q1',
           'Busca un lugar tranquilo',
           'Encuentra el espacio donde puedas concentrarte sin '
               'interrupciones. Las memorias merecen tu atención plena.',
+          'Q2',
           'Escucha los momentos especiales',
           'Cada foto guarda una historia silenciosa. Deja que esos '
               'pequeños detalles vuelvan a ti.',
+          true,
+          true,
+        ),
+      DotsAlbumType.generalEventos => (
+          // generalEventos has no separate left-page big title — the Q1
+          // chapter title IS the page title. No right-page furniture.
+          '',
+          '',
+          '',
+          '(01)',
+          'Busca un lugar tranquilo',
+          'Encuentra un espacio donde puedas estar en calma. Siéntate. '
+              'Respira despacio. Deja que el silencio te encuentre, '
+              'aunque sea por un instante, y que todo lo demás se '
+              'disuelva un poco: las prisas, los pensamientos, el ruido '
+              'de fuera... En ese pequeño respiro, el tiempo se abre y '
+              'con ello comienza tu viaje al pasado. Siente. Déjate '
+              'llevar. Ese es el único objetivo.',
+          '(02)',
+          'Más allá del papel',
+          'Las fotografías capturan instantes. Los vídeos conservan las '
+              'voces, las emociones y todo aquello que el papel no '
+              'puede guardar. En el final de este Dotbook encontrarás '
+              'un código QR para revivir esos momentos más especiales '
+              'de una forma más viva y real. Porque hay recuerdos que '
+              'no solo se miran… también se sienten.',
+          false,
+          false,
         ),
       _ => throw ArgumentError.value(
           type,
           'type',
           'DotsAlbumSpreadPage.beforeYouStart currently supports '
-              'DotsAlbumType.parejas and DotsAlbumType.hijos only; '
-              'other categories land in Tasks 5 and 7.',
+              'DotsAlbumType.parejas, DotsAlbumType.hijos, and '
+              'DotsAlbumType.generalEventos; individuales, otros, and '
+              'boda land in later tasks.',
         ),
     };
 
@@ -2209,56 +2257,62 @@ class DotsAlbumSpreadPage extends DotsPage {
           width: slotWidthMm * _mmToPt,
           height: slotHeightMm * _mmToPt,
         ),
-      // ── Left-page title L1 + L2 ────────────────────────────────────
-      DotsTextElement(
-        x: leftTitleXMm * _mmToPt,
-        y: leftTitleYMm * _mmToPt,
-        value: content.titleOverride ?? leftTitleL1,
-        fontSize: 27,
-        fontFamily: 'P22 Mackinac Medium',
-      ),
-      DotsTextElement(
-        x: leftTitleXMm * _mmToPt,
-        // L2 sits on the next line (27pt × ~1.15 lh ≈ 31pt ≈ 10.94 mm).
-        y: (leftTitleYMm + 10.94) * _mmToPt,
-        value: leftTitleL2,
-        fontSize: 27,
-        fontFamily: 'P22 Mackinac Medium',
-      ),
-      // ── Left-page body block ───────────────────────────────────────
-      DotsTextBlockElement(
-        x: leftTitleXMm * _mmToPt,
-        y: leftBodyYMm * _mmToPt,
-        value: content.bodyOverride ?? leftBody,
-        fontSize: 9,
-        width: leftTitleWidthMm * _mmToPt,
-        fontFamily: 'Inter',
-        colorHex: '#1e1e1e',
-        textAlign: DotsTextAlign.left,
-        lineHeight: 1.2,
-      ),
-      // ── Right-page protagonist label ───────────────────────────────
-      DotsTextElement(
-        x: rightProtagonistXMm * _mmToPt,
-        y: rightProtagonistYMm * _mmToPt,
-        value: contextLabelValue.isEmpty ? '{PROTAGONISTA}' : contextLabelValue,
-        fontSize: 9,
-        fontFamily: 'Inter',
-      ),
-      // ── Right-page CTA ─────────────────────────────────────────────
-      const DotsTextBlockElement(
-        x: rightProtagonistXMm * _mmToPt,
-        y: rightCtaYMm * _mmToPt,
-        value: 'Pasad la página para empezar esta experiencia',
-        fontSize: 15,
-        width: rightTextWidthMm * _mmToPt,
-        fontFamily: 'P22 Mackinac Medium',
-      ),
+      // ── Left-page title L1 + L2 (parejas/hijos only) ───────────────
+      if (hasLeftMainTitle)
+        DotsTextElement(
+          x: leftTitleXMm * _mmToPt,
+          y: leftTitleYMm * _mmToPt,
+          value: content.titleOverride ?? leftTitleL1,
+          fontSize: 27,
+          fontFamily: 'P22 Mackinac Medium',
+        ),
+      if (hasLeftMainTitle)
+        DotsTextElement(
+          x: leftTitleXMm * _mmToPt,
+          // L2 sits on the next line (27pt × ~1.15 lh ≈ 31pt ≈ 10.94 mm).
+          y: (leftTitleYMm + 10.94) * _mmToPt,
+          value: leftTitleL2,
+          fontSize: 27,
+          fontFamily: 'P22 Mackinac Medium',
+        ),
+      // ── Left-page body block (parejas/hijos only) ──────────────────
+      if (hasLeftMainTitle)
+        DotsTextBlockElement(
+          x: leftTitleXMm * _mmToPt,
+          y: leftBodyYMm * _mmToPt,
+          value: content.bodyOverride ?? leftBody,
+          fontSize: 9,
+          width: leftTitleWidthMm * _mmToPt,
+          fontFamily: 'Inter',
+          colorHex: '#1e1e1e',
+          textAlign: DotsTextAlign.left,
+          lineHeight: 1.2,
+        ),
+      // ── Right-page protagonist label (parejas/hijos only) ──────────
+      if (hasRightFurniture)
+        DotsTextElement(
+          x: rightProtagonistXMm * _mmToPt,
+          y: rightProtagonistYMm * _mmToPt,
+          value:
+              contextLabelValue.isEmpty ? '{PROTAGONISTA}' : contextLabelValue,
+          fontSize: 9,
+          fontFamily: 'Inter',
+        ),
+      // ── Right-page CTA (parejas/hijos only) ────────────────────────
+      if (hasRightFurniture)
+        const DotsTextBlockElement(
+          x: rightProtagonistXMm * _mmToPt,
+          y: rightCtaYMm * _mmToPt,
+          value: 'Pasad la página para empezar esta experiencia',
+          fontSize: 15,
+          width: rightTextWidthMm * _mmToPt,
+          fontFamily: 'P22 Mackinac Medium',
+        ),
       // ── Q1 cluster (below left-page slots) ─────────────────────────
-      const DotsTextElement(
+      DotsTextElement(
         x: clusterXMm * _mmToPt,
         y: clusterYNumberMm * _mmToPt,
-        value: 'Q1',
+        value: q1Marker,
         fontSize: 23,
         fontFamily: 'P22 Mackinac Medium',
       ),
@@ -2281,10 +2335,10 @@ class DotsAlbumSpreadPage extends DotsPage {
         lineHeight: 1.2,
       ),
       // ── Q2 cluster (below right-page slots; spread coords) ─────────
-      const DotsTextElement(
+      DotsTextElement(
         x: (203 + clusterXMm) * _mmToPt,
         y: clusterYNumberMm * _mmToPt,
-        value: 'Q2',
+        value: q2Marker,
         fontSize: 23,
         fontFamily: 'P22 Mackinac Medium',
       ),
@@ -2675,9 +2729,16 @@ class DotsAlbumSpreadPage extends DotsPage {
 
   /// generalEventos closing spread variant — photo + `{TítuloDelAlbum}`
   /// + dual-signature subtitle. Distinct from `closing(...)` because the
-  /// dual-signature subtitle is generalEventos-specific. Body lands in
-  /// Task 7; today the renderer throws
-  /// `UnimplementedError('Task 7: eventosClosing')`.
+  /// subtitle composes from two signature inputs unique to the
+  /// generalEventos category.
+  ///
+  /// Filled in Task 7 of `final-render-refinement` against
+  /// `pdf13_general_eventos_final.pdf` p.3. Layout mirrors the standard
+  /// `closing` factory: 66×86 mm photo centered horizontally at y=71.534,
+  /// 20pt title at y=photo_bottom+5, 9pt subtitle at y=title_bottom+5.
+  /// The dual-signature subtitle is composed from `content.signature1`
+  /// and `content.signature2` per the spec text "Vivido con mucho amor
+  /// por: {Firma 1} y {Firma 2}".
   factory DotsAlbumSpreadPage.eventosClosing({
     required DotsAlbumType type,
     required int pageNumber,
@@ -2693,21 +2754,63 @@ class DotsAlbumSpreadPage extends DotsPage {
       );
     }
     assert(content.title.isNotEmpty);
+
+    // Layout constants (mm) — verified against pdf13 p.3.
+    const double pageWidthPt = 575.43; // dotbook default (203 mm).
+    const double photoWidthPt = 66.0 * _mmToPt;
+    const double photoHeightPt = 86.0 * _mmToPt;
+    const double photoX = (pageWidthPt - photoWidthPt) / 2.0;
+    const double photoY = 71.534 * _mmToPt;
+    const double textBoxX = 44.0 * _mmToPt;
+    const double textBoxWidthPt = 115.0 * _mmToPt;
+    const double titleFontSize = 20.0;
+    const double titleY = photoY + photoHeightPt + 5.0 * _mmToPt;
+    const double subtitleY =
+        titleY + titleFontSize * 1.2 + 5.0 * _mmToPt;
+
+    final String subtitle =
+        'Vivido con mucho amor por: ${content.signature1} y '
+        '${content.signature2}';
+
+    final elements = <DotsElement>[
+      if (content.photoPath != null)
+        DotsImageElement(
+          x: photoX,
+          y: photoY,
+          assetPath: content.photoPath!,
+          width: photoWidthPt,
+          height: photoHeightPt,
+        ),
+      DotsTextElement(
+        x: textBoxX,
+        y: titleY,
+        value: content.title,
+        fontSize: titleFontSize,
+        fontFamily: 'P22 Mackinac Medium',
+      ),
+      DotsTextBlockElement(
+        x: textBoxX,
+        y: subtitleY,
+        value: subtitle,
+        fontSize: 9,
+        width: textBoxWidthPt,
+        fontFamily: 'P22 Mackinac Book',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 1.2,
+        maxLines: 2,
+      ),
+    ];
+
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
-        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
-        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+        rightPageNumber: '$pageNumber',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: const [
-        DotsUnimplementedElement(
-          taskId: 'Task 7',
-          message: 'eventosClosing factory body not yet implemented '
-              '(generalEventos)',
-        ),
-      ],
+      elements: elements,
     );
   }
 
