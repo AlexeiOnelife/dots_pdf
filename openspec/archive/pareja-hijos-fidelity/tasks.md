@@ -28,7 +28,7 @@ Chain strategy: size:exception
 
 **Strict TDD: RED test first, then implementation.**
 
-- [ ] **T1.1** `test/config/dots_album_spread_page_test.dart` — add RED group `AlbumBeforeYouStartContent — photoPaths`:
+- [x] **T1.1** `test/config/dots_album_spread_page_test.dart` — add RED group `AlbumBeforeYouStartContent — photoPaths`:
   - `photoPaths required — constructor with length-10 list succeeds`
   - `photoPaths required — omitting photoPaths is a compile error` (static; comment-only)
   - `length invariant — constructing with length 9 throws AssertionError` (assert in debug mode)
@@ -36,20 +36,20 @@ Chain strategy: size:exception
   - `equality includes photoPaths` (two instances differing only in photoPaths are not equal)
   Satisfies R7.
 
-- [ ] **T1.2** `lib/src/api/album_before_you_start_content.dart` — add `required this.photoPaths` to const ctor; add `: assert(photoPaths.length == 10, 'photoPaths must contain exactly 10 entries')` invariant; add `final List<String> photoPaths`; extend `==` (add `other.photoPaths == photoPaths` using `listEquals` or element-wise) and `hashCode` (fold photoPaths into `Object.hashAll`); update dartdoc. Satisfies R7.
+- [x] **T1.2** `lib/src/api/album_before_you_start_content.dart` — add `required this.photoPaths` to const ctor; add `: assert(photoPaths.length == 10, 'photoPaths must contain exactly 10 entries')` invariant; add `final List<String> photoPaths`; extend `==` (add `other.photoPaths == photoPaths` using `listEquals` or element-wise) and `hashCode` (fold photoPaths into `Object.hashAll`); update dartdoc. Satisfies R7.
   Commit: `feat(api): add required photoPaths[10] to AlbumBeforeYouStartContent`
 
-- [ ] **T1.3** `test/config/dots_album_spread_page_test.dart` — add RED group `AlbumQrSpreadContent — bottomTextOverride`:
+- [x] **T1.3** `test/config/dots_album_spread_page_test.dart` — add RED group `AlbumQrSpreadContent — bottomTextOverride`:
   - `bottomTextOverride null by default`
   - `bottomTextOverride non-null stored correctly`
   - `equality distinguishes bottomTextOverride`
   - `hashCode differs when bottomTextOverride differs`
   Satisfies R8.
 
-- [ ] **T1.4** `lib/src/api/album_qr_spread_content.dart` — add `this.bottomTextOverride` optional named param to const ctor (no `required`); add `final String? bottomTextOverride`; extend `==` and `hashCode`; update dartdoc. Satisfies R8.
+- [x] **T1.4** `lib/src/api/album_qr_spread_content.dart` — add `this.bottomTextOverride` optional named param to const ctor (no `required`); add `final String? bottomTextOverride`; extend `==` and `hashCode`; update dartdoc. Satisfies R8.
   Commit: `feat(api): add optional bottomTextOverride to AlbumQrSpreadContent`
 
-- [ ] **T1.5** Run `flutter analyze` clean. Run `flutter test test/config/dots_album_spread_page_test.dart` — T1.1 + T1.3 groups GREEN (no other suites broken; no production caller of `AlbumBeforeYouStartContent` exists outside tests).
+- [x] **T1.5** Run `flutter analyze` clean. Run `flutter test test/config/dots_album_spread_page_test.dart` — T1.1 + T1.3 groups GREEN (no other suites broken; no production caller of `AlbumBeforeYouStartContent` exists outside tests).
 
 ---
 
@@ -57,48 +57,48 @@ Chain strategy: size:exception
 
 **Drift risk: update `album_spread_page.dart` and `isolate_synthesis.dart` in the SAME commit.**
 
-- [ ] **T2.1** `test/config/dots_oval_qr_element_test.dart` — add RED group `DotsOvalQrElement — drawFrame`:
+- [x] **T2.1** `test/config/dots_oval_qr_element_test.dart` — add RED group `DotsOvalQrElement — drawFrame`:
   - `drawFrame defaults to true`
   - `drawFrame false stored correctly`
   - `equality includes drawFrame` (two elements differing only in drawFrame are not equal)
   - `hashCode includes drawFrame`
   Satisfies Design Decision 1 contract.
 
-- [ ] **T2.2** `lib/src/config/dots_template.dart` at `DotsOvalQrElement` (lines 503–542) — add `this.drawFrame = true` named param to const ctor; add `final bool drawFrame`; extend `==` (add `other.drawFrame == drawFrame`) and `hashCode` (add `drawFrame` to `Object.hash`). Dartdoc: `"When false the elliptical border stroke is suppressed; use for the closing-QR square block where no oval frame is wanted. Defaults to true to preserve photoArc behaviour."`. Satisfies R9 partial.
+- [x] **T2.2** `lib/src/config/dots_template.dart` at `DotsOvalQrElement` (lines 503–542) — add `this.drawFrame = true` named param to const ctor; add `final bool drawFrame`; extend `==` (add `other.drawFrame == drawFrame`) and `hashCode` (add `drawFrame` to `Object.hash`). Dartdoc: `"When false the elliptical border stroke is suppressed; use for the closing-QR square block where no oval frame is wanted. Defaults to true to preserve photoArc behaviour."`. Satisfies R9 partial.
 
-- [ ] **T2.3** `lib/src/render/album_spread_page.dart` — in `_buildOvalQrElement`: gate the `pw.Container(decoration: BoxDecoration(shape: BoxShape.circle, border: …))` block on `if (element.drawFrame)`. Keep the `BarcodeWidget` arm unchanged.
+- [x] **T2.3** `lib/src/render/album_spread_page.dart` — in `_buildOvalQrElement`: gate the `pw.Container(decoration: BoxDecoration(shape: BoxShape.circle, border: …))` block on `if (element.drawFrame)`. Keep the `BarcodeWidget` arm unchanged.
 
-- [ ] **T2.4** `lib/src/render/isolate_synthesis.dart` — apply the identical `if (element.drawFrame)` gate in the lock-step copy of `_buildOvalQrElement`. Same commit as T2.3 to prevent drift. Satisfies Design Decision 1.
+- [x] **T2.4** `lib/src/render/isolate_synthesis.dart` — apply the identical `if (element.drawFrame)` gate in the lock-step copy of `_buildOvalQrElement`. Same commit as T2.3 to prevent drift. Satisfies Design Decision 1.
 
-- [ ] **T2.5** `test/render/album_spread_page_test.dart` — add RED group `DotsOvalQrElement — drawFrame: false rendering`:
+- [x] **T2.5** `test/render/album_spread_page_test.dart` — add RED group `DotsOvalQrElement — drawFrame: false rendering`:
   - `drawFrame false renders BarcodeWidget without oval border` (widget-tree assertion or PDF byte inspection via `@visibleForTesting` hook).
   Satisfies Design Decision 1 render verification.
   Commit: `refactor(api): add drawFrame bool to DotsOvalQrElement; gate oval border in both renderers`
 
-- [ ] **T2.6** Run `flutter analyze` clean. Run `flutter test` — T2.1 + T2.5 groups GREEN; pre-existing oval QR tests unchanged (default `drawFrame: true`).
+- [x] **T2.6** Run `flutter analyze` clean. Run `flutter test` — T2.1 + T2.5 groups GREEN; pre-existing oval QR tests unchanged (default `drawFrame: true`).
 
 ---
 
 ## Phase 3 — Foundation: Layout-Constant Files (R9)
 
-- [ ] **T3.1** `test/render/before_you_start_layout_test.dart` — create new file with RED tests:
+- [x] **T3.1** `test/render/before_you_start_layout_test.dart` — create new file with RED tests:
   - `kBeforeYouStartPhotoSlots length equals 10`
   - per-slot `xMm`, `yMm`, `widthMm`, `heightMm` values against design table (tolerance ±0.001 mm)
   - `kBeforeYouStartTitleL1`, `kBeforeYouStartTitleL2`, `kBeforeYouStartLeftBody`, `kBeforeYouStartProtagonistLabel`, `kBeforeYouStartCta` record values match design
   Satisfies R9.
 
-- [ ] **T3.2** `lib/src/render/before_you_start_layout.dart` — create new file:
+- [x] **T3.2** `lib/src/render/before_you_start_layout.dart` — create new file:
   - Library-private `typedef _SlotRectMm` and `typedef _TextRectMm`.
   - `const List<_SlotRectMm> kBeforeYouStartPhotoSlots` — 10 entries: slots 0–4 at `x ∈ [8, 43, 78, 113, 148]`, `y=36`, `w=35`, `h=46`; slots 5–9 at `x ∈ [211, 246, 281, 316, 351]`, `y=36`, `w=35`, `h=46`.
   - `kBeforeYouStartTitleL1`, `kBeforeYouStartTitleL2`, `kBeforeYouStartLeftBody`, `kBeforeYouStartProtagonistLabel`, `kBeforeYouStartCta` const singletons per design.
   - `@visibleForTesting` accessor projecting `kBeforeYouStartPhotoSlots` as a public named-record list for tests.
   Satisfies R9.
 
-- [ ] **T3.3** `test/render/closing_qr_spread_layout_test.dart` — create new file with RED tests:
+- [x] **T3.3** `test/render/closing_qr_spread_layout_test.dart` — create new file with RED tests:
   - `kClosingQrTitle`, `kClosingQrBody1`, `kClosingQrBlock`, `kClosingQrCaption`, `kClosingQrBottom` record values against design constants (tolerance ±0.001 mm)
   Satisfies R9.
 
-- [ ] **T3.4** `lib/src/render/closing_qr_spread_layout.dart` — create new file:
+- [x] **T3.4** `lib/src/render/closing_qr_spread_layout.dart` — create new file:
   - Library-private `typedef _SlotRectMm` and `typedef _TextRectMm`.
   - `kClosingQrTitle = (xMm: 30, yMm: 50.892, widthMm: 143)`.
   - `kClosingQrBody1 = (xMm: 30, yMm: 71.346, widthMm: 92)`.
@@ -108,7 +108,7 @@ Chain strategy: size:exception
   - `@visibleForTesting` accessor.
   Satisfies R9.
 
-- [ ] **T3.5** Run `flutter test test/render/before_you_start_layout_test.dart test/render/closing_qr_spread_layout_test.dart` — GREEN.
+- [x] **T3.5** Run `flutter test test/render/before_you_start_layout_test.dart test/render/closing_qr_spread_layout_test.dart` — GREEN.
   Commit: `feat(render): add before_you_start_layout + closing_qr_spread_layout constant files`
 
 ---
@@ -117,7 +117,7 @@ Chain strategy: size:exception
 
 **Each sub-task: update test fixture first (RED), then production code (GREEN).**
 
-- [ ] **T4.1** `test/config/dots_album_spread_page_test.dart` — add/update group `cover — parejas and hijos`:
+- [x] **T4.1** `test/config/dots_album_spread_page_test.dart` — add/update group `cover — parejas and hijos`:
   - Both types: eyebrow element value == `'DOTBOOK DE {PROTAGONISTA}'`.
   - `eyebrowOverride` wins over default.
   - Text-box `x = 41.5 mm * _mmToPt`, `width = 120 mm * _mmToPt`.
@@ -125,21 +125,21 @@ Chain strategy: size:exception
   - Title `y ≈ 119 mm * _mmToPt`, date `y ≈ 130.7 mm * _mmToPt`.
   Satisfies R1, R2.
 
-- [ ] **T4.2** `lib/src/config/dots_template.dart` — `cover` factory (lines 1505–~1588):
+- [x] **T4.2** `lib/src/config/dots_template.dart` — `cover` factory (lines 1505–~1588):
   - Rewrite eyebrow `switch`: both `parejas` and `hijos` default to `'DOTBOOK DE {PROTAGONISTA}'`.
   - Replace centered text block with `x = 41.5 mm`, `width = 120 mm`; eyebrow `y = 110.249 mm`, title `y ≈ 119 mm`, date `y ≈ 130.7 mm` (all in pt via `_mmToPt`).
   - Rewrite dartdoc lines 1499–1502 to reflect new defaults.
   Satisfies R1, R2.
   Commit: `fix(render): cover(parejas|hijos) — correct eyebrow text + geometry`
 
-- [ ] **T4.3** `test/config/dots_album_spread_page_test.dart` — add/update group `dedication — parejas and hijos`:
+- [x] **T4.3** `test/config/dots_album_spread_page_test.dart` — add/update group `dedication — parejas and hijos`:
   - Title `x = 50.53 mm * _mmToPt`.
   - Body `width = 120 mm * _mmToPt`.
   - Body `y = titleY + titleHeight + 6.5 mm * _mmToPt` (relative, computed from constants).
   - Signature `y = bodyY + bodyHeight + 8 mm * _mmToPt`.
   Satisfies R3.
 
-- [ ] **T4.4** `lib/src/config/dots_template.dart` — `dedication` factory (lines 1253–1316):
+- [x] **T4.4** `lib/src/config/dots_template.dart` — `dedication` factory (lines 1253–1316):
   - Replace `const double titleX = 0` → `x = 50.53 * _mmToPt`.
   - Replace `const double bodyX = 0` → same `x`.
   - Replace `const double bodyWidthPt = 102.0 * _mmToPt` → `120.0 * _mmToPt`.
@@ -147,7 +147,7 @@ Chain strategy: size:exception
   Satisfies R3.
   Commit: `fix(render): dedication(parejas|hijos) — correct x/width/relative-y`
 
-- [ ] **T4.5** `test/config/dots_album_spread_page_test.dart` — add/update group `closing — parejas and hijos`:
+- [x] **T4.5** `test/config/dots_album_spread_page_test.dart` — add/update group `closing — parejas and hijos`:
   - Photo `y = 71.534 mm * _mmToPt`.
   - Title and subtitle `x = 44 mm * _mmToPt`.
   - Subtitle `width = 115 mm * _mmToPt`.
@@ -155,7 +155,7 @@ Chain strategy: size:exception
   - Subtitle `y = titleY + titleFontSize * lineHeightFactor + 5 mm * _mmToPt`.
   Satisfies R4.
 
-- [ ] **T4.6** `lib/src/config/dots_template.dart` — `closing` factory (lines 1334–1407):
+- [x] **T4.6** `lib/src/config/dots_template.dart` — `closing` factory (lines 1334–1407):
   - `photoY = 71.534 * _mmToPt` (was `60.0 * _mmToPt`).
   - `titleX = 44 * _mmToPt` (was `0`); `subtitleX = 44 * _mmToPt` (was `0`).
   - `titleY = photoY + photoHeightPt + 5 * _mmToPt` (was `+ 10 mm`).
@@ -164,7 +164,7 @@ Chain strategy: size:exception
   Satisfies R4.
   Commit: `fix(render): closing(parejas|hijos) — correct photo y, title/subtitle x/width/gap`
 
-- [ ] **T4.7** Run `flutter analyze` clean. Run `flutter test test/config/dots_album_spread_page_test.dart` — all T4 groups GREEN; remaining test suite unchanged.
+- [x] **T4.7** Run `flutter analyze` clean. Run `flutter test test/config/dots_album_spread_page_test.dart` — all T4 groups GREEN; remaining test suite unchanged.
 
 ---
 
@@ -172,7 +172,7 @@ Chain strategy: size:exception
 
 **Strict TDD: test assertions precede factory implementation.**
 
-- [ ] **T5.1** `test/config/dots_album_spread_page_test.dart` — add group `beforeYouStart — parejas and hijos`:
+- [x] **T5.1** `test/config/dots_album_spread_page_test.dart` — add group `beforeYouStart — parejas and hijos`:
   - Zero `DotsUnimplementedElement` instances in elements list.
   - Total element count ≈ 22 (10 `DotsImageElement` + ~12 text elements).
   - `header.leftPageNumber == '$pageNumber'`, `header.rightPageNumber == '${pageNumber + 1}'`.
@@ -184,7 +184,7 @@ Chain strategy: size:exception
   - All 10 photo slots have `widthMm == 35 mm * _mmToPt` and `heightMm == 46 mm * _mmToPt` (converted).
   Satisfies R5, R7.
 
-- [ ] **T5.2** `lib/src/config/dots_template.dart` — `beforeYouStart` factory (lines 2047–2070): replace stub with real body:
+- [x] **T5.2** `lib/src/config/dots_template.dart` — `beforeYouStart` factory (lines 2047–2070): replace stub with real body:
   - Exhaustive `switch (type)` for `parejas` + `hijos` copy; `individuales`, `outros`, `generalEventos` fall through to parejas copy with `// TODO(task-5-7)` marker; `boda` throws `ArgumentError`.
   - Import/use `kBeforeYouStartPhotoSlots`, `kBeforeYouStartTitleL1`, `kBeforeYouStartTitleL2`, `kBeforeYouStartLeftBody`, `kBeforeYouStartProtagonistLabel`, `kBeforeYouStartCta` from `before_you_start_layout.dart`.
   - Emit 10 `DotsImageElement` from `content.photoPaths` using slot rects (spread coords).
@@ -195,7 +195,7 @@ Chain strategy: size:exception
   Satisfies R5.
   Commit: `feat(render): implement beforeYouStart factory body (parejas + hijos)`
 
-- [ ] **T5.3** Run `flutter test test/config/dots_album_spread_page_test.dart` — T5.1 group GREEN; no regressions.
+- [x] **T5.3** Run `flutter test test/config/dots_album_spread_page_test.dart` — T5.1 group GREEN; no regressions.
 
 ---
 
@@ -203,7 +203,7 @@ Chain strategy: size:exception
 
 **Strict TDD: test assertions precede factory implementation.**
 
-- [ ] **T6.1** `test/config/dots_album_spread_page_test.dart` — add group `closingQrSpread — parejas and hijos`:
+- [x] **T6.1** `test/config/dots_album_spread_page_test.dart` — add group `closingQrSpread — parejas and hijos`:
   - Exactly 5 elements on the left page (title, body-1, QR, QR-caption, bottom).
   - Zero elements at `x >= 203 mm * _mmToPt` (right half of spread).
   - `header.leftPageNumber == '$pageNumber'`, `header.rightPageNumber == '${pageNumber + 1}'`.
@@ -214,7 +214,7 @@ Chain strategy: size:exception
   - `assert(content.placement == AlbumQrSpreadPlacement.closing)` fires if wrong placement.
   Satisfies R6, R8.
 
-- [ ] **T6.2** `lib/src/config/dots_template.dart` — `closingQrSpread` factory (lines 2134–2157): replace stub with real body:
+- [x] **T6.2** `lib/src/config/dots_template.dart` — `closingQrSpread` factory (lines 2134–2157): replace stub with real body:
   - Import/use `kClosingQrTitle`, `kClosingQrBody1`, `kClosingQrBlock`, `kClosingQrCaption`, `kClosingQrBottom` from `closing_qr_spread_layout.dart`.
   - Emit title `DotsTextElement` (P22 Mackinac Medium 23 pt) at `kClosingQrTitle` position.
   - Emit body-1 `DotsTextBlockElement` (Inter Book 9 pt) at `kClosingQrBody1` position.
@@ -226,27 +226,27 @@ Chain strategy: size:exception
   Satisfies R6.
   Commit: `feat(render): implement closingQrSpread factory body LEFT page (parejas + hijos)`
 
-- [ ] **T6.3** Run `flutter test test/config/dots_album_spread_page_test.dart` — T6.1 group GREEN; no regressions.
+- [x] **T6.3** Run `flutter test test/config/dots_album_spread_page_test.dart` — T6.1 group GREEN; no regressions.
 
 ---
 
 ## Phase 7 — Cleanup + Documentation (R10, cosmetic)
 
-- [ ] **T7.1** `lib/src/render/photo_arc_layout.dart` — update the source-attribution comment for `kPhotoArcLayout` to reflect that parejas p.9 is now `beforeYouStart`, not the arc. Cosmetic only; no geometry change. Satisfies proposal Decision Q1.
+- [x] **T7.1** `lib/src/render/photo_arc_layout.dart` — update the source-attribution comment for `kPhotoArcLayout` to reflect that parejas p.9 is now `beforeYouStart`, not the arc. Cosmetic only; no geometry change. Satisfies proposal Decision Q1.
 
-- [ ] **T7.2** Confirm `lib/dots_pdf.dart` exports `AlbumBeforeYouStartContent` and `AlbumQrSpreadContent`. Layout-constant files (`before_you_start_layout.dart`, `closing_qr_spread_layout.dart`) remain library-private — NOT exported. No change needed if exports already exist; otherwise add them.
+- [x] **T7.2** Confirm `lib/dots_pdf.dart` exports `AlbumBeforeYouStartContent` and `AlbumQrSpreadContent`. Layout-constant files (`before_you_start_layout.dart`, `closing_qr_spread_layout.dart`) remain library-private — NOT exported. No change needed if exports already exist; otherwise add them.
   Commit: `docs(render): update kPhotoArcLayout source comment; verify public exports`
 
 ---
 
 ## Phase 8 — Final Verification (R10)
 
-- [ ] **T8.1** Run `flutter analyze` — zero warnings or errors. Confirm:
+- [x] **T8.1** Run `flutter analyze` — zero warnings or errors. Confirm:
   - No `public_member_api_docs` violations on new fields.
   - Exhaustive `switch (type)` in `beforeYouStart` covers all `DotsAlbumType` values.
   - No dangling reference to old `content.titleOverride`-only ctor in tests.
 
-- [ ] **T8.2** Run `flutter test` — ALL tests GREEN. Confirm:
+- [x] **T8.2** Run `flutter test` — ALL tests GREEN. Confirm:
   - Phase 1 content-class groups GREEN.
   - Phase 2 `drawFrame` groups GREEN.
   - Phase 3 layout-constant tests GREEN.
