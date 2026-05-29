@@ -284,6 +284,14 @@ Future<pw.Widget?> _buildElement({
         bytesResolver: bytesResolver,
         onPhotoFailure: onPhotoFailure,
       );
+
+    case DotsUnimplementedElement():
+      // Stub element from a category factory whose body lands in a later
+      // task (Tasks 4–7). Throw with the responsible task in the message
+      // so the failure mode is loud and unambiguous.
+      throw UnimplementedError(
+        '${element.taskId}: ${element.message}',
+      );
   }
 }
 

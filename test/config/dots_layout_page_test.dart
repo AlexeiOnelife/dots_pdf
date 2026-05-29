@@ -10,19 +10,24 @@ void main() {
       {
         "documentId": "doc_layout",
         "pageSize": { "width": 575.43, "height": 720.0 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "l1",
             "photos": ["/assets/a.jpg"]
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
       ''';
 
       final template = parser.parse(json);
-      expect(template.pages, hasLength(1));
-      final page = template.pages.single;
+      expect(template.effectivePages, hasLength(2));
+      final page = template.effectivePages.first;
       expect(page, isA<DotsLayoutPage>());
       final layoutPage = page as DotsLayoutPage;
       expect(layoutPage.pageNumber, 1);
@@ -36,8 +41,11 @@ void main() {
       {
         "documentId": "doc_hito",
         "pageSize": { "width": 575.43, "height": 720.0 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "lhito",
             "captions": {
@@ -46,11 +54,13 @@ void main() {
               "body": "B",
               "qr": "https://example.com"
             }
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
       ''';
-      final page = parser.parse(json).pages.single as DotsLayoutPage;
+      final page = parser.parse(json).effectivePages.first as DotsLayoutPage;
       expect(page.captions, <DotsSlotKind, String>{
         DotsSlotKind.captionTitle: 'T',
         DotsSlotKind.captionDate: 'D',
@@ -65,11 +75,16 @@ void main() {
       {
         "documentId": "doc_mixed",
         "pageSize": { "width": 575.43, "height": 720.0 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "l1",
             "elements": []
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
@@ -85,10 +100,15 @@ void main() {
       {
         "documentId": "doc_bad_layout",
         "pageSize": { "width": 575.43, "height": 720.0 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "lxx"
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
@@ -110,11 +130,16 @@ void main() {
       {
         "documentId": "doc_short",
         "pageSize": { "width": 575.43, "height": 720.0 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "l4a",
             "photos": ["/a.jpg"]
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
@@ -136,11 +161,16 @@ void main() {
       {
         "documentId": "doc_long",
         "pageSize": { "width": 575.43, "height": 720.0 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "l1",
             "photos": ["/a.jpg", "/b.jpg"]
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
@@ -156,12 +186,17 @@ void main() {
       {
         "documentId": "doc_bad_caption",
         "pageSize": { "width": 575.43, "height": 720.0 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "l1",
             "photos": ["/a.jpg"],
             "captions": { "title": "nope" }
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
@@ -183,11 +218,16 @@ void main() {
       {
         "documentId": "doc_bad_key",
         "pageSize": { "width": 575.43, "height": 720.0 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "lhito",
             "captions": { "subtitle": "x" }
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
@@ -209,17 +249,22 @@ void main() {
       {
         "documentId": "doc_explicit",
         "pageSize": { "width": 100, "height": 100 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "elements": [
               { "type": "text", "value": "x", "x": 0, "y": 0, "fontSize": 10 }
             ]
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
       ''';
-      final page = parser.parse(json).pages.single;
+      final page = parser.parse(json).effectivePages.first;
       expect(page, isA<DotsElementsPage>());
     });
   });

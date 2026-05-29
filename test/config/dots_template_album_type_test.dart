@@ -1,58 +1,73 @@
 import 'package:dots_pdf/dots_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// Base template JSON without albumType, for backwards-compat and hash tests.
+// Base template JSON without category, for default-value and hash tests.
 const _baseJson = '''
 {
   "documentId": "doc_1",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "pages": [
-    { "pageNumber": 1, "elements": [] }
-  ]
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
 
 void main() {
   const parser = DotsTemplateParser();
 
-  group('DotsTemplateParser — albumType field (R1)', () {
+  group('DotsTemplateParser — category field (R1)', () {
     // ---- round-trip for every enum value ----
 
     for (final value in DotsAlbumType.values) {
-      test('parses albumType "${value.name}" correctly', () {
+      test('parses category "${value.name}" correctly', () {
         final json = '''
 {
   "documentId": "doc_1",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "albumType": "${value.name}",
-  "pages": [
-    { "pageNumber": 1, "elements": [] }
-  ]
+  "category": "${value.name}",
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
         final template = parser.parse(json);
-        expect(template.albumType, equals(value));
+        expect(template.category, equals(value));
       });
     }
 
-    // ---- absent albumType yields null ----
+    // ---- absent category defaults to generalEventos ----
 
-    test('albumType absent yields null', () {
+    test('category absent yields generalEventos default', () {
       final template = parser.parse(_baseJson);
-      expect(template.albumType, isNull);
+      expect(template.category, equals(DotsAlbumType.generalEventos));
     });
 
-    // ---- unknown string raises DotsConfigException ----
+    // ---- deprecated albumType key is rejected with a migration hint ----
 
-    test('unknown albumType raises DotsConfigException at \$.albumType', () {
+    test('albumType key is rejected with a migration hint', () {
       const json = '''
 {
   "documentId": "doc_1",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "albumType": "quinceañera",
-  "pages": [
-    { "pageNumber": 1, "elements": [] }
-  ]
+  "albumType": "boda",
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
       expect(
@@ -67,28 +82,69 @@ void main() {
               .having(
                 (e) => e.message,
                 'message',
+                contains('category'),
+              ),
+        ),
+      );
+    });
+
+    // ---- unknown category string raises DotsConfigException ----
+
+    test('unknown category raises DotsConfigException at \$.category', () {
+      const json = '''
+{
+  "documentId": "doc_1",
+  "pageSize": { "width": 595.0, "height": 842.0 },
+  "category": "quinceañera",
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
+}
+''';
+      expect(
+        () => parser.parse(json),
+        throwsA(
+          isA<DotsConfigException>()
+              .having(
+                (e) => e.pointer,
+                'pointer',
+                contains(r'$.category'),
+              )
+              .having(
+                (e) => e.message,
+                'message',
                 contains('quinceañera'),
               ),
         ),
       );
     });
 
-    // ---- contentHash differs when albumType differs ----
+    // ---- contentHash differs when category differs ----
 
-    test('albumType participates in contentHash', () {
-      const withAlbumType = '''
+    test('category participates in contentHash', () {
+      const withBoda = '''
 {
   "documentId": "doc_1",
   "pageSize": { "width": 595.0, "height": 842.0 },
-  "albumType": "boda",
-  "pages": [
-    { "pageNumber": 1, "elements": [] }
-  ]
+  "category": "boda",
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
-      final withHash = parser.parse(withAlbumType).contentHash;
-      final withoutHash = parser.parse(_baseJson).contentHash;
-      expect(withHash, isNot(withoutHash));
+      final bodaHash = parser.parse(withBoda).contentHash;
+      final defaultHash = parser.parse(_baseJson).contentHash;
+      expect(bodaHash, isNot(defaultHash));
     });
   });
 }

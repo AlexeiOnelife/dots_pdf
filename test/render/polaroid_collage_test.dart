@@ -447,7 +447,7 @@ void main() {
       final template = DotsTemplate(
         documentId: 'polaroid_no_iso',
         pageSize: _pageSize,
-        pages: [page],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: page, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
 
       final events =
@@ -513,7 +513,7 @@ void main() {
       final template = DotsTemplate(
         documentId: 'polaroid_iso',
         pageSize: _pageSize,
-        pages: [page],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: page, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
 
       final events =
@@ -566,12 +566,12 @@ void main() {
       final isoTemplate = DotsTemplate(
         documentId: 'polaroid_parity_iso',
         pageSize: _pageSize,
-        pages: [pageIso],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: pageIso, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
       final noIsoTemplate = DotsTemplate(
         documentId: 'polaroid_parity_no_iso',
         pageSize: _pageSize,
-        pages: [pageNoIso],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: pageNoIso, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
 
       await withIsolate.generateWhole(template: isoTemplate).toList();

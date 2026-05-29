@@ -1,8 +1,14 @@
 import 'package:meta/meta.dart';
 
+import '../api/album_before_you_start_content.dart';
 import '../api/album_boda_cluster_content.dart';
+import '../api/album_boda_cover_content.dart';
 import '../api/album_boda_halo_content.dart';
+import '../api/album_eventos_closing_content.dart';
 import '../api/album_photo_arc_content.dart';
+import '../api/album_photo_only_cover_content.dart';
+import '../api/album_qr_spread_content.dart';
+import '../api/album_welcome_journey_content.dart';
 import '../api/dots_album_type.dart';
 import '../render/boda_halo_layout.dart';
 import '../render/cover_circles.dart';
@@ -937,6 +943,44 @@ class DotsSpreadImageElement extends DotsElement {
       );
 }
 
+/// Placeholder element produced by the seven `DotsAlbumSpreadPage` factory
+/// stubs introduced by Task 2 of the `final-render-refinement` series.
+///
+/// Carriers of this element parse and construct cleanly so that the
+/// JSON parser's category-driven mandatory-pliego injection succeeds
+/// for every category; the actual visual content is filled in by
+/// Tasks 4–7 (per-category fidelity work). At render time, the
+/// renderer throws an [UnimplementedError] whose message points at
+/// the responsible task — this is how stub spreads communicate "valid
+/// to declare, not yet renderable."
+@immutable
+class DotsUnimplementedElement extends DotsElement {
+  /// Creates a placeholder element pointing at the task that will
+  /// implement its real content.
+  const DotsUnimplementedElement({
+    required this.taskId,
+    required this.message,
+  }) : super(x: 0, y: 0);
+
+  /// Human-friendly identifier of the task that will replace this stub
+  /// with real content. Typical values are `'Task 4'`, `'Task 5'`,
+  /// `'Task 6'`, `'Task 7'`.
+  final String taskId;
+
+  /// Descriptive message used when the renderer throws
+  /// [UnimplementedError] for this element.
+  final String message;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsUnimplementedElement &&
+      other.taskId == taskId &&
+      other.message == message;
+
+  @override
+  int get hashCode => Object.hash(taskId, message);
+}
+
 /// A page declaration at a 1-based [pageNumber].
 ///
 /// Sealed: two concrete variants exist — [DotsElementsPage] for the
@@ -1041,7 +1085,7 @@ class DotsSpreadHeader {
 
   /// Optional context-label string shown at the top-centre of the spread.
   ///
-  /// Typically the resolved value of `albumType.contextLabelToken` after
+  /// Typically the resolved value of `category.contextLabelToken` after
   /// parse-time variable substitution.
   final String? centerLabel;
 
@@ -1115,7 +1159,7 @@ class DotsPageChrome {
 
   /// Context-label string placed in the centre column of the header band.
   ///
-  /// Typically the resolved value of `albumType.contextLabelToken` after
+  /// Typically the resolved value of `category.contextLabelToken` after
   /// variable substitution. A `null` value omits the centre slot.
   final String? centerLabel;
 
@@ -1301,7 +1345,8 @@ class DotsAlbumSpreadPage extends DotsPage {
       DotsAlbumType.parejas ||
       DotsAlbumType.hijos ||
       DotsAlbumType.individuales ||
-      DotsAlbumType.otros =>
+      DotsAlbumType.otros ||
+      DotsAlbumType.generalEventos =>
         20.0,
     };
 
@@ -1568,13 +1613,14 @@ class DotsAlbumSpreadPage extends DotsPage {
     required String contextLabelValue,
     required AlbumPhotoArcContent content,
   }) {
-    // Type guard — boda is not supported.
-    if (type == DotsAlbumType.boda) {
+    // Type guard — boda and generalEventos are not supported here.
+    if (type == DotsAlbumType.boda || type == DotsAlbumType.generalEventos) {
       throw ArgumentError.value(
         type,
         'type',
-        'DotsAlbumSpreadPage.photoArc does not support DotsAlbumType.boda; '
-            "boda's analogue (p.4 radial halo) is not implemented.",
+        'DotsAlbumSpreadPage.photoArc supports parejas, hijos, individuales, '
+            'and otros only. boda uses bodaHalo; generalEventos has its own '
+            'opening QR spread (Task 7).',
       );
     }
 
@@ -1596,7 +1642,9 @@ class DotsAlbumSpreadPage extends DotsPage {
       DotsAlbumType.individuales ||
       DotsAlbumType.otros =>
         'Tu album en digital',
-      DotsAlbumType.boda => '', // unreachable — guarded above
+      DotsAlbumType.boda ||
+      DotsAlbumType.generalEventos =>
+        '', // unreachable — guarded above
     };
     final String leftCaption =
         content.qrCaptionLeftOverride ?? defaultLeftCaption;
@@ -1949,6 +1997,241 @@ class DotsAlbumSpreadPage extends DotsPage {
   }
 
   // ---------------------------------------------------------------------------
+  // Category factory stubs (Task 2 — pliego-first-category).
+  //
+  // Each stub builds a DotsAlbumSpreadPage whose elements list carries a
+  // single [DotsUnimplementedElement]. The page parses and constructs
+  // cleanly so the parser's category-driven mandatory-pliego injection
+  // succeeds for every category, but rendering throws an
+  // [UnimplementedError] whose message names the task that fills in the
+  // real visual content. The header trio + footer wordmark follow the
+  // existing chrome convention so Tasks 4–7 can swap the elements list
+  // without touching the chrome plumbing.
+  // ---------------------------------------------------------------------------
+
+  /// Photo-only cover (no decorative circles) — used by `individuales`,
+  /// `otros`, and `generalEventos`. Body lands in Task 4 (`individuales`
+  /// + `otros`) and Task 5 (`generalEventos`); today the renderer throws
+  /// `UnimplementedError('Task 4: photoOnlyCover')`.
+  factory DotsAlbumSpreadPage.photoOnlyCover({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required AlbumPhotoOnlyCoverContent content,
+    String contextLabelValue = '',
+  }) {
+    // Reference the content fields so the parameter is not flagged
+    // "unused" — the bodies in Tasks 4/5/7 consume these.
+    assert(content.photoPath.isNotEmpty);
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: const [
+        DotsUnimplementedElement(
+          taskId: 'Task 4',
+          message: 'photoOnlyCover factory body not yet implemented '
+              '(individuales/otros/generalEventos)',
+        ),
+      ],
+    );
+  }
+
+  /// "Busca un lugar tranquilo / Más allá del papel" instruction spread
+  /// — shared by `parejas`, `hijos`, `individuales`, `otros`, and
+  /// `generalEventos`. Body lands in Task 4; today the renderer throws
+  /// `UnimplementedError('Task 4: beforeYouStart')`.
+  factory DotsAlbumSpreadPage.beforeYouStart({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required AlbumBeforeYouStartContent content,
+    String contextLabelValue = '',
+  }) {
+    // Reference content so the parameter is not flagged "unused".
+    final _ = content.titleOverride;
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: const [
+        DotsUnimplementedElement(
+          taskId: 'Task 4',
+          message: 'beforeYouStart factory body not yet implemented',
+        ),
+      ],
+    );
+  }
+
+  /// "Bienvenido/a a tu viaje al pasado" welcome spread — specific to
+  /// the `generalEventos` category. Body lands in Task 5; today the
+  /// renderer throws `UnimplementedError('Task 5: welcomeJourney')`.
+  factory DotsAlbumSpreadPage.welcomeJourney({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required AlbumWelcomeJourneyContent content,
+    String contextLabelValue = '',
+  }) {
+    final _ = content.titleOverride;
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: const [
+        DotsUnimplementedElement(
+          taskId: 'Task 5',
+          message: 'welcomeJourney factory body not yet implemented '
+              '(generalEventos)',
+        ),
+      ],
+    );
+  }
+
+  /// "Porque algunos recuerdos…" opening QR spread — specific to the
+  /// `generalEventos` category (initial pliego 1). Distinct from the
+  /// closing variant: opening puts the QR on the LEFT page. Body lands
+  /// in Task 5; today the renderer throws
+  /// `UnimplementedError('Task 5: openingQrSpread')`.
+  factory DotsAlbumSpreadPage.openingQrSpread({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required AlbumQrSpreadContent content,
+    String contextLabelValue = '',
+  }) {
+    assert(content.placement == AlbumQrSpreadPlacement.opening);
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: const [
+        DotsUnimplementedElement(
+          taskId: 'Task 5',
+          message: 'openingQrSpread factory body not yet implemented '
+              '(generalEventos)',
+        ),
+      ],
+    );
+  }
+
+  /// "Porque algunos recuerdos merecen seguir vivos" closing QR spread
+  /// — shared by ALL six categories as the penultimate pliego. Body
+  /// lands in Task 5; today the renderer throws
+  /// `UnimplementedError('Task 5: closingQrSpread')`.
+  factory DotsAlbumSpreadPage.closingQrSpread({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required AlbumQrSpreadContent content,
+    String contextLabelValue = '',
+  }) {
+    assert(content.placement == AlbumQrSpreadPlacement.closing);
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: const [
+        DotsUnimplementedElement(
+          taskId: 'Task 5',
+          message: 'closingQrSpread factory body not yet implemented '
+              '(shared across all categories)',
+        ),
+      ],
+    );
+  }
+
+  /// Boda cover — DEFERRED per the existing album-type series memo
+  /// (boda p.1/p.2/p.5 lack coordinate extraction). Body lands in Task 6
+  /// only when coordinates are available; today the renderer throws
+  /// `UnimplementedError('Task 6: boda cover — deferred per album-type
+  /// series')`.
+  factory DotsAlbumSpreadPage.bodaCover({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required AlbumBodaCoverContent content,
+    String contextLabelValue = '',
+  }) {
+    if (type != DotsAlbumType.boda) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'DotsAlbumSpreadPage.bodaCover only supports DotsAlbumType.boda.',
+      );
+    }
+    final _ = content.title;
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: const [
+        DotsUnimplementedElement(
+          taskId: 'Task 6',
+          message: 'boda cover — deferred per album-type series '
+              '(coordinates not yet extracted)',
+        ),
+      ],
+    );
+  }
+
+  /// generalEventos closing spread variant — photo + `{TítuloDelAlbum}`
+  /// + dual-signature subtitle. Distinct from `closing(...)` because the
+  /// dual-signature subtitle is generalEventos-specific. Body lands in
+  /// Task 7; today the renderer throws
+  /// `UnimplementedError('Task 7: eventosClosing')`.
+  factory DotsAlbumSpreadPage.eventosClosing({
+    required DotsAlbumType type,
+    required int pageNumber,
+    required AlbumEventosClosingContent content,
+    String contextLabelValue = '',
+  }) {
+    if (type != DotsAlbumType.generalEventos) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'DotsAlbumSpreadPage.eventosClosing only supports '
+            'DotsAlbumType.generalEventos.',
+      );
+    }
+    assert(content.title.isNotEmpty);
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: const [
+        DotsUnimplementedElement(
+          taskId: 'Task 7',
+          message: 'eventosClosing factory body not yet implemented '
+              '(generalEventos)',
+        ),
+      ],
+    );
+  }
+
+  // ---------------------------------------------------------------------------
   // Fields
   // ---------------------------------------------------------------------------
 
@@ -2006,17 +2289,11 @@ class DotsTemplate {
   const DotsTemplate({
     required this.documentId,
     required this.pageSize,
-    this.albumType,
+    this.category = DotsAlbumType.generalEventos,
     this.defaultChrome,
-    this.pages = _emptyPages,
     this.pliegos = _emptyPliegos,
-  }) : assert(
-          identical(pages, _emptyPages) ||
-              identical(pliegos, _emptyPliegos),
-          'DotsTemplate accepts pages OR pliegos, not both',
-        );
+  });
 
-  static const List<DotsPage> _emptyPages = <DotsPage>[];
   static const List<DotsPliego> _emptyPliegos = <DotsPliego>[];
 
   /// Stable identifier used for disk paths and cache lookups.
@@ -2025,10 +2302,15 @@ class DotsTemplate {
   /// Page geometry applied to every page.
   final DotsPageSize pageSize;
 
-  /// Optional album type that selects front/back matter and the
-  /// right-page top-center header label token. Defaults to `null` —
-  /// absent from templates that do not use album-type spread pages.
-  final DotsAlbumType? albumType;
+  /// Category that selects mandatory front/back matter and the
+  /// right-page top-center header label token.
+  ///
+  /// Renamed from `albumType` in Task 2 of the `final-render-refinement`
+  /// series so the public vocabulary matches the JSON field. Non-nullable
+  /// with default [DotsAlbumType.generalEventos] — JSON callers that omit
+  /// the `category` field receive the same default (parser default — wired
+  /// in PR 2).
+  final DotsAlbumType category;
 
   /// Optional chrome applied to every interior page rendered from this
   /// template.
@@ -2040,22 +2322,16 @@ class DotsTemplate {
   /// [DotsPageChrome] to [buildPageChrome].
   final DotsPageChrome? defaultChrome;
 
-  /// Page-level content. Empty when [pliegos] is the source of truth.
-  final List<DotsPage> pages;
-
-  /// Pliego-level (2-page-spread) content. Empty when [pages] is the
-  /// source of truth.
+  /// Pliego-level (2-page-spread) content — the sole input shape for
+  /// renderable templates after Task 2 of the `final-render-refinement`
+  /// series. The page-level `pages` field was removed alongside the JSON
+  /// `pages` key in favour of always going through pliegos.
   final List<DotsPliego> pliegos;
 
-  /// Resolved list of pages the renderer consumes, regardless of
-  /// whether the template was authored page-level or pliego-level.
-  ///
-  /// When [pliegos] is non-empty, each pliego is flattened into its
-  /// two output pages with sequentially assigned page numbers; the
-  /// first pliego becomes pages 1 and 2, the second 3 and 4, and so
-  /// on. When [pages] is non-empty, the list is returned as-is.
+  /// Resolved list of pages the renderer consumes, flattened from
+  /// [pliegos]. The first pliego becomes pages 1 and 2, the second 3 and
+  /// 4, and so on.
   List<DotsPage> get effectivePages {
-    if (pliegos.isEmpty) return pages;
     final result = <DotsPage>[];
     var nextPageNumber = 1;
     for (final pliego in pliegos) {
@@ -2073,9 +2349,8 @@ class DotsTemplate {
   int get contentHash => Object.hash(
         documentId,
         pageSize,
-        albumType,
+        category,
         defaultChrome,
-        Object.hashAll(pages),
         Object.hashAll(pliegos),
       );
 }

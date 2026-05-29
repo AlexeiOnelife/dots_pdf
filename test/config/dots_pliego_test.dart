@@ -107,44 +107,19 @@ void main() {
       expect(pages[3].pageNumber, 4);
     });
 
-    test('DotsTemplate.effectivePages returns pages as-is when no pliegos',
-        () {
+    test('DotsTemplate.effectivePages flattens pliegos into pages', () {
       const template = DotsTemplate(
         documentId: 'flat',
-        pageSize: DotsPageSize(width: 100, height: 100),
-        pages: <DotsPage>[
-          DotsElementsPage(pageNumber: 1, elements: <DotsElement>[]),
-        ],
-      );
-      expect(template.effectivePages, hasLength(1));
-    });
-
-    test('contentHash differs between pages-form and pliegos-form even '
-        'when the rendered output would be the same', () {
-      // This is intentional — the hash is over the SOURCE, not the
-      // flattened pages. Editing the template from one form to the
-      // other invalidates the cache and re-renders, which is the
-      // safe default.
-      const flat = DotsTemplate(
-        documentId: 'x',
-        pageSize: DotsPageSize(width: 100, height: 100),
-        pages: <DotsPage>[
-          DotsElementsPage(pageNumber: 1, elements: <DotsElement>[]),
-          DotsElementsPage(pageNumber: 2, elements: <DotsElement>[]),
-        ],
-      );
-      const pliego = DotsTemplate(
-        documentId: 'x',
         pageSize: DotsPageSize(width: 100, height: 100),
         pliegos: <DotsPliego>[
           DotsLayoutPliego(
             pliegoNumber: 1,
-            left: DotsElementsPage(pageNumber: 0, elements: <DotsElement>[]),
-            right: DotsElementsPage(pageNumber: 0, elements: <DotsElement>[]),
+            left: DotsElementsPage(pageNumber: 1, elements: <DotsElement>[]),
+            right: DotsElementsPage(pageNumber: 2, elements: <DotsElement>[]),
           ),
         ],
       );
-      expect(flat.contentHash, isNot(pliego.contentHash));
+      expect(template.effectivePages, hasLength(2));
     });
   });
 
@@ -177,20 +152,18 @@ void main() {
       ''';
       final template = parser.parse(json);
       expect(template.pliegos, hasLength(2));
-      expect(template.pages, isEmpty);
       final flattened = template.effectivePages;
       expect(flattened, hasLength(4));
       expect(flattened[0].pageNumber, 1);
       expect(flattened[3].pageNumber, 4);
     });
 
-    test('rejects a template that declares both pages and pliegos', () {
+    test('rejects a template that declares the deprecated pages JSON key', () {
       const json = '''
       {
         "documentId": "bad",
         "pageSize": { "width": 100, "height": 100 },
-        "pages": [],
-        "pliegos": []
+        "pages": []
       }
       ''';
       expect(
@@ -199,13 +172,13 @@ void main() {
           isA<DotsConfigException>().having(
             (e) => e.message,
             'message',
-            contains('pages'),
+            contains('pliegos'),
           ),
         ),
       );
     });
 
-    test('rejects a template that declares neither pages nor pliegos', () {
+    test('rejects a template that omits pliegos entirely', () {
       const json = '''
       {
         "documentId": "empty",
@@ -249,19 +222,7 @@ void main() {
   });
 
   group('DotsTemplate constructor — invariants', () {
-    test('accepts pages-only', () {
-      const t = DotsTemplate(
-        documentId: 'a',
-        pageSize: DotsPageSize(width: 100, height: 100),
-        pages: <DotsPage>[
-          DotsElementsPage(pageNumber: 1, elements: <DotsElement>[]),
-        ],
-      );
-      expect(t.pliegos, isEmpty);
-      expect(t.pages, hasLength(1));
-    });
-
-    test('accepts pliegos-only', () {
+    test('accepts pliegos', () {
       const t = DotsTemplate(
         documentId: 'b',
         pageSize: DotsPageSize(width: 100, height: 100),
@@ -273,16 +234,16 @@ void main() {
           ),
         ],
       );
-      expect(t.pages, isEmpty);
       expect(t.pliegos, hasLength(1));
     });
 
-    test('accepts the empty case (both empty)', () {
+    test('accepts the empty case (no pliegos)', () {
       const t = DotsTemplate(
         documentId: 'c',
         pageSize: DotsPageSize(width: 100, height: 100),
       );
       expect(t.effectivePages, isEmpty);
+      expect(t.pliegos, isEmpty);
     });
   });
 

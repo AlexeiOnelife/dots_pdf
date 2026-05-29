@@ -35,9 +35,12 @@ class _CountingFakeRasterizer implements DotsPdfRasterizer {
 DotsTemplate _twoPageTemplate(final String id) => DotsTemplate(
       documentId: id,
       pageSize: const DotsPageSize(width: 200, height: 300),
-      pages: const <DotsPage>[
-        DotsElementsPage(pageNumber: 1, elements: <DotsElement>[]),
-        DotsElementsPage(pageNumber: 2, elements: <DotsElement>[]),
+      pliegos: const <DotsPliego>[
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(pageNumber: 1, elements: <DotsElement>[]),
+          right: DotsElementsPage(pageNumber: 2, elements: <DotsElement>[]),
+        ),
       ],
     );
 
@@ -185,14 +188,21 @@ void main() {
         documentsDir: fs.directory('/docs'),
         rasterizer: rasterizer,
       );
-      // 3 pages → 2 pairs (one of 2 pages, one of 1).
+      // 4 pages over 2 pliegos → 2 pairs of 2 pages each.
       const template = DotsTemplate(
         documentId: 'doc_pairs_preview',
         pageSize: DotsPageSize(width: 200, height: 300),
-        pages: <DotsPage>[
-          DotsElementsPage(pageNumber: 1, elements: <DotsElement>[]),
-          DotsElementsPage(pageNumber: 2, elements: <DotsElement>[]),
-          DotsElementsPage(pageNumber: 3, elements: <DotsElement>[]),
+        pliegos: <DotsPliego>[
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(pageNumber: 1, elements: <DotsElement>[]),
+            right: DotsElementsPage(pageNumber: 2, elements: <DotsElement>[]),
+          ),
+          DotsLayoutPliego(
+            pliegoNumber: 2,
+            left: DotsElementsPage(pageNumber: 3, elements: <DotsElement>[]),
+            right: DotsElementsPage(pageNumber: 4, elements: <DotsElement>[]),
+          ),
         ],
       );
 

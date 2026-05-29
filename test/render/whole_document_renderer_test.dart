@@ -39,17 +39,21 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_text',
         pageSize: DotsPageSize(width: 200, height: 300),
-        pages: [
-          DotsElementsPage(
-            pageNumber: 1,
-            elements: [
-              DotsTextElement(
-                x: 20,
-                y: 40,
-                value: 'Hello',
-                fontSize: 12,
-              ),
-            ],
+        pliegos: [
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(
+              pageNumber: 1,
+              elements: [
+                DotsTextElement(
+                  x: 20,
+                  y: 40,
+                  value: 'Hello',
+                  fontSize: 12,
+                ),
+              ],
+            ),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
           ),
         ],
       );
@@ -57,7 +61,7 @@ void main() {
       const outPath = '/docs/out.pdf';
       await renderer.render(
         template: template,
-        pages: template.pages,
+        pages: template.effectivePages,
         outputPath: outPath,
       );
 
@@ -76,17 +80,21 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_alpha',
         pageSize: DotsPageSize(width: 200, height: 300),
-        pages: [
-          DotsElementsPage(
-            pageNumber: 1,
-            elements: [
-              DotsTextElement(
-                x: 20,
-                y: 40,
-                value: 'Hello',
-                fontSize: 12,
-              ),
-            ],
+        pliegos: [
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(
+              pageNumber: 1,
+              elements: [
+                DotsTextElement(
+                  x: 20,
+                  y: 40,
+                  value: 'Hello',
+                  fontSize: 12,
+                ),
+              ],
+            ),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
           ),
         ],
       );
@@ -125,20 +133,24 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_image',
         pageSize: DotsPageSize(width: 200, height: 300),
-        pages: [
-          DotsElementsPage(
-            pageNumber: 1,
-            elements: [
-              DotsImageElement(
-                x: 10,
-                y: 10,
-                assetPath: '/assets/pixel.png',
-                width: 50,
-                height: 50,
-                bleedTop: true,
-                bleedRight: true,
-              ),
-            ],
+        pliegos: [
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(
+              pageNumber: 1,
+              elements: [
+                DotsImageElement(
+                  x: 10,
+                  y: 10,
+                  assetPath: '/assets/pixel.png',
+                  width: 50,
+                  height: 50,
+                  bleedTop: true,
+                  bleedRight: true,
+                ),
+              ],
+            ),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
           ),
         ],
       );
@@ -163,7 +175,13 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_cache',
         pageSize: DotsPageSize(width: 100, height: 100),
-        pages: [DotsElementsPage(pageNumber: 1, elements: [])],
+        pliegos: [
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(pageNumber: 1, elements: []),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
+          ),
+        ],
       );
 
       final first =
@@ -184,7 +202,13 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_force',
         pageSize: DotsPageSize(width: 100, height: 100),
-        pages: [DotsElementsPage(pageNumber: 1, elements: [])],
+        pliegos: [
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(pageNumber: 1, elements: []),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
+          ),
+        ],
       );
 
       await generator.generateWhole(template: template).toList();

@@ -533,7 +533,7 @@ void main() {
       final customTemplate = DotsTemplate(
         documentId: 'album_no_iso',
         pageSize: _pageSize,
-        pages: [dedicationPage],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: dedicationPage, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
       final events =
           await generator.generateWhole(template: customTemplate).toList();
@@ -552,7 +552,7 @@ void main() {
       final customTemplate = DotsTemplate(
         documentId: 'album_iso',
         pageSize: _pageSize,
-        pages: [dedicationPage],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: dedicationPage, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
       final events =
           await generator.generateWhole(template: customTemplate).toList();
@@ -574,12 +574,12 @@ void main() {
       final noIsoTemplate = DotsTemplate(
         documentId: 'album_cmp_no_iso',
         pageSize: _pageSize,
-        pages: [dedicationPage],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: dedicationPage, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
       final isoTemplate = DotsTemplate(
         documentId: 'album_cmp_iso',
         pageSize: _pageSize,
-        pages: [dedicationPage],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: dedicationPage, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
 
       await noIso.generateWhole(template: noIsoTemplate).toList();
