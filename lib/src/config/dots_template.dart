@@ -2255,9 +2255,8 @@ class DotsAlbumSpreadPage extends DotsPage {
     String contextLabelValue = '',
   }) {
     // Per-category Q1/Q2 chapter-cluster copy. Canonical, NOT editable
-    // by the caller (the existing AlbumBeforeYouStartContent.titleOverride
-    // and .bodyOverride fields target the deprecated leftTitle/leftBody
-    // pre-fidelity-fix elements and are now ignored).
+    // by the caller — the factory selects per-category Spanish text
+    // from the source PDFs.
     final (
       String q1Marker,
       String q1Title,

@@ -1,29 +1,26 @@
-// Caller-supplied content for the "Busca un lugar tranquilo / Más allá
-// del papel" instruction spread introduced by Task 2 of the
-// `final-render-refinement` series.
+// Caller-supplied content for the chapter-cluster ("Busca un lugar
+// tranquilo / Más allá del papel" or per-category equivalent) instruction
+// spread.
 
 import 'package:meta/meta.dart';
 
-/// Content for the "Busca un lugar tranquilo / Más allá del papel"
-/// instruction spread shared by `parejas`, `hijos`, `individuales`,
-/// `otros`, and `generalEventos`.
+/// Content for the photo-grid + chapter-cluster instruction spread
+/// rendered by [DotsAlbumSpreadPage.beforeYouStart].
 ///
-/// Both fields default to the canonical Spanish copy from the source
-/// templates; callers may override either string for testing or
-/// localisation. The factory body lands in Tasks 4, 5, and 7; in Task 2
-/// the factory constructs cleanly and throws at render time.
+/// The Q1/Q2 marker, title, and body copy are NOT caller-editable — the
+/// factory selects the canonical per-category Spanish text from the
+/// source PDFs (`pdf02` p.9, `pdf08` p.9, `pdf10` p.7, `pdf04` p.7,
+/// `pdf12` p.2, `pdf06` p.2). The only caller input is the 10 photo
+/// paths for the slot grid.
 @immutable
 class AlbumBeforeYouStartContent {
   /// Creates the instruction-spread content.
   ///
   /// [photoPaths] must contain exactly 10 entries — the first 5 fill the
   /// left-page slot grid (left-to-right) and the last 5 fill the
-  /// right-page grid. The asserted length aligns with the 10-slot
-  /// design specified in `pdf02_pareja_inicial.pdf` / `pdf08_hijos_inicial.pdf`.
+  /// right-page grid.
   const AlbumBeforeYouStartContent({
     required this.photoPaths,
-    this.titleOverride,
-    this.bodyOverride,
   }) : assert(
           photoPaths.length == 10,
           'AlbumBeforeYouStartContent.photoPaths must have exactly 10 entries '
@@ -34,22 +31,13 @@ class AlbumBeforeYouStartContent {
   /// last 5 fill the right page. Each slot is 35 × 46 mm.
   final List<String> photoPaths;
 
-  /// Optional override of the fixed left-page title.
-  final String? titleOverride;
-
-  /// Optional override of the fixed right-page body block.
-  final String? bodyOverride;
-
   @override
   bool operator ==(Object other) =>
       other is AlbumBeforeYouStartContent &&
-      _listEquals(other.photoPaths, photoPaths) &&
-      other.titleOverride == titleOverride &&
-      other.bodyOverride == bodyOverride;
+      _listEquals(other.photoPaths, photoPaths);
 
   @override
-  int get hashCode =>
-      Object.hash(Object.hashAll(photoPaths), titleOverride, bodyOverride);
+  int get hashCode => Object.hashAll(photoPaths);
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {
