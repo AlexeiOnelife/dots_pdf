@@ -339,6 +339,51 @@ class DotsTextBlockElement extends DotsElement {
       );
 }
 
+/// A solid, decorative rounded rectangle (no photo, no text).
+///
+/// Used by the generalEventos welcomeJourney spread to render the 48×60 mm
+/// blue "door" placeholder above the title. Geometry is in PDF points
+/// (1 pt = 1/72 inch); [colorHex] is `#RRGGBB`. Set [borderRadius] to 0 for
+/// a square-cornered rectangle.
+@immutable
+class DotsDecorativeRectElement extends DotsElement {
+  /// Creates a decorative rounded-rectangle element.
+  const DotsDecorativeRectElement({
+    required super.x,
+    required super.y,
+    required this.width,
+    required this.height,
+    required this.colorHex,
+    this.borderRadius = 0,
+  });
+
+  /// Rectangle width in PDF points.
+  final double width;
+
+  /// Rectangle height in PDF points.
+  final double height;
+
+  /// Fill colour encoded as `#RRGGBB`. The renderer parses this once per
+  /// build call.
+  final String colorHex;
+
+  /// Corner radius in PDF points. Default `0` (square corners).
+  final double borderRadius;
+
+  @override
+  bool operator ==(Object other) =>
+      other is DotsDecorativeRectElement &&
+      other.x == x &&
+      other.y == y &&
+      other.width == width &&
+      other.height == height &&
+      other.colorHex == colorHex &&
+      other.borderRadius == borderRadius;
+
+  @override
+  int get hashCode => Object.hash(x, y, width, height, colorHex, borderRadius);
+}
+
 /// A decorative circle element for album cover pages.
 ///
 /// Bundles position + diameter + colour + Gaussian fade radius + four bleed
@@ -2276,15 +2321,85 @@ class DotsAlbumSpreadPage extends DotsPage {
   }
 
   /// "Bienvenido/a a tu viaje al pasado" welcome spread — specific to
-  /// the `generalEventos` category. Body lands in Task 5; today the
-  /// renderer throws `UnimplementedError('Task 5: welcomeJourney')`.
+  /// the `generalEventos` category (initial pliego 2).
+  ///
+  /// Filled in Task 5 of `final-render-refinement` against
+  /// `pdf12_general_eventos_inicial.pdf` p.1. The page carries a
+  /// decorative 48×60 mm light-blue rounded rectangle, the two-line title
+  /// "Bienvenido/a / a tu viaje al pasado" (P22 Mackinac Medium 18pt,
+  /// centered), and a multi-paragraph body block (Inter Book 9pt,
+  /// centered, 87 mm wide). Single-page coords (0..203 mm).
   factory DotsAlbumSpreadPage.welcomeJourney({
     required DotsAlbumType type,
     required int pageNumber,
     required AlbumWelcomeJourneyContent content,
     String contextLabelValue = '',
   }) {
-    final _ = content.titleOverride;
+    if (type != DotsAlbumType.generalEventos) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'DotsAlbumSpreadPage.welcomeJourney only supports '
+            'DotsAlbumType.generalEventos.',
+      );
+    }
+
+    // Layout constants (mm) — verified against pdf12 p.1.
+    const double rectXMm = 77.5;
+    const double rectYMm = 67;
+    const double rectWidthMm = 48;
+    const double rectHeightMm = 60;
+    const double rectBorderRadiusMm = 4;
+    const String rectColorHex = '#CDE7F2';
+
+    const double titleXMm = 58;
+    const double titleYMm = 132; // rect.bottom (67 + 60) + 5 mm gap.
+    const double titleWidthMm = 87;
+
+    const double bodyXMm = 58;
+    const double bodyYMm = 149.7; // title.bottom (~144.7) + 5 mm gap.
+    const double bodyWidthMm = 87;
+
+    const String defaultTitle = 'Bienvenido/a\na tu viaje al pasado';
+    const String defaultBody =
+        'Este no es un álbum cualquiera: es una puerta que se abre hacia '
+        'esos momentos que parecían efímeros, pero que quedaron guardados '
+        'para siempre.\n'
+        'Antes de empezar, sigue los pasos que encontrarás a continuación. '
+        'Lee despacio, sin prisa y siente cada momento de nuevo.';
+
+    final elements = <DotsElement>[
+      const DotsDecorativeRectElement(
+        x: rectXMm * _mmToPt,
+        y: rectYMm * _mmToPt,
+        width: rectWidthMm * _mmToPt,
+        height: rectHeightMm * _mmToPt,
+        colorHex: rectColorHex,
+        borderRadius: rectBorderRadiusMm * _mmToPt,
+      ),
+      DotsTextBlockElement(
+        x: titleXMm * _mmToPt,
+        y: titleYMm * _mmToPt,
+        value: content.titleOverride ?? defaultTitle,
+        fontSize: 18,
+        width: titleWidthMm * _mmToPt,
+        fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 1.167, // 21pt / 18pt per pdf12 annotation.
+      ),
+      DotsTextBlockElement(
+        x: bodyXMm * _mmToPt,
+        y: bodyYMm * _mmToPt,
+        value: content.bodyOverride ?? defaultBody,
+        fontSize: 9,
+        width: bodyWidthMm * _mmToPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 1.2,
+      ),
+    ];
+
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
@@ -2293,43 +2408,115 @@ class DotsAlbumSpreadPage extends DotsPage {
         rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: const [
-        DotsUnimplementedElement(
-          taskId: 'Task 5',
-          message: 'welcomeJourney factory body not yet implemented '
-              '(generalEventos)',
-        ),
-      ],
+      elements: elements,
     );
   }
 
   /// "Porque algunos recuerdos…" opening QR spread — specific to the
-  /// `generalEventos` category (initial pliego 1). Distinct from the
-  /// closing variant: opening puts the QR on the LEFT page. Body lands
-  /// in Task 5; today the renderer throws
-  /// `UnimplementedError('Task 5: openingQrSpread')`.
+  /// `generalEventos` category (initial pliego 1).
+  ///
+  /// Filled in Task 5 of `final-render-refinement`. No annotated source
+  /// PDF exists for the opening variant; the LEFT-page geometry mirrors
+  /// `closingQrSpread` (`pdf03_pareja_final.pdf` p.1 — title at y=50.892,
+  /// body at y=71.346, square 27×27 mm QR at (30, 94.081), caption to the
+  /// right of the QR). The opening differs from the closing in role
+  /// (welcome vs farewell) and body copy; visual layout is otherwise
+  /// identical. The RIGHT-page decorative-circle scatter remains deferred
+  /// pending annotated coordinates, consistent with Task 4's closing
+  /// variant.
   factory DotsAlbumSpreadPage.openingQrSpread({
     required DotsAlbumType type,
     required int pageNumber,
     required AlbumQrSpreadContent content,
     String contextLabelValue = '',
   }) {
+    if (type != DotsAlbumType.generalEventos) {
+      throw ArgumentError.value(
+        type,
+        'type',
+        'DotsAlbumSpreadPage.openingQrSpread only supports '
+            'DotsAlbumType.generalEventos.',
+      );
+    }
     assert(content.placement == AlbumQrSpreadPlacement.opening);
+
+    // Layout constants (mm) — mirror closingQrSpread (pdf03 p.1).
+    const double titleXMm = 30;
+    const double titleYMm = 50.892;
+    const double titleWidthMm = 143;
+    const double bodyXMm = 30;
+    const double bodyYMm = 71.346;
+    const double bodyWidthMm = 92;
+    const double qrXMm = 30;
+    const double qrYMm = 94.081;
+    const double qrSizeMm = 27;
+    const double qrCaptionXMm = 62; // 30 + 27 + 5 gap.
+    const double qrCaptionYMm = 94.081;
+    const double qrCaptionWidthMm = 36.178;
+
+    final String qrCaption = content.captionOverride ??
+        'Escanea el QR para abrir tu viaje al pasado.';
+
+    final elements = <DotsElement>[
+      // Title — shared opening/closing wording.
+      const DotsTextBlockElement(
+        x: titleXMm * _mmToPt,
+        y: titleYMm * _mmToPt,
+        value: 'Porque algunos recuerdos merecen seguir vivos',
+        fontSize: 23,
+        width: titleWidthMm * _mmToPt,
+        fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.087, // 25 / 23.
+      ),
+      // Body — opening copy (welcoming role).
+      const DotsTextBlockElement(
+        x: bodyXMm * _mmToPt,
+        y: bodyYMm * _mmToPt,
+        value: 'Las fotografías capturan instantes. Los vídeos conservan '
+            'las voces, las emociones y todo aquello que el papel no puede '
+            'guardar. Escanea el QR al final de este Dotbook para revivir '
+            'esos momentos más especiales de una forma más viva y real.',
+        fontSize: 9,
+        width: bodyWidthMm * _mmToPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.2,
+      ),
+      // QR block — 27×27 mm square; oval element with equal w/h is a
+      // temporary approximation pending a true square-frame element
+      // variant (same approximation as closingQrSpread).
+      DotsOvalQrElement(
+        x: qrXMm * _mmToPt,
+        y: qrYMm * _mmToPt,
+        ovalWidth: qrSizeMm * _mmToPt,
+        ovalHeight: qrSizeMm * _mmToPt,
+        qrPayload: content.qrPayload,
+        caption: '', // caption rendered separately to the right of the QR.
+      ),
+      // QR caption — to the right of the QR block.
+      DotsTextBlockElement(
+        x: qrCaptionXMm * _mmToPt,
+        y: qrCaptionYMm * _mmToPt,
+        value: qrCaption,
+        fontSize: 9,
+        width: qrCaptionWidthMm * _mmToPt,
+        fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.left,
+        lineHeight: 1.2,
+      ),
+    ];
+
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
-        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
+        leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
-        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
+        rightPageNumber: '${pageNumber + 1}',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: const [
-        DotsUnimplementedElement(
-          taskId: 'Task 5',
-          message: 'openingQrSpread factory body not yet implemented '
-              '(generalEventos)',
-        ),
-      ],
+      elements: elements,
     );
   }
 

@@ -258,6 +258,9 @@ Future<pw.Widget?> _buildElement({
     case DotsDecorativeCircleElement():
       return _buildDecorativeCircleElement(element);
 
+    case DotsDecorativeRectElement():
+      return _buildDecorativeRectElement(element);
+
     case DotsPhotoCircleElement():
       return _buildPhotoCircleElement(
         element: element,
@@ -653,6 +656,32 @@ pw.Widget _buildDecorativeCircleElement(DotsDecorativeCircleElement element) {
     left: element.x - haloPt,
     top: element.y - haloPt,
     child: pw.Image(memImage, width: canvasPt, height: canvasPt),
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Decorative-rect element builder
+// ---------------------------------------------------------------------------
+
+pw.Widget _buildDecorativeRectElement(DotsDecorativeRectElement element) {
+  final color = _parseColor(element.colorHex) ??
+      const PdfColor(
+        0xCD / 255.0,
+        0xE7 / 255.0,
+        0xF2 / 255.0,
+      );
+  final radius = element.borderRadius;
+  return pw.Positioned(
+    left: element.x,
+    top: element.y,
+    child: pw.Container(
+      width: element.width,
+      height: element.height,
+      decoration: pw.BoxDecoration(
+        color: color,
+        borderRadius: radius > 0 ? pw.BorderRadius.all(pw.Radius.circular(radius)) : null,
+      ),
+    ),
   );
 }
 
