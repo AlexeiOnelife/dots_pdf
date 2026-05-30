@@ -72,11 +72,14 @@ void main() {
           contextLabelValue: contextLabel,
         );
 
-    test('emits title block, body block, QR, caption block — 4 elements', () {
+    test('emits title + body + QR + caption + 28 right-page circles', () {
       final p = page();
-      expect(p.elements, hasLength(4));
       expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(3));
       expect(p.elements.whereType<DotsOvalQrElement>(), hasLength(1));
+      // 28 decorative circles on the right page (shared with closingQrSpread).
+      expect(p.elements.whereType<DotsDecorativeCircleElement>(),
+          hasLength(28));
+      expect(p.elements, hasLength(3 + 1 + 28));
     });
 
     test('title is the shared "Porque algunos recuerdos…" wording at 23pt',

@@ -27,6 +27,53 @@ import 'dots_pliego.dart';
 /// 1 mm expressed in PDF points (1 pt = 1/72 inch; 1 inch = 25.4 mm).
 const double _mmToPt = 2.834645669;
 
+/// Right-page decorative-circle scatter for the shared
+/// `closingQrSpread` (and, by symmetry, the generalEventos
+/// `openingQrSpread`). Twenty-eight circles authored against
+/// `pdf13_general_eventos_final.pdf` p.1 (annotated diameters) +
+/// p.2 (annotated X/Y positions). X/Y are top-left of each circle's
+/// bounding box, in spread mm (right page = x in 137..395 mm; the
+/// cluster straddles the gutter near x=200). Diameter pairings were
+/// done by visual matching between the two PDF pages — the histogram
+/// is exact (matches every annotated diameter exactly once), but
+/// individual position↔diameter pairings within a cluster are
+/// best-effort and may need refinement after visual QA.
+const List<({double xMm, double yMm, double diameterMm})>
+    _kRightPageCircles = [
+  // Top-right corner area.
+  (xMm: 390, yMm: 57, diameterMm: 40),
+  (xMm: 362, yMm: 77, diameterMm: 13),
+  (xMm: 338, yMm: 57, diameterMm: 23),
+  (xMm: 389, yMm: 94, diameterMm: 16),
+  (xMm: 307, yMm: 94, diameterMm: 32),
+  (xMm: 266, yMm: 102, diameterMm: 26),
+  // Mid right / centre.
+  (xMm: 236, yMm: 140, diameterMm: 43),
+  (xMm: 202, yMm: 128, diameterMm: 23),
+  (xMm: 205, yMm: 160, diameterMm: 13),
+  (xMm: 348, yMm: 138, diameterMm: 56),
+  (xMm: 395, yMm: 139, diameterMm: 5),
+  (xMm: 291, yMm: 135, diameterMm: 13),
+  (xMm: 266, yMm: 151, diameterMm: 13),
+  // Dense small cluster near the gutter.
+  (xMm: 137, yMm: 142, diameterMm: 8),
+  (xMm: 149, yMm: 142, diameterMm: 5),
+  (xMm: 163, yMm: 136, diameterMm: 6),
+  (xMm: 165, yMm: 154, diameterMm: 8),
+  (xMm: 182, yMm: 157, diameterMm: 9),
+  (xMm: 177, yMm: 140, diameterMm: 13),
+  (xMm: 185, yMm: 132, diameterMm: 13),
+  // Lower area.
+  (xMm: 241, yMm: 186, diameterMm: 23),
+  (xMm: 310, yMm: 194, diameterMm: 56),
+  (xMm: 271, yMm: 203, diameterMm: 8),
+  (xMm: 307, yMm: 216, diameterMm: 37),
+  (xMm: 348, yMm: 232, diameterMm: 40),
+  (xMm: 369, yMm: 182, diameterMm: 43),
+  (xMm: 391, yMm: 201, diameterMm: 23),
+  (xMm: 389, yMm: 238, diameterMm: 43),
+];
+
 /// Immutable page size in PDF points (1 pt = 1/72 inch).
 @immutable
 class DotsPageSize {
@@ -2549,9 +2596,9 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// body at y=71.346, square 27×27 mm QR at (30, 94.081), caption to the
   /// right of the QR). The opening differs from the closing in role
   /// (welcome vs farewell) and body copy; visual layout is otherwise
-  /// identical. The RIGHT-page decorative-circle scatter remains deferred
-  /// pending annotated coordinates, consistent with Task 4's closing
-  /// variant.
+  /// identical. The RIGHT-page decorative-circle scatter is shared with
+  /// `closingQrSpread` (see [_kRightPageCircles]) per the design's
+  /// "QR LEFT, circles RIGHT" specification.
   factory DotsAlbumSpreadPage.openingQrSpread({
     required DotsAlbumType type,
     required int pageNumber,
@@ -2634,6 +2681,16 @@ class DotsAlbumSpreadPage extends DotsPage {
         textAlign: DotsTextAlign.left,
         lineHeight: 1.2,
       ),
+      // Right-page decorative-circle scatter — shared with
+      // closingQrSpread per the design's "QR LEFT, circles RIGHT"
+      // specification. Same 28-circle layout from pdf13 p.1 + p.2.
+      for (final c in _kRightPageCircles)
+        DotsDecorativeCircleElement(
+          x: c.xMm * _mmToPt,
+          y: c.yMm * _mmToPt,
+          diameter: c.diameterMm * _mmToPt,
+          colorHex: '#CDE7F2',
+        ),
     ];
 
     return DotsAlbumSpreadPage(
@@ -2654,9 +2711,10 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// Body landed in Task 4 of `final-render-refinement` against
   /// `pdf03_pareja_final.pdf` p.1–2 and `pdf09_hijos_final.pdf` p.1–2.
   /// The LEFT page carries the title, body, QR block, QR caption, and
-  /// bottom variable text; the RIGHT page is intentionally chrome-only
-  /// (the decorative-circle scatter from the PDFs lacks annotated
-  /// diameters and is deferred to a follow-up task).
+  /// bottom variable text. The RIGHT-page decorative-circle scatter was
+  /// landed in a follow-up against `pdf13_general_eventos_final.pdf`
+  /// p.1 (annotated diameters) + p.2 (annotated X/Y positions); see
+  /// [_kRightPageCircles] for the 28-circle data table.
   factory DotsAlbumSpreadPage.closingQrSpread({
     required DotsAlbumType type,
     required int pageNumber,
@@ -2750,6 +2808,22 @@ class DotsAlbumSpreadPage extends DotsPage {
         textAlign: DotsTextAlign.left,
         lineHeight: 1.2,
       ),
+      // Right-page decorative-circle scatter — 28 circles from
+      // pdf13 p.1 (diameters) + p.2 (positions). Solid light blue;
+      // the right-to-left opacity gradient ("transparencia 100% A 0%
+      // sobre 181 mm") annotated in pdf13 p.1 is NOT applied — the
+      // DotsDecorativeCircleElement renders solid colour, so a gradient
+      // would require a per-circle alpha or a render-time fade mask.
+      // Deferred to a separate follow-up. Each circle uses the default
+      // Gaussian edge fade of 1.764 mm (matches Task 4's cover circles
+      // and pdf13's "Desvanecimiento de bordes" annotation).
+      for (final c in _kRightPageCircles)
+        DotsDecorativeCircleElement(
+          x: c.xMm * _mmToPt,
+          y: c.yMm * _mmToPt,
+          diameter: c.diameterMm * _mmToPt,
+          colorHex: '#CDE7F2',
+        ),
     ];
 
     return DotsAlbumSpreadPage(
