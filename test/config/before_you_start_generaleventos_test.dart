@@ -156,11 +156,10 @@ void main() {
       expect(p.elements, hasLength(21));
     });
 
-    test('individuales, otros, boda still throw ArgumentError', () {
+    test('individuales and otros still throw ArgumentError', () {
       for (final type in const [
         DotsAlbumType.individuales,
         DotsAlbumType.otros,
-        DotsAlbumType.boda,
       ]) {
         expect(
           () => DotsAlbumSpreadPage.beforeYouStart(
@@ -170,6 +169,87 @@ void main() {
           ),
           throwsArgumentError,
         );
+      }
+    });
+  });
+
+  group('beforeYouStart(boda) — shares generalEventos chapter-cluster layout',
+      () {
+    DotsAlbumSpreadPage page() => DotsAlbumSpreadPage.beforeYouStart(
+          type: DotsAlbumType.boda,
+          pageNumber: 5,
+          content: _content(),
+        );
+
+    test('emits the same 16-element shape as generalEventos '
+        '(10 slots + 6 cluster texts)', () {
+      final p = page();
+      expect(p.elements.whereType<DotsImageElement>(), hasLength(10));
+      expect(p.elements.whereType<DotsTextElement>(), hasLength(4));
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(2));
+      expect(p.elements, hasLength(16));
+    });
+
+    test('Q1 cluster matches generalEventos exactly (shared "calm" copy)',
+        () {
+      final boda = page();
+      final ge = DotsAlbumSpreadPage.beforeYouStart(
+        type: DotsAlbumType.generalEventos,
+        pageNumber: 5,
+        content: _content(),
+      );
+      final bodaBlocks =
+          boda.elements.whereType<DotsTextBlockElement>().toList();
+      final geBlocks =
+          ge.elements.whereType<DotsTextBlockElement>().toList();
+      // Q1 body (first text block) is shared canonical copy.
+      expect(bodaBlocks[0].value, equals(geBlocks[0].value));
+      // Q1 marker + title also shared.
+      final bodaTexts =
+          boda.elements.whereType<DotsTextElement>().toList();
+      final geTexts = ge.elements.whereType<DotsTextElement>().toList();
+      expect(bodaTexts[0].value, equals('(01)'));
+      expect(bodaTexts[1].value, equals('Busca un lugar tranquilo'));
+      expect(bodaTexts[0].value, equals(geTexts[0].value));
+      expect(bodaTexts[1].value, equals(geTexts[1].value));
+    });
+
+    test('Q2 body is boda-specific (wedding-photo + QR copy)', () {
+      final boda = page();
+      final ge = DotsAlbumSpreadPage.beforeYouStart(
+        type: DotsAlbumType.generalEventos,
+        pageNumber: 5,
+        content: _content(),
+      );
+      final bodaBlocks =
+          boda.elements.whereType<DotsTextBlockElement>().toList();
+      final geBlocks =
+          ge.elements.whereType<DotsTextBlockElement>().toList();
+      // Q2 body distinct from generalEventos.
+      expect(bodaBlocks[1].value, isNot(equals(geBlocks[1].value)));
+      // boda Q2 body references the wedding-specific phrasing.
+      expect(bodaBlocks[1].value,
+          contains('estuvieron a tu lado en este día tan importante'));
+      expect(bodaBlocks[1].value, contains('código QR'));
+    });
+
+    test('Q2 marker and title match generalEventos', () {
+      final texts = page().elements.whereType<DotsTextElement>().toList();
+      expect(texts[2].value, equals('(02)'));
+      expect(texts[3].value, equals('Más allá del papel'));
+    });
+
+    test('does NOT include parejas/hijos left-page big title or right CTA',
+        () {
+      final p = page();
+      final texts = p.elements.whereType<DotsTextElement>().toList();
+      for (final t in texts) {
+        expect(t.value, isNot(equals('Antes de empezar')));
+        expect(t.value, isNot(equals('el viaje')));
+      }
+      final blocks = p.elements.whereType<DotsTextBlockElement>().toList();
+      for (final b in blocks) {
+        expect(b.value, isNot(contains('Pasad la página')));
       }
     });
   });

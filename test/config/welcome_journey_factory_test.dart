@@ -8,13 +8,12 @@ const double _mmToPt = 2.834645669;
 
 void main() {
   group('DotsAlbumSpreadPage.welcomeJourney — guards', () {
-    test('rejects non-generalEventos types', () {
+    test('rejects parejas, hijos, individuales, otros', () {
       for (final type in const [
         DotsAlbumType.parejas,
         DotsAlbumType.hijos,
         DotsAlbumType.individuales,
         DotsAlbumType.otros,
-        DotsAlbumType.boda,
       ]) {
         expect(
           () => DotsAlbumSpreadPage.welcomeJourney(
@@ -28,15 +27,103 @@ void main() {
       }
     });
 
-    test('accepts generalEventos', () {
-      expect(
-        () => DotsAlbumSpreadPage.welcomeJourney(
-          type: DotsAlbumType.generalEventos,
-          pageNumber: 3,
-          content: const AlbumWelcomeJourneyContent(),
-        ),
-        returnsNormally,
+    test('accepts generalEventos and boda', () {
+      for (final type in const [
+        DotsAlbumType.generalEventos,
+        DotsAlbumType.boda,
+      ]) {
+        expect(
+          () => DotsAlbumSpreadPage.welcomeJourney(
+            type: type,
+            pageNumber: 3,
+            content: const AlbumWelcomeJourneyContent(),
+          ),
+          returnsNormally,
+          reason: '$type should be accepted',
+        );
+      }
+    });
+  });
+
+  group('DotsAlbumSpreadPage.welcomeJourney — per-category body', () {
+    test('generalEventos default body starts with "Este no es un álbum…"',
+        () {
+      final p = DotsAlbumSpreadPage.welcomeJourney(
+        type: DotsAlbumType.generalEventos,
+        pageNumber: 3,
+        content: const AlbumWelcomeJourneyContent(),
       );
+      final body =
+          p.elements.whereType<DotsTextBlockElement>().toList().last;
+      // Starts directly with the "Este no es un álbum…" sentence
+      // (no boda prelude).
+      expect(body.value, startsWith('Este no es un álbum cualquiera'));
+      expect(body.value, isNot(contains('Prepárate para revivir')));
+    });
+
+    test('boda default body opens with "Prepárate para revivir…" '
+        'before the shared "Este no es un álbum…" copy', () {
+      final p = DotsAlbumSpreadPage.welcomeJourney(
+        type: DotsAlbumType.boda,
+        pageNumber: 3,
+        content: const AlbumWelcomeJourneyContent(),
+      );
+      final body =
+          p.elements.whereType<DotsTextBlockElement>().toList().last;
+      expect(body.value, startsWith('Prepárate para revivir'));
+      expect(body.value,
+          contains('uno de los días más bonitos de tu vida'));
+      // Shared "Este no es un álbum…" copy follows the boda prelude.
+      expect(body.value, contains('Este no es un álbum cualquiera'));
+    });
+
+    test('boda + generalEventos share the SAME layout '
+        '(rect, title, body geometry identical)', () {
+      final ge = DotsAlbumSpreadPage.welcomeJourney(
+        type: DotsAlbumType.generalEventos,
+        pageNumber: 3,
+        content: const AlbumWelcomeJourneyContent(),
+      );
+      final bd = DotsAlbumSpreadPage.welcomeJourney(
+        type: DotsAlbumType.boda,
+        pageNumber: 3,
+        content: const AlbumWelcomeJourneyContent(),
+      );
+      // Both emit rect + title + body.
+      expect(ge.elements, hasLength(3));
+      expect(bd.elements, hasLength(3));
+      // Rect geometry matches.
+      final geRect =
+          ge.elements.whereType<DotsDecorativeRectElement>().single;
+      final bdRect =
+          bd.elements.whereType<DotsDecorativeRectElement>().single;
+      expect(bdRect.x, equals(geRect.x));
+      expect(bdRect.y, equals(geRect.y));
+      expect(bdRect.width, equals(geRect.width));
+      expect(bdRect.height, equals(geRect.height));
+      expect(bdRect.colorHex, equals(geRect.colorHex));
+      // Title text identical between the two (only body changes).
+      final geTitle =
+          ge.elements.whereType<DotsTextBlockElement>().toList().first;
+      final bdTitle =
+          bd.elements.whereType<DotsTextBlockElement>().toList().first;
+      expect(bdTitle.value, equals(geTitle.value));
+      expect(bdTitle.x, equals(geTitle.x));
+      expect(bdTitle.y, equals(geTitle.y));
+    });
+
+    test('titleOverride and bodyOverride work for boda too', () {
+      final p = DotsAlbumSpreadPage.welcomeJourney(
+        type: DotsAlbumType.boda,
+        pageNumber: 3,
+        content: const AlbumWelcomeJourneyContent(
+          titleOverride: 'Custom title',
+          bodyOverride: 'Custom body',
+        ),
+      );
+      final blocks = p.elements.whereType<DotsTextBlockElement>().toList();
+      expect(blocks.first.value, equals('Custom title'));
+      expect(blocks.last.value, equals('Custom body'));
     });
   });
 

@@ -2229,10 +2229,14 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// Body landed in Task 4 of `final-render-refinement` against
   /// `pdf02_pareja_inicial.pdf` pp.8–9 (parejas) and
   /// `pdf08_hijos_inicial.pdf` pp.8–9 (hijos). Task 7 extended the
-  /// switch with a `generalEventos` arm against `pdf12_general_eventos_inicial.pdf`
-  /// p.2 — generalEventos uses the simpler "(01)/(02) chapter cluster"
-  /// layout without the parejas/hijos left-page main title or right-page
-  /// protagonist + CTA. `individuales`, `otros`, and `boda` still throw.
+  /// switch with a `generalEventos` arm against
+  /// `pdf12_general_eventos_inicial.pdf` p.2 — generalEventos uses the
+  /// simpler "(01)/(02) chapter cluster" layout without the
+  /// parejas/hijos left-page main title or right-page protagonist + CTA.
+  /// A follow-up added the `boda` arm against `pdf06_boda_inicial.pdf`
+  /// p.2 — same chapter-cluster layout, Q1 body identical to
+  /// generalEventos, Q2 body differs (boda-specific copy about wedding
+  /// photos and the QR). `individuales` and `otros` still throw.
   factory DotsAlbumSpreadPage.beforeYouStart({
     required DotsAlbumType type,
     required int pageNumber,
@@ -2324,13 +2328,43 @@ class DotsAlbumSpreadPage extends DotsPage {
           false,
           false,
         ),
+      DotsAlbumType.boda => (
+          // boda uses the same chapter-cluster layout as generalEventos.
+          // Q1 body is identical (shared canonical "calm" copy); Q2 body
+          // differs (boda-specific wedding-photo copy from pdf06 p.2).
+          '',
+          '',
+          '',
+          '(01)',
+          'Busca un lugar tranquilo',
+          'Encuentra un espacio donde puedas estar en calma. Siéntate. '
+              'Respira despacio. Deja que el silencio te encuentre, '
+              'aunque sea por un instante, y que todo lo demás se '
+              'disuelva un poco: las prisas, los pensamientos, el ruido '
+              'de fuera... En ese pequeño respiro, el tiempo se abre y '
+              'con ello comienza tu viaje al pasado. Siente. Déjate '
+              'llevar. Ese es el único objetivo.',
+          '(02)',
+          'Más allá del papel',
+          'En estas páginas tienes la historia impresa para guardarla '
+              'siempre. Las fotos, no son solo imágenes, sino una señal '
+              'de que aquellos que más quieres estuvieron a tu lado en '
+              'este día tan importante. Sin embargo, hay momentos que '
+              'se viven mejor en movimiento: los vídeos forman una parte '
+              'importante de este recuerdo. En las última páginas de '
+              'este libro encontraréis un código QR, escanéalo y vuelve '
+              'al álbum digital cuando quieras para revivir un instante '
+              'concreto y ver todo lo que quedó más allá del papel.',
+          false,
+          false,
+        ),
       _ => throw ArgumentError.value(
           type,
           'type',
           'DotsAlbumSpreadPage.beforeYouStart currently supports '
-              'DotsAlbumType.parejas, DotsAlbumType.hijos, and '
-              'DotsAlbumType.generalEventos; individuales, otros, and '
-              'boda land in later tasks.',
+              'DotsAlbumType.parejas, DotsAlbumType.hijos, '
+              'DotsAlbumType.generalEventos, and DotsAlbumType.boda; '
+              'individuales and otros land in a later task.',
         ),
     };
 
@@ -2495,31 +2529,53 @@ class DotsAlbumSpreadPage extends DotsPage {
     );
   }
 
-  /// "Bienvenido/a a tu viaje al pasado" welcome spread — specific to
-  /// the `generalEventos` category (initial pliego 2).
+  /// "Bienvenido/a a tu viaje al pasado" welcome spread — supports the
+  /// `generalEventos` (initial pliego 2) and `boda` categories.
   ///
   /// Filled in Task 5 of `final-render-refinement` against
-  /// `pdf12_general_eventos_inicial.pdf` p.1. The page carries a
-  /// decorative 48×60 mm light-blue rounded rectangle, the two-line title
-  /// "Bienvenido/a / a tu viaje al pasado" (P22 Mackinac Medium 18pt,
-  /// centered), and a multi-paragraph body block (Inter Book 9pt,
-  /// centered, 87 mm wide). Single-page coords (0..203 mm).
+  /// `pdf12_general_eventos_inicial.pdf` p.1. The boda arm was added in
+  /// a follow-up against `pdf06_boda_inicial.pdf` p.1 — same layout as
+  /// generalEventos, but the body gets a boda-specific intro sentence
+  /// ("Prepárate para revivir uno de los días más bonitos de tu vida.")
+  /// prepended to the shared "door" copy.
+  ///
+  /// Visual layout: 48×60 mm light-blue rounded rectangle at top, the
+  /// two-line title "Bienvenido/a / a tu viaje al pasado" (P22 Mackinac
+  /// Medium 18pt, centered) 5 mm below, multi-paragraph body block
+  /// (Inter Book 9pt, centered, 87 mm wide) 5 mm below the title.
+  /// Single-page coords (0..203 mm).
   factory DotsAlbumSpreadPage.welcomeJourney({
     required DotsAlbumType type,
     required int pageNumber,
     required AlbumWelcomeJourneyContent content,
     String contextLabelValue = '',
   }) {
-    if (type != DotsAlbumType.generalEventos) {
-      throw ArgumentError.value(
-        type,
-        'type',
-        'DotsAlbumSpreadPage.welcomeJourney only supports '
-            'DotsAlbumType.generalEventos.',
-      );
-    }
+    // Per-category body copy. Title and layout are shared.
+    final String defaultBody = switch (type) {
+      DotsAlbumType.generalEventos =>
+        'Este no es un álbum cualquiera: es una puerta que se abre hacia '
+            'esos momentos que parecían efímeros, pero que quedaron '
+            'guardados para siempre.\n'
+            'Antes de empezar, sigue los pasos que encontrarás a '
+            'continuación. Lee despacio, sin prisa y siente cada momento '
+            'de nuevo.',
+      DotsAlbumType.boda =>
+        'Prepárate para revivir uno de los días más bonitos de tu vida.\n'
+            'Este no es un álbum cualquiera: es una puerta que se abre '
+            'hacia esos momentos que parecían efímeros, pero que '
+            'quedaron guardados para siempre.\n'
+            'Antes de empezar, sigue los pasos que encontrarás a '
+            'continuación. Lee despacio, sin prisa y siente cada momento '
+            'de nuevo.',
+      _ => throw ArgumentError.value(
+          type,
+          'type',
+          'DotsAlbumSpreadPage.welcomeJourney supports '
+              'DotsAlbumType.generalEventos and DotsAlbumType.boda only.',
+        ),
+    };
 
-    // Layout constants (mm) — verified against pdf12 p.1.
+    // Layout constants (mm) — verified against pdf12 p.1 and pdf06 p.1.
     const double rectXMm = 77.5;
     const double rectYMm = 67;
     const double rectWidthMm = 48;
@@ -2536,12 +2592,6 @@ class DotsAlbumSpreadPage extends DotsPage {
     const double bodyWidthMm = 87;
 
     const String defaultTitle = 'Bienvenido/a\na tu viaje al pasado';
-    const String defaultBody =
-        'Este no es un álbum cualquiera: es una puerta que se abre hacia '
-        'esos momentos que parecían efímeros, pero que quedaron guardados '
-        'para siempre.\n'
-        'Antes de empezar, sigue los pasos que encontrarás a continuación. '
-        'Lee despacio, sin prisa y siente cada momento de nuevo.';
 
     final elements = <DotsElement>[
       const DotsDecorativeRectElement(
