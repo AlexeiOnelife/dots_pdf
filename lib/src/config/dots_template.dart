@@ -1,5 +1,6 @@
 import 'package:meta/meta.dart';
 
+import '../api/album_before_journey_content.dart';
 import '../api/album_before_you_start_content.dart';
 import '../api/album_boda_cluster_content.dart';
 import '../api/album_boda_cover_content.dart';
@@ -2991,6 +2992,153 @@ class DotsAlbumSpreadPage extends DotsPage {
         leftPageNumber: '$pageNumber',
         centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
         rightPageNumber: '$pageNumber',
+      ),
+      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      elements: elements,
+    );
+  }
+
+  /// "Antes de empezar el viaje" decorative-circles 2-page instruction
+  /// spread. Renders the title + body on the RIGHT page; the LEFT
+  /// page's blue background and decorative-circles cluster (with the
+  /// per-circle opacity gradients annotated in the source PDFs) are
+  /// DEFERRED — `DotsDecorativeCircleElement` currently emits solid
+  /// circles only.
+  ///
+  /// Sources (each category has its own canonical body, but title and
+  /// layout are shared):
+  ///   - `parejas`     — `pdf02_pareja_inicial.pdf`     p.10
+  ///   - `hijos`       — `pdf08_hijos_inicial.pdf`      p.10
+  ///   - `individuales`— `pdf10_individual_inicial.pdf` p.8
+  ///   - `otros`       — `pdf04_otros_inicial.pdf`      p.8
+  ///   - `boda`        — `pdf06_boda_inicial.pdf`       p.3
+  ///   - `generalEventos`— `pdf12_general_eventos_inicial.pdf` p.3
+  ///
+  /// Layout (uniform):
+  ///   - Title "Antes de empezar / el viaje" — two lines, P22 Mackinac
+  ///     Medium 27pt (line 1) + P22 Mackinac Medium Italic 27pt (line
+  ///     2). Centred on the RIGHT page, 95 mm-wide box at right-page
+  ///     spread x=203+54.083.
+  ///   - Body — Inter Book 9pt, 95 mm-wide centred box, 5 mm below the
+  ///     title.
+  ///
+  /// Right-page chrome (character names + "Pasad la página" CTA)
+  /// annotated in the source PDFs for parejas / hijos / individuales /
+  /// otros / boda but NOT generalEventos: also DEFERRED to a follow-up.
+  factory DotsAlbumSpreadPage.beforeJourney({
+    required DotsAlbumType type,
+    required int pageNumber,
+    AlbumBeforeJourneyContent content = const AlbumBeforeJourneyContent(),
+    String contextLabelValue = '',
+  }) {
+    // Per-category body copy — canonical Spanish from the source PDFs.
+    final String defaultBody = switch (type) {
+      DotsAlbumType.parejas =>
+        // pdf02 p.10 — vosotros form.
+        'Pensad que esto no son solo fotos.\nSon momentos.\n'
+            'La historia de cómo ocurrió. Reviviéndola tal y como fue, '
+            'en ese instante. Volviendo a veros y escucharos, tal y '
+            'como erais entonces, mientras todo pasaba.\n'
+            'Cerrad los ojos un instante.\nRespirad despacio.',
+      DotsAlbumType.hijos =>
+        // pdf08 p.10 — tú form.
+        'Piensa que esto no son solo fotos.\nSon momentos.\n'
+            'La historia de cómo ocurrió. Reviviéndolo tal y como fue, '
+            'en ese instante. Volviendo a ver y escuchar a tus seres '
+            'queridos, tal y como eran entonces, mientras todo pasaba.\n'
+            'Cierra los ojos un instante.\nRespira despacio.\n'
+            'Y vuelve allí.',
+      DotsAlbumType.individuales || DotsAlbumType.otros =>
+        // pdf10 p.8 / pdf04 p.8 — IDENTICAL tú-form body for both.
+        'Piensa que esto no son solo fotos.\nSon momentos.\n'
+            'Fragmentos de una historia vivida de verdad.\n'
+            'Instantes que quedaron atrás, pero que siguen teniendo '
+            'algo que decir.\n'
+            'Aquí podrás volver a ver, escuchar y sentir parte de lo '
+            'que fue esa etapa, tal y como ocurrió.\n'
+            'Cierra los ojos un instante.\nRespira despacio.\n'
+            'Y vuelve allí.',
+      DotsAlbumType.boda =>
+        // pdf06 p.3 — tú form, wedding-specific closing line.
+        'Cierra los ojos un instante.\nRespira despacio.\nY vuelve allí.\n'
+            'Estas fotos no las hizo una cámara. Las hizo la gente que '
+            'los quiere… mientras ocurría. Por eso no son solo '
+            'recuerdos: son emoción. Son miradas. Son "yo estuve '
+            'contigo".\n'
+            'Deja que cada página te devuelva ese día. Quédate un poco. '
+            'Como si el tiempo, por fin, aflojara.\n'
+            'Y cuando estes listo, vuelve al momento exacto en el que '
+            'dejasteis de ser dos y empezasteis a ser un nosotros.',
+      DotsAlbumType.generalEventos =>
+        // pdf12 p.3 — tú form, generic closing line.
+        'Cierra los ojos un instante.\nRespira despacio.\nY vuelve allí.\n'
+            'Estas fotos no las hizo solo una cámara. Las hicieron las '
+            'personas que estaban contigo mientras todo ocurría. Por '
+            'eso no son solo recuerdos: son emoción. Son miradas. Son '
+            'momentos compartidos que siguen vivos.\n'
+            'Deja que cada página te lleve de vuelta. Quédate un '
+            'momento. Como si el tiempo fuera un poco más lento.\n'
+            'Y cuando estés listo, vuelve exactamente a ese instante '
+            'que merecía quedarse para siempre.',
+    };
+
+    // Layout constants (mm) — verified against pdf02 p.10 / pdf08 p.10
+    // / pdf06 p.3. Right-page spread coords (x += 203 from page-local).
+    const double titleXMm = 203 + 54.083;
+    const double titleWidthMm = 95;
+    const double titleL1YMm = 96.2;
+    // Line 2 sits 27pt × ~1.148 leading ≈ 31pt ≈ 10.94 mm below L1.
+    const double titleL2YMm = titleL1YMm + 10.94;
+    const double bodyXMm = 203 + 54.083;
+    const double bodyWidthMm = 95;
+    // Title height 19.1 mm + 5 mm gap below L2 baseline.
+    const double bodyYMm = titleL1YMm + 19.1 + 5;
+
+    final String body = content.bodyOverride ?? defaultBody;
+
+    final elements = <DotsElement>[
+      // Title line 1 — "Antes de empezar" (P22 Mackinac Medium 27pt).
+      const DotsTextBlockElement(
+        x: titleXMm * _mmToPt,
+        y: titleL1YMm * _mmToPt,
+        value: 'Antes de empezar',
+        fontSize: 27,
+        width: titleWidthMm * _mmToPt,
+        fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 31 / 27,
+      ),
+      // Title line 2 — "el viaje" (P22 Mackinac Medium Italic 27pt).
+      const DotsTextBlockElement(
+        x: titleXMm * _mmToPt,
+        y: titleL2YMm * _mmToPt,
+        value: 'el viaje',
+        fontSize: 27,
+        width: titleWidthMm * _mmToPt,
+        fontFamily: 'P22 Mackinac Medium Italic',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 31 / 27,
+      ),
+      // Body — per-category Spanish copy.
+      DotsTextBlockElement(
+        x: bodyXMm * _mmToPt,
+        y: bodyYMm * _mmToPt,
+        value: body,
+        fontSize: 9,
+        width: bodyWidthMm * _mmToPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 10.8 / 9,
+      ),
+    ];
+
+    return DotsAlbumSpreadPage(
+      pageNumber: pageNumber,
+      header: DotsSpreadHeader(
+        leftPageNumber: '$pageNumber',
+        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        rightPageNumber: '${pageNumber + 1}',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: elements,
