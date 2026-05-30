@@ -1,7 +1,7 @@
 // Tests for DotsAlbumSpreadPage.photoOnlyCover — fills the Task-2 stub
 // against pdf10_individual_inicial.pdf p.1. Supports individuales,
-// otros, and generalEventos (parejas/hijos use cover(); boda uses
-// bodaCover which remains deferred).
+// otros, and generalEventos (parejas/hijos use cover(); boda has no
+// cover layout in docs/templates/final_templates/).
 import 'package:dots_pdf/dots_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
 

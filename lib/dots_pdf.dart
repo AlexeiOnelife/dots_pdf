@@ -11,7 +11,6 @@ export 'src/api/album_before_journey_content.dart'
 export 'src/api/album_before_you_start_content.dart'
     show AlbumBeforeYouStartContent;
 export 'src/api/album_boda_cluster_content.dart' show AlbumBodaClusterContent;
-export 'src/api/album_boda_cover_content.dart' show AlbumBodaCoverContent;
 export 'src/api/album_boda_halo_content.dart' show AlbumBodaHaloContent;
 export 'src/api/album_collage_content.dart' show AlbumCollageContent;
 export 'src/api/album_cover_content.dart' show AlbumCoverContent;
