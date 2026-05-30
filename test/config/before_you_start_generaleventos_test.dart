@@ -20,54 +20,60 @@ void main() {
           content: _content(),
         );
 
-    test('emits exactly 10 photo slots + 6 cluster text elements = 16 total',
+    test('emits exactly 10 photo slots + 6 cluster text blocks = 16 total',
         () {
-      // 10 DotsImageElement (5 left + 5 right) + 2 DotsTextElement per
-      // cluster (number + title) × 2 clusters + 1 DotsTextBlockElement per
-      // cluster body × 2 clusters = 10 + 4 + 2 = 16.
-      // generalEventos has NO leftTitle L1+L2, NO leftBody,
-      // NO rightProtagonist, NO rightCta — those are parejas/hijos only.
+      // 10 DotsImageElement (5 left + 5 right) + 6 DotsTextBlockElement
+      // (marker + title + body per page, post-fidelity-fix all cluster
+      // elements use DotsTextBlockElement for center alignment).
       final p = page();
       expect(p.elements.whereType<DotsImageElement>(), hasLength(10));
-      expect(p.elements.whereType<DotsTextElement>(), hasLength(4));
-      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(2));
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(6));
+      expect(p.elements.whereType<DotsTextElement>(), isEmpty);
       expect(p.elements, hasLength(16));
     });
 
-    test('Q1 cluster uses "(01)" marker + "Busca un lugar tranquilo" title',
+    test('Q1 cluster uses "(01)" marker + "Busca un lugar tranquilo" title '
+        'at title-x=30.53 mm', () {
+      final blocks =
+          page().elements.whereType<DotsTextBlockElement>().toList();
+      // First 2 cluster blocks are LEFT-page marker + title.
+      expect(blocks[0].value, equals('(01)'));
+      expect(blocks[1].value, equals('Busca un lugar tranquilo'));
+      // Title/marker at x=30.53 mm (title-box width 141 mm, center-aligned).
+      expect(blocks[0].x, closeTo(30.53 * _mmToPt, 0.01));
+      expect(blocks[1].x, closeTo(30.53 * _mmToPt, 0.01));
+    });
+
+    test('Q2 cluster uses "(02)" marker + "Más allá del papel" title '
+        'at spread title-x=203+30.53 mm', () {
+      final blocks =
+          page().elements.whereType<DotsTextBlockElement>().toList();
+      // Blocks 3-4 are RIGHT-page marker + title (x = 203 + 30.53).
+      expect(blocks[3].value, equals('(02)'));
+      expect(blocks[4].value, equals('Más allá del papel'));
+      expect(blocks[3].x, closeTo((203 + 30.53) * _mmToPt, 0.01));
+      expect(blocks[4].x, closeTo((203 + 30.53) * _mmToPt, 0.01));
+    });
+
+    test('Q1 body uses generalEventos canonical tú-form copy at body-x=55.309',
         () {
-      final texts = page().elements.whereType<DotsTextElement>().toList();
-      // First 2 DotsTextElement entries are LEFT-page cluster (number + title).
-      expect(texts[0].value, equals('(01)'));
-      expect(texts[1].value, equals('Busca un lugar tranquilo'));
-      // x coords are 55.309 mm on the LEFT page (cluster origin).
-      expect(texts[0].x, closeTo(55.309 * _mmToPt, 0.01));
-      expect(texts[1].x, closeTo(55.309 * _mmToPt, 0.01));
-    });
-
-    test('Q2 cluster uses "(02)" marker + "Más allá del papel" title', () {
-      final texts = page().elements.whereType<DotsTextElement>().toList();
-      // Next 2 entries are RIGHT-page cluster (number + title at x=203+55.309).
-      expect(texts[2].value, equals('(02)'));
-      expect(texts[3].value, equals('Más allá del papel'));
-      expect(texts[2].x, closeTo((203 + 55.309) * _mmToPt, 0.01));
-      expect(texts[3].x, closeTo((203 + 55.309) * _mmToPt, 0.01));
-    });
-
-    test('Q1 body uses generalEventos canonical Spanish copy (tú-form)', () {
       final blocks =
           page().elements.whereType<DotsTextBlockElement>().toList();
-      // Body opens with the tú-form invitation to be still.
-      expect(blocks[0].value, contains('Encuentra un espacio'));
-      expect(blocks[0].value, contains('Siéntate'));
-      expect(blocks[0].value, contains('Respira despacio'));
+      // Body is the 3rd cluster block (marker, title, body).
+      expect(blocks[2].value, contains('Encuentra un espacio'));
+      expect(blocks[2].value, contains('Siéntate'));
+      expect(blocks[2].value, contains('Respira despacio'));
+      expect(blocks[2].x, closeTo(55.309 * _mmToPt, 0.01));
     });
 
-    test('Q2 body references the QR / videos preview', () {
+    test('Q2 body references the QR / videos preview at body-x=203+55.309',
+        () {
       final blocks =
           page().elements.whereType<DotsTextBlockElement>().toList();
-      expect(blocks[1].value, contains('vídeos'));
-      expect(blocks[1].value, contains('código QR'));
+      // Block 5 (0-indexed) is the right-page Q2 body.
+      expect(blocks[5].value, contains('vídeos'));
+      expect(blocks[5].value, contains('código QR'));
+      expect(blocks[5].x, closeTo((203 + 55.309) * _mmToPt, 0.01));
     });
 
     test('photo slots are 35×46 mm at y=36 mm with 5-position grid', () {
@@ -84,22 +90,13 @@ void main() {
       }
     });
 
-    test('does NOT include parejas/hijos left-page big title text', () {
-      final texts = page().elements.whereType<DotsTextElement>().toList();
-      for (final t in texts) {
-        expect(t.value, isNot(equals('Antes de empezar')));
-        expect(t.value, isNot(equals('el viaje')));
-      }
-    });
-
-    test('does NOT include parejas/hijos right-page CTA', () {
-      final blocks =
-          page().elements.whereType<DotsTextBlockElement>().toList();
-      for (final b in blocks) {
-        expect(
-          b.value,
-          isNot(contains('Pasad la página')),
-        );
+    test('does NOT include the legacy "Antes de empezar el viaje" big '
+        'title or the "Pasad la página" CTA (post-fidelity-fix)', () {
+      final p = page();
+      for (final b in p.elements.whereType<DotsTextBlockElement>()) {
+        expect(b.value, isNot(equals('Antes de empezar')));
+        expect(b.value, isNot(equals('el viaje')));
+        expect(b.value, isNot(contains('Pasad la página')));
       }
     });
   });
@@ -127,33 +124,104 @@ void main() {
     });
   });
 
-  group('beforeYouStart — parejas/hijos arms remain intact (regression)', () {
-    test('parejas still emits the full element list', () {
+  group('beforeYouStart — parejas/hijos arms after fidelity fix', () {
+    test('parejas emits canonical 16-element shape (post-fidelity-fix)', () {
       final p = DotsAlbumSpreadPage.beforeYouStart(
         type: DotsAlbumType.parejas,
         pageNumber: 5,
         content: _content(),
       );
-      // parejas: 10 photo slots + (leftTitleL1, leftTitleL2,
-      // rightProtagonist, q1Number, q1Title, q2Number, q2Title) = 7 text
-      // + (leftBody, rightCta, q1Body, q2Body) = 4 text blocks. Total 21.
+      // 10 photo slots + 6 cluster text blocks (marker+title+body per
+      // page). Same shape as generalEventos/boda/individuales/otros
+      // after the fidelity fix dropped the invented leftTitle/leftBody
+      // and rightProtagonist/rightCTA elements.
       expect(p.elements.whereType<DotsImageElement>(), hasLength(10));
-      expect(p.elements.whereType<DotsTextElement>(), hasLength(7));
-      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(4));
-      expect(p.elements, hasLength(21));
-      // Q1 marker still 'Q1'.
-      final texts = p.elements.whereType<DotsTextElement>().toList();
-      expect(texts.any((t) => t.value == 'Q1'), isTrue);
-      expect(texts.any((t) => t.value == 'Q2'), isTrue);
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(6));
+      expect(p.elements.whereType<DotsTextElement>(), isEmpty);
+      expect(p.elements, hasLength(16));
     });
 
-    test('hijos still emits the full element list', () {
+    test('parejas Q1 marker is "(Q1)" with parens per pdf02 p.9', () {
+      final p = DotsAlbumSpreadPage.beforeYouStart(
+        type: DotsAlbumType.parejas,
+        pageNumber: 5,
+        content: _content(),
+      );
+      final blocks =
+          p.elements.whereType<DotsTextBlockElement>().toList();
+      expect(blocks[0].value, equals('(Q1)'));
+      expect(blocks[1].value, equals('Buscad vuestro momento'));
+      // Q1 body — canonical vosotros copy from pdf02 p.9.
+      expect(blocks[2].value, contains('Encontrad un espacio'));
+      expect(blocks[2].value, contains('vuestro viaje al pasado'));
+    });
+
+    test('parejas Q2 body matches pdf02 p.9 canonical vosotros copy', () {
+      final p = DotsAlbumSpreadPage.beforeYouStart(
+        type: DotsAlbumType.parejas,
+        pageNumber: 5,
+        content: _content(),
+      );
+      final blocks =
+          p.elements.whereType<DotsTextBlockElement>().toList();
+      expect(blocks[3].value, equals('(Q2)'));
+      expect(blocks[4].value, equals('Escuchad vuestra historia'));
+      // Q2 body — canonical "Hay recuerdos que no caben…" vosotros copy.
+      expect(blocks[5].value, contains('habéis ido guardando'));
+      expect(blocks[5].value, contains('podréis revivir'));
+    });
+
+    test('hijos emits canonical 16-element shape (post-fidelity-fix)', () {
       final p = DotsAlbumSpreadPage.beforeYouStart(
         type: DotsAlbumType.hijos,
         pageNumber: 5,
         content: _content(),
       );
-      expect(p.elements, hasLength(21));
+      expect(p.elements.whereType<DotsImageElement>(), hasLength(10));
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(6));
+      expect(p.elements, hasLength(16));
+    });
+
+    test('hijos Q1/Q2 markers + canonical tú-form bodies from pdf08 p.9',
+        () {
+      final p = DotsAlbumSpreadPage.beforeYouStart(
+        type: DotsAlbumType.hijos,
+        pageNumber: 5,
+        content: _content(),
+      );
+      final blocks =
+          p.elements.whereType<DotsTextBlockElement>().toList();
+      expect(blocks[0].value, equals('(Q1)'));
+      expect(blocks[1].value, equals('Busca un lugar tranquilo'));
+      expect(blocks[2].value, contains('Encuentra un espacio'));
+      expect(blocks[2].value, contains('tu viaje al pasado'));
+      expect(blocks[3].value, equals('(Q2)'));
+      expect(blocks[4].value, equals('Escucha los momentos especiales'));
+      // pdf08 p.9 Q2 body opens "Hay páginas con recuerdos…" — DISTINCT
+      // from the parejas "Hay recuerdos que no caben…".
+      expect(blocks[5].value, startsWith('Hay páginas con recuerdos'));
+      expect(blocks[5].value, contains('marcaron tu camino'));
+      expect(blocks[5].value, contains('mientras crecías'));
+    });
+
+    test('post-fidelity-fix: parejas/hijos NO LONGER carry the invented '
+        '"Antes de empezar el viaje" leftTitle or "Pasad la página" CTA',
+        () {
+      for (final type in const [
+        DotsAlbumType.parejas,
+        DotsAlbumType.hijos,
+      ]) {
+        final p = DotsAlbumSpreadPage.beforeYouStart(
+          type: type,
+          pageNumber: 5,
+          content: _content(),
+        );
+        for (final b in p.elements.whereType<DotsTextBlockElement>()) {
+          expect(b.value, isNot(equals('Antes de empezar')));
+          expect(b.value, isNot(equals('el viaje')));
+          expect(b.value, isNot(contains('Pasad la página')));
+        }
+      }
     });
 
     test('all 6 categories construct without throwing', () {
@@ -181,36 +249,34 @@ void main() {
     test('emits the same 16-element shape as generalEventos', () {
       final p = page();
       expect(p.elements.whereType<DotsImageElement>(), hasLength(10));
-      expect(p.elements.whereType<DotsTextElement>(), hasLength(4));
-      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(2));
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(6));
+      expect(p.elements.whereType<DotsTextElement>(), isEmpty);
       expect(p.elements, hasLength(16));
     });
 
     test('Q1 marker "(01)" + title "Encontra tu momento" + tú-form body',
         () {
-      final texts = page().elements.whereType<DotsTextElement>().toList();
-      expect(texts[0].value, equals('(01)'));
-      expect(texts[1].value, equals('Encontra tu momento'));
-      final body =
-          page().elements.whereType<DotsTextBlockElement>().toList()[0];
-      // tú-form body — singular imperatives ("Encuentra", "Siéntate", "Respira").
-      expect(body.value, contains('Encuentra un espacio'));
-      expect(body.value, contains('Siéntate'));
-      expect(body.value, contains('Respira despacio'));
-      expect(body.value, contains('tus recuerdos'));
+      final blocks =
+          page().elements.whereType<DotsTextBlockElement>().toList();
+      expect(blocks[0].value, equals('(01)'));
+      expect(blocks[1].value, equals('Encontra tu momento'));
+      // tú-form body — singular imperatives.
+      expect(blocks[2].value, contains('Encuentra un espacio'));
+      expect(blocks[2].value, contains('Siéntate'));
+      expect(blocks[2].value, contains('Respira despacio'));
+      expect(blocks[2].value, contains('tus recuerdos'));
     });
 
     test('Q2 marker "(02)" + title "Escucha la historia" + tú-form body',
         () {
-      final texts = page().elements.whereType<DotsTextElement>().toList();
-      expect(texts[2].value, equals('(02)'));
-      expect(texts[3].value, equals('Escucha la historia'));
-      final body =
-          page().elements.whereType<DotsTextBlockElement>().toList()[1];
-      // tú-form QR references — "encontrarás", "llegues", "escanéalo".
-      expect(body.value, contains('encontrarás'));
-      expect(body.value, contains('escanéalo'));
-      expect(body.value, contains('Escucharás'));
+      final blocks =
+          page().elements.whereType<DotsTextBlockElement>().toList();
+      expect(blocks[3].value, equals('(02)'));
+      expect(blocks[4].value, equals('Escucha la historia'));
+      // tú-form QR references.
+      expect(blocks[5].value, contains('encontrarás'));
+      expect(blocks[5].value, contains('escanéalo'));
+      expect(blocks[5].value, contains('Escucharás'));
     });
   });
 
@@ -224,36 +290,32 @@ void main() {
     test('emits the same 16-element shape as generalEventos', () {
       final p = page();
       expect(p.elements.whereType<DotsImageElement>(), hasLength(10));
-      expect(p.elements.whereType<DotsTextElement>(), hasLength(4));
-      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(2));
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(6));
+      expect(p.elements.whereType<DotsTextElement>(), isEmpty);
       expect(p.elements, hasLength(16));
     });
 
     test('Q1 marker "(01)" + title "Encontrad vuestro momento" + '
         'vosotros body', () {
-      final texts = page().elements.whereType<DotsTextElement>().toList();
-      expect(texts[0].value, equals('(01)'));
-      expect(texts[1].value, equals('Encontrad vuestro momento'));
-      final body =
-          page().elements.whereType<DotsTextBlockElement>().toList()[0];
-      // vosotros imperatives — "Encontrad", "Sentaos", "Respirad", "Dejad".
-      expect(body.value, contains('Encontrad un espacio'));
-      expect(body.value, contains('Sentaos'));
-      expect(body.value, contains('Respirad despacio'));
-      expect(body.value, contains('vuestros recuerdos'));
+      final blocks =
+          page().elements.whereType<DotsTextBlockElement>().toList();
+      expect(blocks[0].value, equals('(01)'));
+      expect(blocks[1].value, equals('Encontrad vuestro momento'));
+      expect(blocks[2].value, contains('Encontrad un espacio'));
+      expect(blocks[2].value, contains('Sentaos'));
+      expect(blocks[2].value, contains('Respirad despacio'));
+      expect(blocks[2].value, contains('vuestros recuerdos'));
     });
 
     test('Q2 marker "(02)" + title "Escuchad la historia" + vosotros body',
         () {
-      final texts = page().elements.whereType<DotsTextElement>().toList();
-      expect(texts[2].value, equals('(02)'));
-      expect(texts[3].value, equals('Escuchad la historia'));
-      final body =
-          page().elements.whereType<DotsTextBlockElement>().toList()[1];
-      // vosotros QR references — "encontraréis", "lleguéis", "escaneadlo".
-      expect(body.value, contains('encontraréis'));
-      expect(body.value, contains('escaneadlo'));
-      expect(body.value, contains('Escucharéis'));
+      final blocks =
+          page().elements.whereType<DotsTextBlockElement>().toList();
+      expect(blocks[3].value, equals('(02)'));
+      expect(blocks[4].value, equals('Escuchad la historia'));
+      expect(blocks[5].value, contains('encontraréis'));
+      expect(blocks[5].value, contains('escaneadlo'));
+      expect(blocks[5].value, contains('Escucharéis'));
     });
 
     test('individuales (tú) and otros (vosotros) differ in body copy', () {
@@ -267,13 +329,13 @@ void main() {
         pageNumber: 5,
         content: _content(),
       );
-      final indBodies =
+      final indBlocks =
           ind.elements.whereType<DotsTextBlockElement>().toList();
-      final otrBodies =
+      final otrBlocks =
           otr.elements.whereType<DotsTextBlockElement>().toList();
-      // Q1 and Q2 bodies BOTH differ (tú vs vosotros throughout).
-      expect(indBodies[0].value, isNot(equals(otrBodies[0].value)));
-      expect(indBodies[1].value, isNot(equals(otrBodies[1].value)));
+      // Q1 body (block 2) and Q2 body (block 5) both differ.
+      expect(indBlocks[2].value, isNot(equals(otrBlocks[2].value)));
+      expect(indBlocks[5].value, isNot(equals(otrBlocks[5].value)));
     });
   });
 
@@ -286,15 +348,15 @@ void main() {
         );
 
     test('emits the same 16-element shape as generalEventos '
-        '(10 slots + 6 cluster texts)', () {
+        '(10 slots + 6 cluster blocks)', () {
       final p = page();
       expect(p.elements.whereType<DotsImageElement>(), hasLength(10));
-      expect(p.elements.whereType<DotsTextElement>(), hasLength(4));
-      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(2));
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(6));
+      expect(p.elements.whereType<DotsTextElement>(), isEmpty);
       expect(p.elements, hasLength(16));
     });
 
-    test('Q1 cluster matches generalEventos exactly (shared "calm" copy)',
+    test('Q1 cluster (marker + title + body) matches generalEventos exactly',
         () {
       final boda = page();
       final ge = DotsAlbumSpreadPage.beforeYouStart(
@@ -306,16 +368,12 @@ void main() {
           boda.elements.whereType<DotsTextBlockElement>().toList();
       final geBlocks =
           ge.elements.whereType<DotsTextBlockElement>().toList();
-      // Q1 body (first text block) is shared canonical copy.
+      // Q1 marker (block 0), title (block 1), body (block 2) all shared.
+      expect(bodaBlocks[0].value, equals('(01)'));
+      expect(bodaBlocks[1].value, equals('Busca un lugar tranquilo'));
       expect(bodaBlocks[0].value, equals(geBlocks[0].value));
-      // Q1 marker + title also shared.
-      final bodaTexts =
-          boda.elements.whereType<DotsTextElement>().toList();
-      final geTexts = ge.elements.whereType<DotsTextElement>().toList();
-      expect(bodaTexts[0].value, equals('(01)'));
-      expect(bodaTexts[1].value, equals('Busca un lugar tranquilo'));
-      expect(bodaTexts[0].value, equals(geTexts[0].value));
-      expect(bodaTexts[1].value, equals(geTexts[1].value));
+      expect(bodaBlocks[1].value, equals(geBlocks[1].value));
+      expect(bodaBlocks[2].value, equals(geBlocks[2].value));
     });
 
     test('Q2 body is boda-specific (wedding-photo + QR copy)', () {
@@ -329,30 +387,25 @@ void main() {
           boda.elements.whereType<DotsTextBlockElement>().toList();
       final geBlocks =
           ge.elements.whereType<DotsTextBlockElement>().toList();
-      // Q2 body distinct from generalEventos.
-      expect(bodaBlocks[1].value, isNot(equals(geBlocks[1].value)));
-      // boda Q2 body references the wedding-specific phrasing.
-      expect(bodaBlocks[1].value,
+      // Q2 body (block 5) distinct from generalEventos.
+      expect(bodaBlocks[5].value, isNot(equals(geBlocks[5].value)));
+      expect(bodaBlocks[5].value,
           contains('estuvieron a tu lado en este día tan importante'));
-      expect(bodaBlocks[1].value, contains('código QR'));
+      expect(bodaBlocks[5].value, contains('código QR'));
     });
 
-    test('Q2 marker and title match generalEventos', () {
-      final texts = page().elements.whereType<DotsTextElement>().toList();
-      expect(texts[2].value, equals('(02)'));
-      expect(texts[3].value, equals('Más allá del papel'));
+    test('Q2 marker "(02)" and title match generalEventos', () {
+      final blocks = page().elements.whereType<DotsTextBlockElement>().toList();
+      expect(blocks[3].value, equals('(02)'));
+      expect(blocks[4].value, equals('Más allá del papel'));
     });
 
-    test('does NOT include parejas/hijos left-page big title or right CTA',
-        () {
+    test('does NOT include parejas/hijos invented furniture '
+        '(post-fidelity-fix all categories share the same layout)', () {
       final p = page();
-      final texts = p.elements.whereType<DotsTextElement>().toList();
-      for (final t in texts) {
-        expect(t.value, isNot(equals('Antes de empezar')));
-        expect(t.value, isNot(equals('el viaje')));
-      }
-      final blocks = p.elements.whereType<DotsTextBlockElement>().toList();
-      for (final b in blocks) {
+      for (final b in p.elements.whereType<DotsTextBlockElement>()) {
+        expect(b.value, isNot(equals('Antes de empezar')));
+        expect(b.value, isNot(equals('el viaje')));
         expect(b.value, isNot(contains('Pasad la página')));
       }
     });
