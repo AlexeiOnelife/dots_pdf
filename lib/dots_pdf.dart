@@ -6,6 +6,8 @@
 /// must not be imported by consumers.
 library;
 
+export 'src/api/album_before_journey_content.dart'
+    show AlbumBeforeJourneyContent;
 export 'src/api/album_before_you_start_content.dart'
     show AlbumBeforeYouStartContent;
 export 'src/api/album_boda_cluster_content.dart' show AlbumBodaClusterContent;
