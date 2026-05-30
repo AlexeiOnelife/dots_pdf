@@ -155,6 +155,55 @@ void main() {
       expect(title.fontSize, equals(12.0));
     });
 
+    test('AlbumSpreadPage — closing(boda) text box is 86 mm wide centered '
+        '(per pdf07 p.3 — narrower than the 115 mm box used by the '
+        'other categories)', () {
+      final page = DotsAlbumSpreadPage.closing(
+        type: DotsAlbumType.boda,
+        pageNumber: 1,
+        contextLabelValue: '{Protagonistas}',
+        photoPath: 'photo.jpg',
+        title: 'Que la vida siga reencontrándoos, una y otra vez',
+        subtitle: '',
+      );
+      // Subtitle block carries the text-box width.
+      final subtitle =
+          page.elements.whereType<DotsTextBlockElement>().single;
+      expect(subtitle.width, closeTo(86.0 * _mmToPt, 0.01));
+      // Title and subtitle x = (203 - 86) / 2 = 58.5 mm.
+      expect(subtitle.x, closeTo(58.5 * _mmToPt, 0.01));
+      // Title (DotsTextElement) shares the same x.
+      final title = page.elements.whereType<DotsTextElement>().first;
+      expect(title.x, closeTo(58.5 * _mmToPt, 0.01));
+    });
+
+    test('AlbumSpreadPage — closing(parejas/hijos/etc) text box is '
+        '115 mm wide centered (x=44 mm)', () {
+      for (final type in const [
+        DotsAlbumType.parejas,
+        DotsAlbumType.hijos,
+        DotsAlbumType.individuales,
+        DotsAlbumType.otros,
+        DotsAlbumType.generalEventos,
+      ]) {
+        final page = DotsAlbumSpreadPage.closing(
+          type: type,
+          pageNumber: 1,
+          contextLabelValue: '{label}',
+          photoPath: 'photo.jpg',
+          title: 'T',
+          subtitle: 'S',
+        );
+        final subtitle =
+            page.elements.whereType<DotsTextBlockElement>().single;
+        expect(subtitle.width, closeTo(115.0 * _mmToPt, 0.01),
+            reason: '$type subtitle width should be 115 mm');
+        // x = (203 - 115) / 2 = 44 mm.
+        expect(subtitle.x, closeTo(44.0 * _mmToPt, 0.01),
+            reason: '$type subtitle x should be 44 mm');
+      }
+    });
+
     test('AlbumSpreadPage — closing page title is 20pt for parejas', () {
       final page = DotsAlbumSpreadPage.closing(
         type: DotsAlbumType.parejas,

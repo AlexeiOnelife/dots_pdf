@@ -1445,18 +1445,34 @@ class DotsAlbumSpreadPage extends DotsPage {
         20.0,
     };
 
-    // Canonical element positions corrected against pdf03 p.3 / pdf09 p.3
-    // (Task 4 fidelity work):
+    // Text box width is per-category:
+    //   - boda (pdf07 p.3):                  86 mm box
+    //   - parejas/hijos/individuales/otros/generalEventos:  115 mm box
+    final double textBoxWidthMm = switch (type) {
+      DotsAlbumType.boda => 86.0,
+      DotsAlbumType.parejas ||
+      DotsAlbumType.hijos ||
+      DotsAlbumType.individuales ||
+      DotsAlbumType.otros ||
+      DotsAlbumType.generalEventos =>
+        115.0,
+    };
+
+    // Canonical element positions verified against pdf03 p.3 / pdf09 p.3
+    // (parejas/hijos — Task 4 fidelity work) and pdf07 p.3 (boda):
     //   - photo 66×86 mm centred horizontally at y=71.534 mm.
-    //   - title  at x=44 mm width=115 mm; y = photo_bottom + 5 mm.
-    //   - subtitle at x=44 mm width=115 mm; y = title_bottom + 5 mm.
-    const double pageWidthPt = 575.43; // dotbook default (203 mm).
+    //   - title  centred horizontally in a per-category-width box;
+    //     y = photo_bottom + 5 mm.
+    //   - subtitle in the same per-category-width box;
+    //     y = title_bottom + 5 mm.
+    const double pageWidthMm = 203;
+    const double pageWidthPt = pageWidthMm * _mmToPt;
     const double photoWidthPt = 66.0 * _mmToPt;
     const double photoHeightPt = 86.0 * _mmToPt;
     const double photoX = (pageWidthPt - photoWidthPt) / 2.0;
     const double photoY = 71.534 * _mmToPt;
-    const double textBoxX = 44.0 * _mmToPt;
-    const double textBoxWidthPt = 115.0 * _mmToPt;
+    final double textBoxWidthPt = textBoxWidthMm * _mmToPt;
+    final double textBoxX = (pageWidthPt - textBoxWidthPt) / 2.0;
     const double titleY = photoY + photoHeightPt + 5.0 * _mmToPt;
     final double subtitleY = titleY + titleFontSize * 1.2 + 5.0 * _mmToPt;
 
