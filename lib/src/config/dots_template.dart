@@ -2222,93 +2222,94 @@ class DotsAlbumSpreadPage extends DotsPage {
     );
   }
 
-  /// "Antes de empezar el viaje" instruction spread — two pages spanning
-  /// 0..406 mm in spread coordinates, paired with a 10-slot photo grid
-  /// (5 slots per page) and per-category instruction copy.
+  /// Photo-grid + chapter-cluster (Q1/Q2) instruction spread — two pages
+  /// spanning 0..406 mm in spread coordinates.
   ///
-  /// Body landed in Task 4 of `final-render-refinement` against
-  /// `pdf02_pareja_inicial.pdf` pp.8–9 (parejas) and
-  /// `pdf08_hijos_inicial.pdf` pp.8–9 (hijos). Task 7 extended the
-  /// switch with a `generalEventos` arm against
-  /// `pdf12_general_eventos_inicial.pdf` p.2 — generalEventos uses the
-  /// simpler "(01)/(02) chapter cluster" layout without the
-  /// parejas/hijos left-page main title or right-page protagonist + CTA.
-  /// Follow-ups added `boda` (`pdf06_boda_inicial.pdf` p.2),
-  /// `individuales` (`pdf10_individual_inicial.pdf` p.7), and `otros`
-  /// (`pdf04_otros_inicial.pdf` p.7) — same chapter-cluster layout,
-  /// per-category Q1/Q2 titles and bodies. All six DotsAlbumType values
-  /// now render.
+  /// Layout (uniform across all six categories, verified against
+  /// `pdf02_pareja_inicial.pdf` p.9, `pdf08_hijos_inicial.pdf` p.9,
+  /// `pdf10_individual_inicial.pdf` p.7, `pdf04_otros_inicial.pdf` p.7,
+  /// `pdf12_general_eventos_inicial.pdf` p.2, `pdf06_boda_inicial.pdf`
+  /// p.2):
+  ///   - 5+5 photo slots at y=36 mm (35×46 mm each).
+  ///   - Per-page chapter cluster below the slots: marker, title,
+  ///     body. Title centered in a 141 mm-wide box at x=30.53 mm;
+  ///     body centered in a 93 mm-wide box at x=55.309 mm.
+  ///
+  /// Per-category copy:
+  ///   - `parejas`, `hijos`: marker `(Q1)` / `(Q2)`, canonical bodies
+  ///     from the source PDFs.
+  ///   - `individuales`, `otros`, `boda`, `generalEventos`: marker
+  ///     `(01)` / `(02)`, per-category bodies.
+  ///
+  /// History: Task 4 originally combined this spread with a separate
+  /// "Antes de empezar el viaje" decorative-circles spread (pdf02 p.10
+  /// / pdf08 equivalent / pdf10 p.8 / etc.) into a single factory with
+  /// invented Q1/Q2 body copy. That fidelity bug was fixed in a
+  /// follow-up: this factory now matches the canonical Q1/Q2 spread
+  /// only, and the standalone "Antes de empezar el viaje" spread is
+  /// either a future factory addition or remains unrendered.
   factory DotsAlbumSpreadPage.beforeYouStart({
     required DotsAlbumType type,
     required int pageNumber,
     required AlbumBeforeYouStartContent content,
     String contextLabelValue = '',
   }) {
-    // Per-category instruction copy (canonical, NOT editable by caller).
-    //
-    // `hasLeftMainTitle` toggles the left-page 27pt "Antes de empezar /
-    // el viaje" stack + the left-page body block (parejas/hijos only).
-    // `hasRightFurniture` toggles the right-page protagonist label + CTA
-    // (parejas/hijos only). `q1Marker` / `q2Marker` are the number labels
-    // above each cluster — "Q1"/"Q2" for parejas/hijos, "(01)"/"(02)"
-    // for generalEventos.
+    // Per-category Q1/Q2 chapter-cluster copy. Canonical, NOT editable
+    // by the caller (the existing AlbumBeforeYouStartContent.titleOverride
+    // and .bodyOverride fields target the deprecated leftTitle/leftBody
+    // pre-fidelity-fix elements and are now ignored).
     final (
-      String leftTitleL1,
-      String leftTitleL2,
-      String leftBody,
       String q1Marker,
       String q1Title,
       String q1Body,
       String q2Marker,
       String q2Title,
       String q2Body,
-      bool hasLeftMainTitle,
-      bool hasRightFurniture,
     ) = switch (type) {
       DotsAlbumType.parejas => (
-          'Antes de empezar',
-          'el viaje',
+          // pdf02 p.9 — vosotros form, marker uses Q-letter prefix.
+          '(Q1)',
+          'Buscad vuestro momento',
           'Encontrad un espacio donde podáis estar en calma. Sentaos. '
               'Respirad despacio. Dejad que el silencio os encuentre, '
-              'aunque sea por un instante… En ese pequeño respiro, el '
-              'tiempo se abre y con ello comienza vuestro viaje al '
-              'pasado. Sentid. Dejaos llevar. Ese es el único objetivo.',
-          'Q1',
-          'Buscad vuestro momento',
-          'Cada recuerdo necesita su propio espacio. Tomad el tiempo '
-              'para revisar las fotografías sin prisa.',
-          'Q2',
+              'aunque sea por un instante, y que todo lo demás se '
+              'disuelva un poco: las prisas, los pensamientos, el ruido '
+              'de fuera... En ese pequeño respiro, el tiempo se abre y '
+              'con ello comienza vuestro viaje al pasado. Sentid. '
+              'Dejaos llevar. Ese es el único objetivo.',
+          '(Q2)',
           'Escuchad vuestra historia',
-          'Las imágenes contienen voces, gestos, instantes que sólo '
-              'vosotros recordáis. Escuchadlas con atención.',
-          true,
-          true,
+          'Hay recuerdos que no caben en una foto. Durante todo este '
+              'tiempo habéis ido guardando esos instantes que han '
+              'marcado vuestra historia, para que encuentren un lugar '
+              'permanente en vuestra memoria. Estos recuerdos van '
+              'acompañados de un código QR; escanéalo y podréis revivir '
+              'las voces, las palabras y las emociones de esos momentos '
+              'compartidos, guardados en el tiempo para vosotros.',
         ),
       DotsAlbumType.hijos => (
-          'Antes de empezar',
-          'el viaje',
-          'Piensa que esto no son solo fotos. Son momentos. La historia '
-              'de cómo ocurrió. Reviviéndola tal y como fue, en ese '
-              'instante. Volviendo a ver y escuchar a tus seres '
-              'queridos… Cierra los ojos un instante. Respira despacio. '
-              'Y vuelve allí.',
-          'Q1',
+          // pdf08 p.9 — tú form, marker uses Q-letter prefix.
+          '(Q1)',
           'Busca un lugar tranquilo',
-          'Encuentra el espacio donde puedas concentrarte sin '
-              'interrupciones. Las memorias merecen tu atención plena.',
-          'Q2',
+          'Encuentra un espacio donde puedas estar en calma. Siéntate. '
+              'Respira despacio. Deja que el silencio te encuentre, '
+              'aunque sea por un instante, y que todo lo demás se '
+              'disuelva un poco: las prisas, los pensamientos, el ruido '
+              'de fuera... En ese pequeño respiro, el tiempo se abre y '
+              'con ello comienza tu viaje al pasado. Siente. Déjate '
+              'llevar. Ese es el único objetivo.',
+          '(Q2)',
           'Escucha los momentos especiales',
-          'Cada foto guarda una historia silenciosa. Deja que esos '
-              'pequeños detalles vuelvan a ti.',
-          true,
-          true,
+          'Hay páginas con recuerdos que no caben en una foto. Durante '
+              'todo este tiempo hemos ido guardando esos instantes que '
+              'marcaron tu camino, para que encuentren un lugar '
+              'permanente en tu memoria. Estos recuerdos van '
+              'acompañados de un código QR, escanéalo: escucharás la '
+              'voz de quienes estuvieron contigo mientras crecías, sus '
+              'palabras congeladas en el tiempo para ti.',
         ),
       DotsAlbumType.generalEventos => (
-          // generalEventos has no separate left-page big title — the Q1
-          // chapter title IS the page title. No right-page furniture.
-          '',
-          '',
-          '',
+          // pdf12 p.2 — tú form, numeric markers.
           '(01)',
           'Busca un lugar tranquilo',
           'Encuentra un espacio donde puedas estar en calma. Siéntate. '
@@ -2326,16 +2327,10 @@ class DotsAlbumSpreadPage extends DotsPage {
               'un código QR para revivir esos momentos más especiales '
               'de una forma más viva y real. Porque hay recuerdos que '
               'no solo se miran… también se sienten.',
-          false,
-          false,
         ),
       DotsAlbumType.boda => (
-          // boda uses the same chapter-cluster layout as generalEventos.
-          // Q1 body is identical (shared canonical "calm" copy); Q2 body
-          // differs (boda-specific wedding-photo copy from pdf06 p.2).
-          '',
-          '',
-          '',
+          // pdf06 p.2 — Q1 body matches generalEventos; Q2 body differs
+          // (wedding-photo + QR copy).
           '(01)',
           'Busca un lugar tranquilo',
           'Encuentra un espacio donde puedas estar en calma. Siéntate. '
@@ -2356,16 +2351,10 @@ class DotsAlbumSpreadPage extends DotsPage {
               'este libro encontraréis un código QR, escanéalo y vuelve '
               'al álbum digital cuando quieras para revivir un instante '
               'concreto y ver todo lo que quedó más allá del papel.',
-          false,
-          false,
         ),
       DotsAlbumType.individuales => (
-          // individuales — pdf10 p.7. Same chapter-cluster layout in
-          // tú form. Q1/Q2 titles differ from generalEventos: chapter
-          // titles refer to "your moment" and "the story".
-          '',
-          '',
-          '',
+          // pdf10 p.7 — tú form. Title from pdf reads "Encontra" (no u);
+          // body uses "Encuentra". Faithful to the source.
           '(01)',
           'Encontra tu momento',
           'Encuentra un espacio donde puedas estar en calma. Siéntate. '
@@ -2385,16 +2374,9 @@ class DotsAlbumSpreadPage extends DotsPage {
               'fragmentos guardados en el tiempo: palabras, voces y '
               'momentos que un día formaron parte de esta historia y '
               'que hoy puedes volver a sentir.',
-          false,
-          false,
         ),
       DotsAlbumType.otros => (
-          // otros — pdf04 p.7. Same chapter-cluster layout in vosotros
-          // form (formal/plural). Q1/Q2 titles use the "vosotros"
-          // imperative ("Encontrad/Escuchad") matching the body copy.
-          '',
-          '',
-          '',
+          // pdf04 p.7 — vosotros form.
           '(01)',
           'Encontrad vuestro momento',
           'Encontrad un espacio donde podáis estar en calma. Sentaos. '
@@ -2414,35 +2396,26 @@ class DotsAlbumSpreadPage extends DotsPage {
               'Escucharéis fragmentos guardados en el tiempo: palabras, '
               'voces y momentos que un día formaron parte de esta '
               'historia y que hoy podéis volver a sentir.',
-          false,
-          false,
         ),
     };
 
-    // Layout constants (mm) — verified against pdf02 p.8/9 + pdf08 p.8/9.
+    // Layout constants (mm) — verified against pdf02 p.9 + pdf08 p.9
+    // and the four single-category source PDFs.
     const double slotWidthMm = 35;
     const double slotHeightMm = 46;
     const double slotYMm = 36;
     const List<double> slotXLeftPageMm = [8, 43, 78, 113, 148];
 
-    // Left-page text block.
-    const double leftTitleXMm = 54.083;
-    const double leftTitleYMm = 96.2;
-    const double leftTitleWidthMm = 95;
-    const double leftBodyYMm = 120.3;
-
-    // Right-page text (spread coords = right-page-local x + 203).
-    const double rightProtagonistXMm = 203 + 69.168;
-    const double rightProtagonistYMm = 210.8;
-    const double rightCtaYMm = 219;
-    const double rightTextWidthMm = 65;
-
-    // Per-page Q1/Q2 cluster below the slots.
-    const double clusterXMm = 55.309;
+    // Per-page chapter cluster below the slots. Two box widths:
+    //   - Title box: x=30.53, width=141 mm (wide, holds marker + title).
+    //   - Body  box: x=55.309, width=93 mm (narrower, holds body text).
+    const double titleClusterXMm = 30.53;
+    const double titleClusterWidthMm = 141;
+    const double bodyClusterXMm = 55.309;
+    const double bodyClusterWidthMm = 93;
     const double clusterYNumberMm = 89.5; // slot_bottom (36+46=82) + 7.5 mm.
     const double clusterYTitleMm = 101.5; // number_bottom + small gap.
-    const double clusterYBodyMm = 113.5; // title_bottom + 5 mm.
-    const double clusterWidthMm = 93;
+    const double clusterYBodyMm = 113.5; // title_bottom + 5 mm gap.
 
     final elements = <DotsElement>[
       // ── Left-page photo slots ──────────────────────────────────────
@@ -2463,108 +2436,70 @@ class DotsAlbumSpreadPage extends DotsPage {
           width: slotWidthMm * _mmToPt,
           height: slotHeightMm * _mmToPt,
         ),
-      // ── Left-page title L1 + L2 (parejas/hijos only) ───────────────
-      if (hasLeftMainTitle)
-        DotsTextElement(
-          x: leftTitleXMm * _mmToPt,
-          y: leftTitleYMm * _mmToPt,
-          value: content.titleOverride ?? leftTitleL1,
-          fontSize: 27,
-          fontFamily: 'P22 Mackinac Medium',
-        ),
-      if (hasLeftMainTitle)
-        DotsTextElement(
-          x: leftTitleXMm * _mmToPt,
-          // L2 sits on the next line (27pt × ~1.15 lh ≈ 31pt ≈ 10.94 mm).
-          y: (leftTitleYMm + 10.94) * _mmToPt,
-          value: leftTitleL2,
-          fontSize: 27,
-          fontFamily: 'P22 Mackinac Medium',
-        ),
-      // ── Left-page body block (parejas/hijos only) ──────────────────
-      if (hasLeftMainTitle)
-        DotsTextBlockElement(
-          x: leftTitleXMm * _mmToPt,
-          y: leftBodyYMm * _mmToPt,
-          value: content.bodyOverride ?? leftBody,
-          fontSize: 9,
-          width: leftTitleWidthMm * _mmToPt,
-          fontFamily: 'Inter',
-          colorHex: '#1e1e1e',
-          textAlign: DotsTextAlign.left,
-          lineHeight: 1.2,
-        ),
-      // ── Right-page protagonist label (parejas/hijos only) ──────────
-      if (hasRightFurniture)
-        DotsTextElement(
-          x: rightProtagonistXMm * _mmToPt,
-          y: rightProtagonistYMm * _mmToPt,
-          value:
-              contextLabelValue.isEmpty ? '{PROTAGONISTA}' : contextLabelValue,
-          fontSize: 9,
-          fontFamily: 'Inter',
-        ),
-      // ── Right-page CTA (parejas/hijos only) ────────────────────────
-      if (hasRightFurniture)
-        const DotsTextBlockElement(
-          x: rightProtagonistXMm * _mmToPt,
-          y: rightCtaYMm * _mmToPt,
-          value: 'Pasad la página para empezar esta experiencia',
-          fontSize: 15,
-          width: rightTextWidthMm * _mmToPt,
-          fontFamily: 'P22 Mackinac Medium',
-        ),
-      // ── Q1 cluster (below left-page slots) ─────────────────────────
-      DotsTextElement(
-        x: clusterXMm * _mmToPt,
+      // ── Q1 cluster (LEFT page) ─────────────────────────────────────
+      // Marker centered within the title-width box.
+      DotsTextBlockElement(
+        x: titleClusterXMm * _mmToPt,
         y: clusterYNumberMm * _mmToPt,
         value: q1Marker,
         fontSize: 23,
+        width: titleClusterWidthMm * _mmToPt,
         fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 27.6 / 23,
       ),
-      DotsTextElement(
-        x: clusterXMm * _mmToPt,
+      DotsTextBlockElement(
+        x: titleClusterXMm * _mmToPt,
         y: clusterYTitleMm * _mmToPt,
         value: q1Title,
         fontSize: 23,
+        width: titleClusterWidthMm * _mmToPt,
         fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 27.6 / 23,
       ),
       DotsTextBlockElement(
-        x: clusterXMm * _mmToPt,
+        x: bodyClusterXMm * _mmToPt,
         y: clusterYBodyMm * _mmToPt,
         value: q1Body,
         fontSize: 9,
-        width: clusterWidthMm * _mmToPt,
+        width: bodyClusterWidthMm * _mmToPt,
         fontFamily: 'Inter',
         colorHex: '#1e1e1e',
-        textAlign: DotsTextAlign.left,
-        lineHeight: 1.2,
+        textAlign: DotsTextAlign.center,
+        lineHeight: 10.8 / 9,
       ),
-      // ── Q2 cluster (below right-page slots; spread coords) ─────────
-      DotsTextElement(
-        x: (203 + clusterXMm) * _mmToPt,
+      // ── Q2 cluster (RIGHT page; spread coords x += 203) ────────────
+      DotsTextBlockElement(
+        x: (203 + titleClusterXMm) * _mmToPt,
         y: clusterYNumberMm * _mmToPt,
         value: q2Marker,
         fontSize: 23,
+        width: titleClusterWidthMm * _mmToPt,
         fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 27.6 / 23,
       ),
-      DotsTextElement(
-        x: (203 + clusterXMm) * _mmToPt,
+      DotsTextBlockElement(
+        x: (203 + titleClusterXMm) * _mmToPt,
         y: clusterYTitleMm * _mmToPt,
         value: q2Title,
         fontSize: 23,
+        width: titleClusterWidthMm * _mmToPt,
         fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 27.6 / 23,
       ),
       DotsTextBlockElement(
-        x: (203 + clusterXMm) * _mmToPt,
+        x: (203 + bodyClusterXMm) * _mmToPt,
         y: clusterYBodyMm * _mmToPt,
         value: q2Body,
         fontSize: 9,
-        width: clusterWidthMm * _mmToPt,
+        width: bodyClusterWidthMm * _mmToPt,
         fontFamily: 'Inter',
         colorHex: '#1e1e1e',
-        textAlign: DotsTextAlign.left,
-        lineHeight: 1.2,
+        textAlign: DotsTextAlign.center,
+        lineHeight: 10.8 / 9,
       ),
     ];
 
