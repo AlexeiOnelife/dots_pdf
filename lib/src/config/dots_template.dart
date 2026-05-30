@@ -2071,18 +2071,98 @@ class DotsAlbumSpreadPage extends DotsPage {
   // ---------------------------------------------------------------------------
 
   /// Photo-only cover (no decorative circles) — used by `individuales`,
-  /// `otros`, and `generalEventos`. Body lands in Task 4 (`individuales`
-  /// + `otros`) and Task 5 (`generalEventos`); today the renderer throws
-  /// `UnimplementedError('Task 4: photoOnlyCover')`.
+  /// `otros`, and `generalEventos`.
+  ///
+  /// Filled against `pdf10_individual_inicial.pdf` p.1. Single-page layout:
+  /// 59×73 mm photo centered horizontally (72 mm margins on a 203 mm-wide
+  /// page) at y=80.756; title (P22 Mackinac Medium 23pt, 120 mm wide,
+  /// center-aligned) 5 mm below the photo; date line (Inter Book 9pt,
+  /// 120 mm wide, center-aligned) 5 mm below the title.
+  ///
+  /// `content.title` carries whatever variable the caller resolved (e.g.
+  /// `{NombreDelAlbum}` for individuales/otros, `{TítuloDelAlbum}` for
+  /// generalEventos). `content.dateLine` is the rendered text — typically
+  /// the resolved start-date variable.
+  ///
+  /// `parejas`, `hijos`, and `boda` reject with `ArgumentError` (those
+  /// categories use the decorative-circle `cover(...)` factory or the
+  /// boda-specific cover that remains deferred).
   factory DotsAlbumSpreadPage.photoOnlyCover({
     required DotsAlbumType type,
     required int pageNumber,
     required AlbumPhotoOnlyCoverContent content,
     String contextLabelValue = '',
   }) {
-    // Reference the content fields so the parameter is not flagged
-    // "unused" — the bodies in Tasks 4/5/7 consume these.
+    switch (type) {
+      case DotsAlbumType.individuales:
+      case DotsAlbumType.otros:
+      case DotsAlbumType.generalEventos:
+        break; // supported categories.
+      case DotsAlbumType.parejas:
+      case DotsAlbumType.hijos:
+      case DotsAlbumType.boda:
+        throw ArgumentError.value(
+          type,
+          'type',
+          'DotsAlbumSpreadPage.photoOnlyCover only supports '
+              'DotsAlbumType.individuales, otros, and generalEventos '
+              '(parejas/hijos use cover(...); boda uses bodaCover).',
+        );
+    }
     assert(content.photoPath.isNotEmpty);
+
+    // Layout constants (mm) — verified against pdf10 p.1.
+    const double photoWidthMm = 59;
+    const double photoHeightMm = 73;
+    const double photoYMm = 80.756;
+    // Photo centered horizontally on a 203 mm page: x = (203 - 59) / 2 = 72.
+    const double photoXMm = (203 - photoWidthMm) / 2;
+
+    const double titleFontSize = 23.0;
+    const double titleLineHeight = 27.6 / 23; // 1.2.
+    const double titleWidthMm = 120;
+    const double titleXMm = (203 - titleWidthMm) / 2; // 41.5 mm.
+    const double titleYMm = photoYMm + photoHeightMm + 5; // 158.756 mm.
+    // 6.635 mm title-box height per pdf10 annotation.
+    const double titleBoxHeightMm = 6.635;
+
+    const double dateFontSize = 9.0;
+    const double dateLineHeight = 10.8 / 9; // 1.2.
+    const double dateWidthMm = 120;
+    const double dateXMm = (203 - dateWidthMm) / 2; // 41.5 mm.
+    const double dateYMm = titleYMm + titleBoxHeightMm + 5; // 170.391 mm.
+
+    final elements = <DotsElement>[
+      DotsImageElement(
+        x: photoXMm * _mmToPt,
+        y: photoYMm * _mmToPt,
+        assetPath: content.photoPath,
+        width: photoWidthMm * _mmToPt,
+        height: photoHeightMm * _mmToPt,
+      ),
+      DotsTextBlockElement(
+        x: titleXMm * _mmToPt,
+        y: titleYMm * _mmToPt,
+        value: content.title,
+        fontSize: titleFontSize,
+        width: titleWidthMm * _mmToPt,
+        fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+        lineHeight: titleLineHeight,
+      ),
+      DotsTextBlockElement(
+        x: dateXMm * _mmToPt,
+        y: dateYMm * _mmToPt,
+        value: content.dateLine,
+        fontSize: dateFontSize,
+        width: dateWidthMm * _mmToPt,
+        fontFamily: 'Inter',
+        colorHex: '#1e1e1e',
+        textAlign: DotsTextAlign.center,
+        lineHeight: dateLineHeight,
+      ),
+    ];
+
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
@@ -2091,13 +2171,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: const [
-        DotsUnimplementedElement(
-          taskId: 'Task 4',
-          message: 'photoOnlyCover factory body not yet implemented '
-              '(individuales/otros/generalEventos)',
-        ),
-      ],
+      elements: elements,
     );
   }
 
