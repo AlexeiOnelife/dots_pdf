@@ -2233,10 +2233,11 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// `pdf12_general_eventos_inicial.pdf` p.2 — generalEventos uses the
   /// simpler "(01)/(02) chapter cluster" layout without the
   /// parejas/hijos left-page main title or right-page protagonist + CTA.
-  /// A follow-up added the `boda` arm against `pdf06_boda_inicial.pdf`
-  /// p.2 — same chapter-cluster layout, Q1 body identical to
-  /// generalEventos, Q2 body differs (boda-specific copy about wedding
-  /// photos and the QR). `individuales` and `otros` still throw.
+  /// Follow-ups added `boda` (`pdf06_boda_inicial.pdf` p.2),
+  /// `individuales` (`pdf10_individual_inicial.pdf` p.7), and `otros`
+  /// (`pdf04_otros_inicial.pdf` p.7) — same chapter-cluster layout,
+  /// per-category Q1/Q2 titles and bodies. All six DotsAlbumType values
+  /// now render.
   factory DotsAlbumSpreadPage.beforeYouStart({
     required DotsAlbumType type,
     required int pageNumber,
@@ -2358,13 +2359,63 @@ class DotsAlbumSpreadPage extends DotsPage {
           false,
           false,
         ),
-      _ => throw ArgumentError.value(
-          type,
-          'type',
-          'DotsAlbumSpreadPage.beforeYouStart currently supports '
-              'DotsAlbumType.parejas, DotsAlbumType.hijos, '
-              'DotsAlbumType.generalEventos, and DotsAlbumType.boda; '
-              'individuales and otros land in a later task.',
+      DotsAlbumType.individuales => (
+          // individuales — pdf10 p.7. Same chapter-cluster layout in
+          // tú form. Q1/Q2 titles differ from generalEventos: chapter
+          // titles refer to "your moment" and "the story".
+          '',
+          '',
+          '',
+          '(01)',
+          'Encontra tu momento',
+          'Encuentra un espacio donde puedas estar en calma. Siéntate. '
+              'Respira despacio. Deja que el silencio te encuentre, '
+              'aunque sea por un instante, y que todo lo demás se '
+              'disuelva un poco: las prisas, los pensamientos, el ruido '
+              'de fuera... En ese pequeño respiro, el tiempo se abre y '
+              'comienza este viaje hacia tus recuerdos. Siente. Déjate '
+              'llevar. Ese es el único objetivo.',
+          '(02)',
+          'Escucha la historia',
+          'Hay recuerdos que no caben en una foto. Momentos, palabras y '
+              'emociones que merecen ser vividos también con la voz. A '
+              'lo largo de este Dotbook encontrarás tarjetas '
+              'acompañadas de un código QR. Cuando llegues a ellas, '
+              'escanéalo y deja que el recuerdo cobre vida. Escucharás '
+              'fragmentos guardados en el tiempo: palabras, voces y '
+              'momentos que un día formaron parte de esta historia y '
+              'que hoy puedes volver a sentir.',
+          false,
+          false,
+        ),
+      DotsAlbumType.otros => (
+          // otros — pdf04 p.7. Same chapter-cluster layout in vosotros
+          // form (formal/plural). Q1/Q2 titles use the "vosotros"
+          // imperative ("Encontrad/Escuchad") matching the body copy.
+          '',
+          '',
+          '',
+          '(01)',
+          'Encontrad vuestro momento',
+          'Encontrad un espacio donde podáis estar en calma. Sentaos. '
+              'Respirad despacio. Dejad que el silencio os encuentre, '
+              'aunque sea por un instante, y que todo lo demás se '
+              'disuelva un poco: las prisas, los pensamientos, el ruido '
+              'de fuera... En ese pequeño respiro, el tiempo se abre y '
+              'comienza este viaje hacia vuestros recuerdos. Sentid. '
+              'Dejaos llevar. Ese es el único objetivo.',
+          '(02)',
+          'Escuchad la historia',
+          'Hay recuerdos que no caben en una foto. Momentos, palabras y '
+              'emociones que merecen ser vividos también con la voz. A '
+              'lo largo de este Dotbook encontraréis tarjetas '
+              'acompañadas de un código QR. Cuando lleguéis a ellas, '
+              'escaneadlo y dejad que el recuerdo cobre vida. '
+              'Escucharéis fragmentos guardados en el tiempo: palabras, '
+              'voces y momentos que un día formaron parte de esta '
+              'historia y que hoy podéis volver a sentir.',
+          false,
+          false,
         ),
     };
 

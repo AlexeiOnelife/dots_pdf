@@ -156,20 +156,124 @@ void main() {
       expect(p.elements, hasLength(21));
     });
 
-    test('individuales and otros still throw ArgumentError', () {
-      for (final type in const [
-        DotsAlbumType.individuales,
-        DotsAlbumType.otros,
-      ]) {
+    test('all 6 categories construct without throwing', () {
+      for (final type in DotsAlbumType.values) {
         expect(
           () => DotsAlbumSpreadPage.beforeYouStart(
             type: type,
             pageNumber: 5,
             content: _content(),
           ),
-          throwsArgumentError,
+          returnsNormally,
+          reason: '$type should construct',
         );
       }
+    });
+  });
+
+  group('beforeYouStart(individuales) — pdf10 p.7, tú form', () {
+    DotsAlbumSpreadPage page() => DotsAlbumSpreadPage.beforeYouStart(
+          type: DotsAlbumType.individuales,
+          pageNumber: 5,
+          content: _content(),
+        );
+
+    test('emits the same 16-element shape as generalEventos', () {
+      final p = page();
+      expect(p.elements.whereType<DotsImageElement>(), hasLength(10));
+      expect(p.elements.whereType<DotsTextElement>(), hasLength(4));
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(2));
+      expect(p.elements, hasLength(16));
+    });
+
+    test('Q1 marker "(01)" + title "Encontra tu momento" + tú-form body',
+        () {
+      final texts = page().elements.whereType<DotsTextElement>().toList();
+      expect(texts[0].value, equals('(01)'));
+      expect(texts[1].value, equals('Encontra tu momento'));
+      final body =
+          page().elements.whereType<DotsTextBlockElement>().toList()[0];
+      // tú-form body — singular imperatives ("Encuentra", "Siéntate", "Respira").
+      expect(body.value, contains('Encuentra un espacio'));
+      expect(body.value, contains('Siéntate'));
+      expect(body.value, contains('Respira despacio'));
+      expect(body.value, contains('tus recuerdos'));
+    });
+
+    test('Q2 marker "(02)" + title "Escucha la historia" + tú-form body',
+        () {
+      final texts = page().elements.whereType<DotsTextElement>().toList();
+      expect(texts[2].value, equals('(02)'));
+      expect(texts[3].value, equals('Escucha la historia'));
+      final body =
+          page().elements.whereType<DotsTextBlockElement>().toList()[1];
+      // tú-form QR references — "encontrarás", "llegues", "escanéalo".
+      expect(body.value, contains('encontrarás'));
+      expect(body.value, contains('escanéalo'));
+      expect(body.value, contains('Escucharás'));
+    });
+  });
+
+  group('beforeYouStart(otros) — pdf04 p.7, vosotros form', () {
+    DotsAlbumSpreadPage page() => DotsAlbumSpreadPage.beforeYouStart(
+          type: DotsAlbumType.otros,
+          pageNumber: 5,
+          content: _content(),
+        );
+
+    test('emits the same 16-element shape as generalEventos', () {
+      final p = page();
+      expect(p.elements.whereType<DotsImageElement>(), hasLength(10));
+      expect(p.elements.whereType<DotsTextElement>(), hasLength(4));
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(2));
+      expect(p.elements, hasLength(16));
+    });
+
+    test('Q1 marker "(01)" + title "Encontrad vuestro momento" + '
+        'vosotros body', () {
+      final texts = page().elements.whereType<DotsTextElement>().toList();
+      expect(texts[0].value, equals('(01)'));
+      expect(texts[1].value, equals('Encontrad vuestro momento'));
+      final body =
+          page().elements.whereType<DotsTextBlockElement>().toList()[0];
+      // vosotros imperatives — "Encontrad", "Sentaos", "Respirad", "Dejad".
+      expect(body.value, contains('Encontrad un espacio'));
+      expect(body.value, contains('Sentaos'));
+      expect(body.value, contains('Respirad despacio'));
+      expect(body.value, contains('vuestros recuerdos'));
+    });
+
+    test('Q2 marker "(02)" + title "Escuchad la historia" + vosotros body',
+        () {
+      final texts = page().elements.whereType<DotsTextElement>().toList();
+      expect(texts[2].value, equals('(02)'));
+      expect(texts[3].value, equals('Escuchad la historia'));
+      final body =
+          page().elements.whereType<DotsTextBlockElement>().toList()[1];
+      // vosotros QR references — "encontraréis", "lleguéis", "escaneadlo".
+      expect(body.value, contains('encontraréis'));
+      expect(body.value, contains('escaneadlo'));
+      expect(body.value, contains('Escucharéis'));
+    });
+
+    test('individuales (tú) and otros (vosotros) differ in body copy', () {
+      final ind = DotsAlbumSpreadPage.beforeYouStart(
+        type: DotsAlbumType.individuales,
+        pageNumber: 5,
+        content: _content(),
+      );
+      final otr = DotsAlbumSpreadPage.beforeYouStart(
+        type: DotsAlbumType.otros,
+        pageNumber: 5,
+        content: _content(),
+      );
+      final indBodies =
+          ind.elements.whereType<DotsTextBlockElement>().toList();
+      final otrBodies =
+          otr.elements.whereType<DotsTextBlockElement>().toList();
+      // Q1 and Q2 bodies BOTH differ (tú vs vosotros throughout).
+      expect(indBodies[0].value, isNot(equals(otrBodies[0].value)));
+      expect(indBodies[1].value, isNot(equals(otrBodies[1].value)));
     });
   });
 
