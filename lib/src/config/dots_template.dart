@@ -74,6 +74,29 @@ const List<({double xMm, double yMm, double diameterMm})>
   (xMm: 389, yMm: 238, diameterMm: 43),
 ];
 
+/// Right-to-left opacity gradient for the `_kRightPageCircles` scatter,
+/// emulating pdf13 p.1's "transparencia de 100% A 0% sobre 181 mm"
+/// annotation.
+///
+/// Computes `[0.2, 1.0]` linearly: circles at the right edge of the
+/// cluster (`xMm ≈ 395`) get full opacity; circles near the gutter
+/// (`xMm ≈ 137`) get 20% — the floor keeps the dense small-circle
+/// cluster faintly visible rather than rendering it invisible. The
+/// gradient span is the full cluster width (~258 mm) rather than the
+/// annotated 181 mm because applying 181 mm strictly would clip the
+/// left half of the cluster, which is clearly drawn in the source.
+///
+/// Best-effort approximation; refine via visual QA against pdf13 p.1.
+double _qrCircleAlphaForX(double xMm) {
+  const double leftEdgeMm = 137;
+  const double rightEdgeMm = 395;
+  const double minAlpha = 0.2;
+  const double maxAlpha = 1.0;
+  final double t = ((xMm - leftEdgeMm) / (rightEdgeMm - leftEdgeMm))
+      .clamp(0.0, 1.0);
+  return minAlpha + (maxAlpha - minAlpha) * t;
+}
+
 /// Immutable page size in PDF points (1 pt = 1/72 inch).
 @immutable
 class DotsPageSize {
@@ -452,11 +475,15 @@ class DotsDecorativeCircleElement extends DotsElement {
     required this.diameter,
     required this.colorHex,
     this.gaussianFadeMm = 1.764,
+    this.opacityAlpha = 1.0,
     this.bleedLeft = false,
     this.bleedRight = false,
     this.bleedTop = false,
     this.bleedBottom = false,
-  });
+  }) : assert(
+          opacityAlpha >= 0.0 && opacityAlpha <= 1.0,
+          'opacityAlpha must be in [0.0, 1.0]',
+        );
 
   /// Circle diameter in PDF points.
   final double diameter;
@@ -469,6 +496,16 @@ class DotsDecorativeCircleElement extends DotsElement {
   /// (spec p.4). This value is intentionally kept in mm because the spec
   /// authors in mm; the factory converts to pixels at rasterisation time.
   final double gaussianFadeMm;
+
+  /// Per-circle opacity multiplier in `[0.0, 1.0]`. Default `1.0` (fully
+  /// opaque). The renderer applies this via `pw.Opacity` around the
+  /// rasterized PNG, so it composes cleanly with [gaussianFadeMm]
+  /// (alpha multiplies the already-faded edges).
+  ///
+  /// Used by the `closingQrSpread` / `openingQrSpread` right-page circle
+  /// scatter to emulate the "transparencia de 100% A 0% sobre 181 mm"
+  /// gradient annotated in `pdf13_general_eventos_final.pdf` p.1.
+  final double opacityAlpha;
 
   /// Whether the circle extends into the bleed beyond its left edge.
   final bool bleedLeft;
@@ -490,6 +527,7 @@ class DotsDecorativeCircleElement extends DotsElement {
       other.diameter == diameter &&
       other.colorHex == colorHex &&
       other.gaussianFadeMm == gaussianFadeMm &&
+      other.opacityAlpha == opacityAlpha &&
       other.bleedLeft == bleedLeft &&
       other.bleedRight == bleedRight &&
       other.bleedTop == bleedTop &&
@@ -502,6 +540,7 @@ class DotsDecorativeCircleElement extends DotsElement {
         diameter,
         colorHex,
         gaussianFadeMm,
+        opacityAlpha,
         bleedLeft,
         bleedRight,
         bleedTop,
@@ -2735,13 +2774,15 @@ class DotsAlbumSpreadPage extends DotsPage {
       ),
       // Right-page decorative-circle scatter — shared with
       // closingQrSpread per the design's "QR LEFT, circles RIGHT"
-      // specification. Same 28-circle layout from pdf13 p.1 + p.2.
+      // specification. Same 28-circle layout from pdf13 p.1 + p.2,
+      // with the right-to-left opacity gradient applied per-circle.
       for (final c in _kRightPageCircles)
         DotsDecorativeCircleElement(
           x: c.xMm * _mmToPt,
           y: c.yMm * _mmToPt,
           diameter: c.diameterMm * _mmToPt,
           colorHex: '#CDE7F2',
+          opacityAlpha: _qrCircleAlphaForX(c.xMm),
         ),
     ];
 
@@ -2861,20 +2902,17 @@ class DotsAlbumSpreadPage extends DotsPage {
         lineHeight: 1.2,
       ),
       // Right-page decorative-circle scatter — 28 circles from
-      // pdf13 p.1 (diameters) + p.2 (positions). Solid light blue;
-      // the right-to-left opacity gradient ("transparencia 100% A 0%
-      // sobre 181 mm") annotated in pdf13 p.1 is NOT applied — the
-      // DotsDecorativeCircleElement renders solid colour, so a gradient
-      // would require a per-circle alpha or a render-time fade mask.
-      // Deferred to a separate follow-up. Each circle uses the default
-      // Gaussian edge fade of 1.764 mm (matches Task 4's cover circles
-      // and pdf13's "Desvanecimiento de bordes" annotation).
+      // pdf13 p.1 (diameters) + p.2 (positions), with the right-to-left
+      // opacity gradient ("transparencia 100% A 0% sobre 181 mm")
+      // applied per-circle via [_qrCircleAlphaForX]. Each circle uses
+      // the default 1.764 mm Gaussian edge fade.
       for (final c in _kRightPageCircles)
         DotsDecorativeCircleElement(
           x: c.xMm * _mmToPt,
           y: c.yMm * _mmToPt,
           diameter: c.diameterMm * _mmToPt,
           colorHex: '#CDE7F2',
+          opacityAlpha: _qrCircleAlphaForX(c.xMm),
         ),
     ];
 

@@ -652,10 +652,15 @@ pw.Widget _buildDecorativeCircleElement(DotsDecorativeCircleElement element) {
   final double haloPt = element.gaussianFadeMm * _kMmToPt * 3;
   final double canvasPt = element.diameter + 2 * haloPt;
 
+  pw.Widget child = pw.Image(memImage, width: canvasPt, height: canvasPt);
+  if (element.opacityAlpha < 1.0) {
+    child = pw.Opacity(opacity: element.opacityAlpha, child: child);
+  }
+
   return pw.Positioned(
     left: element.x - haloPt,
     top: element.y - haloPt,
-    child: pw.Image(memImage, width: canvasPt, height: canvasPt),
+    child: child,
   );
 }
 
