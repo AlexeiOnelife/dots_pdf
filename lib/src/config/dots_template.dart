@@ -3001,9 +3001,15 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///   - Body — Inter Book 9pt, 95 mm-wide centred box, 5 mm below the
   ///     title.
   ///
-  /// Right-page chrome (character names + "Pasad la página" CTA)
-  /// annotated in the source PDFs for parejas / hijos / individuales /
-  /// otros / boda but NOT generalEventos: also DEFERRED to a follow-up.
+  /// Right-page chrome — protagonist names + "Pasad la página…" CTA:
+  ///   - parejas, hijos      → CTA `"Pasad la página para empezar
+  ///                            esta experiencia"` (pdf02 p.10 / pdf08 p.10).
+  ///   - individuales, otros → CTA `"Pasad la página para vivir la
+  ///                            experiencia"` (pdf10 p.8 / pdf04 p.8).
+  ///   - boda, generalEventos → NO chrome (the source PDFs only show
+  ///                            title + body on the right page).
+  /// Coordinates for the chrome are best-effort from the limited
+  /// annotations and may need refinement after visual QA.
   factory DotsAlbumSpreadPage.beforeJourney({
     required DotsAlbumType type,
     required int pageNumber,
@@ -3075,6 +3081,18 @@ class DotsAlbumSpreadPage extends DotsPage {
 
     final String body = content.bodyOverride ?? defaultBody;
 
+    // Per-category right-page CTA. parejas/hijos use the "empezar"
+    // wording (pdf02 p.10 / pdf08 p.10); individuales/otros use the
+    // "vivir" wording (pdf10 p.8 / pdf04 p.8); boda + generalEventos
+    // omit the CTA entirely (no such element in pdf06 p.3 / pdf12 p.3).
+    final String? cta = switch (type) {
+      DotsAlbumType.parejas || DotsAlbumType.hijos =>
+        'Pasad la página para empezar esta experiencia',
+      DotsAlbumType.individuales || DotsAlbumType.otros =>
+        'Pasad la página para vivir la experiencia',
+      DotsAlbumType.boda || DotsAlbumType.generalEventos => null,
+    };
+
     final elements = <DotsElement>[
       // Title line 1 — "Antes de empezar" (P22 Mackinac Medium 27pt).
       const DotsTextBlockElement(
@@ -3110,6 +3128,37 @@ class DotsAlbumSpreadPage extends DotsPage {
         textAlign: DotsTextAlign.center,
         lineHeight: 10.8 / 9,
       ),
+      // ── Right-page chrome (parejas/hijos/individuales/otros only) ───
+      // Protagonist names label + "Pasad la página…" CTA. Skipped for
+      // boda and generalEventos — their source PDFs (pdf06 p.3 /
+      // pdf12 p.3) only show title + body on the right page.
+      if (cta != null) ...[
+        // Protagonist-names line — Inter Medium 9pt, 100 mm wide,
+        // centered on the right page. Falls back to "{Protagonistas}"
+        // when caller passes empty contextLabelValue.
+        DotsTextBlockElement(
+          x: (203 + (203 - 100) / 2) * _mmToPt,
+          y: 210 * _mmToPt,
+          value:
+              contextLabelValue.isEmpty ? '{Protagonistas}' : contextLabelValue,
+          fontSize: 9,
+          width: 100 * _mmToPt,
+          fontFamily: 'Inter',
+          textAlign: DotsTextAlign.center,
+          lineHeight: 10.8 / 9,
+        ),
+        // CTA — P22 Mackinac Medium 15pt, 65 mm wide, centered.
+        DotsTextBlockElement(
+          x: (203 + (203 - 65) / 2) * _mmToPt,
+          y: 220 * _mmToPt,
+          value: cta,
+          fontSize: 15,
+          width: 65 * _mmToPt,
+          fontFamily: 'P22 Mackinac Medium',
+          textAlign: DotsTextAlign.center,
+          lineHeight: 18 / 15,
+        ),
+      ],
     ];
 
     return DotsAlbumSpreadPage(
