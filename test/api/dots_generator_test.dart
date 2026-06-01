@@ -24,12 +24,16 @@ void main() {
     template = const DotsTemplate(
       documentId: 'doc_alpha',
       pageSize: DotsPageSize(width: 200, height: 300),
-      pages: [
-        DotsElementsPage(
-          pageNumber: 1,
-          elements: [
-            DotsTextElement(x: 10, y: 20, value: 'A', fontSize: 12),
-          ],
+      pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
+            pageNumber: 1,
+            elements: [
+              DotsTextElement(x: 10, y: 20, value: 'A', fontSize: 12),
+            ],
+          ),
+          right: DotsElementsPage(pageNumber: 2, elements: []),
         ),
       ],
     );
@@ -67,10 +71,17 @@ void main() {
       const pairsTemplate = DotsTemplate(
         documentId: 'doc_pairs',
         pageSize: DotsPageSize(width: 200, height: 300),
-        pages: [
-          DotsElementsPage(pageNumber: 1, elements: []),
-          DotsElementsPage(pageNumber: 2, elements: []),
-          DotsElementsPage(pageNumber: 3, elements: []),
+        pliegos: [
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(pageNumber: 1, elements: []),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
+          ),
+          DotsLayoutPliego(
+            pliegoNumber: 2,
+            left: DotsElementsPage(pageNumber: 3, elements: []),
+            right: DotsElementsPage(pageNumber: 4, elements: []),
+          ),
         ],
       );
 

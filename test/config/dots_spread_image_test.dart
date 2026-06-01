@@ -8,9 +8,14 @@ void main() {
 {
   "documentId": "doc_sp",
   "pageSize": { "width": 595, "height": 842 },
-  "pages": [
-    { "pageNumber": 1, "elements": [ $elementJson ] }
-  ]
+  "pliegos": [
+          {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": { "pageNumber": 1, "elements": [ $elementJson ] },
+            "right": { "pageNumber": 0, "elements": [] }
+          }
+        ]
 }
 ''';
 
@@ -31,7 +36,7 @@ void main() {
       ''');
       final template = parser.parse(source);
 
-      final page = template.pages.single as DotsElementsPage;
+      final page = template.effectivePages.first as DotsElementsPage;
       expect(page.elements, hasLength(1));
       final el = page.elements.single as DotsSpreadImageElement;
       expect(el.assetPath, 'https://example.com/wide.jpg');
@@ -57,7 +62,7 @@ void main() {
         }
       ''');
       final template = parser.parse(source);
-      final page = template.pages.single as DotsElementsPage;
+      final page = template.effectivePages.first as DotsElementsPage;
       final el = page.elements.single as DotsSpreadImageElement;
       expect(el.half, DotsSpreadHalf.right);
       expect(el.bleedTop, isFalse);

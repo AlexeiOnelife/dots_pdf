@@ -222,16 +222,20 @@ void main() {
       const template = DotsTemplate(
         documentId: 'font_test',
         pageSize: DotsPageSize(width: 400, height: 600),
-        pages: <DotsPage>[
-          DotsLayoutPage(
-            pageNumber: 1,
-            layoutCode: DotsLayoutCode.lhito,
-            captions: <DotsSlotKind, String>{
-              DotsSlotKind.captionTitle: 'A milestone',
-              DotsSlotKind.captionDate: 'May 17, 2026',
-              DotsSlotKind.captionBody:
-                  'Some body text to exercise the Inter font role.',
-            },
+        pliegos: <DotsPliego>[
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsLayoutPage(
+              pageNumber: 1,
+              layoutCode: DotsLayoutCode.lhito,
+              captions: <DotsSlotKind, String>{
+                DotsSlotKind.captionTitle: 'A milestone',
+                DotsSlotKind.captionDate: 'May 17, 2026',
+                DotsSlotKind.captionBody:
+                    'Some body text to exercise the Inter font role.',
+              },
+            ),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
           ),
         ],
       );
@@ -267,25 +271,29 @@ void main() {
       const template = DotsTemplate(
         documentId: 'family_test',
         pageSize: DotsPageSize(width: 400, height: 600),
-        pages: <DotsPage>[
-          DotsElementsPage(
-            pageNumber: 1,
-            elements: <DotsElement>[
-              DotsTextElement(
-                x: 36,
-                y: 72,
-                value: 'P22 sample',
-                fontSize: 18,
-                fontFamily: 'P22 Mackinac',
-              ),
-              DotsTextElement(
-                x: 36,
-                y: 100,
-                value: 'Inter sample',
-                fontSize: 12,
-                fontFamily: 'Inter',
-              ),
-            ],
+        pliegos: <DotsPliego>[
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(
+              pageNumber: 1,
+              elements: <DotsElement>[
+                DotsTextElement(
+                  x: 36,
+                  y: 72,
+                  value: 'P22 sample',
+                  fontSize: 18,
+                  fontFamily: 'P22 Mackinac',
+                ),
+                DotsTextElement(
+                  x: 36,
+                  y: 100,
+                  value: 'Inter sample',
+                  fontSize: 12,
+                  fontFamily: 'Inter',
+                ),
+              ],
+            ),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
           ),
         ],
       );

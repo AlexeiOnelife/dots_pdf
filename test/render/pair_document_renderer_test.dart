@@ -30,12 +30,16 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_pair',
         pageSize: DotsPageSize(width: 200, height: 300),
-        pages: [
-          DotsElementsPage(
-            pageNumber: 1,
-            elements: [
-              DotsTextElement(x: 10, y: 10, value: 'p1', fontSize: 10),
-            ],
+        pliegos: [
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(
+              pageNumber: 1,
+              elements: [
+                DotsTextElement(x: 10, y: 10, value: 'p1', fontSize: 10),
+              ],
+            ),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
           ),
         ],
       );
@@ -43,7 +47,7 @@ void main() {
       const outPath = '/docs/single.pdf';
       await renderer.render(
         template: template,
-        pages: template.pages,
+        pages: template.effectivePages,
         outputPath: outPath,
       );
 
@@ -61,18 +65,21 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_pair2',
         pageSize: DotsPageSize(width: 200, height: 300),
-        pages: [
-          DotsElementsPage(
-            pageNumber: 1,
-            elements: [
-              DotsTextElement(x: 10, y: 10, value: 'p1', fontSize: 10),
-            ],
-          ),
-          DotsElementsPage(
-            pageNumber: 2,
-            elements: [
-              DotsTextElement(x: 10, y: 10, value: 'p2', fontSize: 10),
-            ],
+        pliegos: [
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(
+              pageNumber: 1,
+              elements: [
+                DotsTextElement(x: 10, y: 10, value: 'p1', fontSize: 10),
+              ],
+            ),
+            right: DotsElementsPage(
+              pageNumber: 2,
+              elements: [
+                DotsTextElement(x: 10, y: 10, value: 'p2', fontSize: 10),
+              ],
+            ),
           ),
         ],
       );
@@ -80,7 +87,7 @@ void main() {
       const outPath = '/docs/pair.pdf';
       await renderer.render(
         template: template,
-        pages: template.pages,
+        pages: template.effectivePages,
         outputPath: outPath,
       );
 
@@ -99,24 +106,31 @@ void main() {
         const template = DotsTemplate(
           documentId: 'doc_three',
           pageSize: DotsPageSize(width: 200, height: 300),
-          pages: [
-            DotsElementsPage(
-              pageNumber: 1,
-              elements: [
-                DotsTextElement(x: 10, y: 10, value: 'p1', fontSize: 10),
-              ],
+          pliegos: [
+            DotsLayoutPliego(
+              pliegoNumber: 1,
+              left: DotsElementsPage(
+                pageNumber: 1,
+                elements: [
+                  DotsTextElement(x: 10, y: 10, value: 'p1', fontSize: 10),
+                ],
+              ),
+              right: DotsElementsPage(
+                pageNumber: 2,
+                elements: [
+                  DotsTextElement(x: 10, y: 10, value: 'p2', fontSize: 10),
+                ],
+              ),
             ),
-            DotsElementsPage(
-              pageNumber: 2,
-              elements: [
-                DotsTextElement(x: 10, y: 10, value: 'p2', fontSize: 10),
-              ],
-            ),
-            DotsElementsPage(
-              pageNumber: 3,
-              elements: [
-                DotsTextElement(x: 10, y: 10, value: 'p3', fontSize: 10),
-              ],
+            DotsLayoutPliego(
+              pliegoNumber: 2,
+              left: DotsElementsPage(
+                pageNumber: 3,
+                elements: [
+                  DotsTextElement(x: 10, y: 10, value: 'p3', fontSize: 10),
+                ],
+              ),
+              right: DotsElementsPage(pageNumber: 4, elements: []),
             ),
           ],
         );
@@ -157,9 +171,12 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_pairs_cache',
         pageSize: DotsPageSize(width: 100, height: 100),
-        pages: [
-          DotsElementsPage(pageNumber: 1, elements: []),
-          DotsElementsPage(pageNumber: 2, elements: []),
+        pliegos: [
+          DotsLayoutPliego(
+            pliegoNumber: 1,
+            left: DotsElementsPage(pageNumber: 1, elements: []),
+            right: DotsElementsPage(pageNumber: 2, elements: []),
+          ),
         ],
       );
 

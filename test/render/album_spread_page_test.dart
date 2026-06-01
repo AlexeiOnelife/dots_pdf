@@ -7,7 +7,8 @@ import 'dart:typed_data';
 
 import 'package:dots_pdf/dots_pdf.dart';
 import 'package:dots_pdf/src/render/album_spread_page.dart'
-    show buildAlbumSpreadPage, kHeaderFontRoleForTest, kHeaderFontSizeForTest;
+    show buildAlbumSpreadPage;
+import 'package:dots_pdf/src/render/page_chrome.dart';
 import 'package:file/local.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdf/pdf.dart';
@@ -126,12 +127,13 @@ void main() {
       expect(sig.angleDegrees, equals(2.0));
     });
 
-    test('AlbumSpreadPage — dedication body is constrained to 102 mm width',
+    test('AlbumSpreadPage — dedication body is constrained to 120 mm width',
         () {
       final page = _dedicationPage(DotsAlbumType.parejas);
       final body = page.elements.whereType<DotsTextBlockElement>().first;
-      // 102 mm × 2.834645669 pt/mm ≈ 289.13 pt.
-      expect(body.width, closeTo(102.0 * _mmToPt, 0.01));
+      // 120 mm × 2.834645669 pt/mm ≈ 340.16 pt. Width corrected in Task 4
+      // (`pareja-hijos-fidelity`) against pdf02 p.5 / pdf08 p.5.
+      expect(body.width, closeTo(120.0 * _mmToPt, 0.01));
     });
   });
 
@@ -151,6 +153,55 @@ void main() {
       );
       final title = page.elements.whereType<DotsTextElement>().first;
       expect(title.fontSize, equals(12.0));
+    });
+
+    test('AlbumSpreadPage — closing(boda) text box is 86 mm wide centered '
+        '(per pdf07 p.3 — narrower than the 115 mm box used by the '
+        'other categories)', () {
+      final page = DotsAlbumSpreadPage.closing(
+        type: DotsAlbumType.boda,
+        pageNumber: 1,
+        contextLabelValue: '{Protagonistas}',
+        photoPath: 'photo.jpg',
+        title: 'Que la vida siga reencontrándoos, una y otra vez',
+        subtitle: '',
+      );
+      // Subtitle block carries the text-box width.
+      final subtitle =
+          page.elements.whereType<DotsTextBlockElement>().single;
+      expect(subtitle.width, closeTo(86.0 * _mmToPt, 0.01));
+      // Title and subtitle x = (203 - 86) / 2 = 58.5 mm.
+      expect(subtitle.x, closeTo(58.5 * _mmToPt, 0.01));
+      // Title (DotsTextElement) shares the same x.
+      final title = page.elements.whereType<DotsTextElement>().first;
+      expect(title.x, closeTo(58.5 * _mmToPt, 0.01));
+    });
+
+    test('AlbumSpreadPage — closing(parejas/hijos/etc) text box is '
+        '115 mm wide centered (x=44 mm)', () {
+      for (final type in const [
+        DotsAlbumType.parejas,
+        DotsAlbumType.hijos,
+        DotsAlbumType.individuales,
+        DotsAlbumType.otros,
+        DotsAlbumType.generalEventos,
+      ]) {
+        final page = DotsAlbumSpreadPage.closing(
+          type: type,
+          pageNumber: 1,
+          contextLabelValue: '{label}',
+          photoPath: 'photo.jpg',
+          title: 'T',
+          subtitle: 'S',
+        );
+        final subtitle =
+            page.elements.whereType<DotsTextBlockElement>().single;
+        expect(subtitle.width, closeTo(115.0 * _mmToPt, 0.01),
+            reason: '$type subtitle width should be 115 mm');
+        // x = (203 - 115) / 2 = 44 mm.
+        expect(subtitle.x, closeTo(44.0 * _mmToPt, 0.01),
+            reason: '$type subtitle x should be 44 mm');
+      }
     });
 
     test('AlbumSpreadPage — closing page title is 20pt for parejas', () {
@@ -262,17 +313,26 @@ void main() {
       expect(page.footer.wordmark, equals('Dots. Memories'));
     });
 
-    test('AlbumSpreadPage — header labels use Inter Semibold 7pt', () async {
-      // The font role used for header/footer is DotsFontRole.interSemibold at 7pt.
-      // We verify via the fontResolver callback and the exported constant.
-      expect(kHeaderFontRoleForTest, DotsFontRole.interSemibold);
+    // ── R3/W3 re-split — RED placeholders (PR 1) ──────────────────────────
+    // The original 'header labels use Inter Semibold 7pt' test is split into
+    // separate font and geometry assertions as required by R9. The header font
+    // changes to p22MackinacBook (9 pt) and the footer stays interSemibold
+    // (7 pt). These tests are RED in PR 1 because buildAlbumSpreadPage still
+    // uses the old inline chrome path. PR 2 (T7.1) replaces that path with
+    // buildPageChrome, turning all these tests GREEN.
 
-      final calledRoles = <DotsFontRole>[];
+    test('album_spread_page — header text uses p22MackinacBook (re-split R3)',
+        () async {
+      // R9: after delegation to buildPageChrome, all header text widgets must
+      // use DotsFontRole.p22MackinacBook. We record every fontResolver call
+      // during a minimal non-cover spread render — those calls are dominated
+      // by the chrome since the page carries no body elements.
+      final calls = <DotsFontRole>[];
       const page = DotsAlbumSpreadPage(
-        pageNumber: 1,
+        pageNumber: 5,
         header: DotsSpreadHeader(
-          leftPageNumber: '1',
-          centerLabel: 'label',
+          leftPageNumber: '5',
+          centerLabel: 'Dotbook',
         ),
         footer: DotsSpreadFooter(wordmark: 'Dots. Memories'),
       );
@@ -280,16 +340,111 @@ void main() {
         format: _format,
         page: page,
         fontResolver: (role) {
-          calledRoles.add(role);
+          calls.add(role);
           return null;
         },
-        bytesResolver: (path) async => throw StateError('no bytes'),
+        bytesResolver: (path) async =>
+            throw StateError('no bytes resolver — path: $path'),
         logger: const DotsSilentLogger(),
         onPhotoFailure: _ignorePhotoFailure,
         drawCropMarks: false,
       );
-      // All header/footer text uses DotsFontRole.interSemibold.
-      expect(calledRoles, everyElement(equals(DotsFontRole.interSemibold)));
+      expect(
+        calls,
+        contains(DotsFontRole.p22MackinacBook),
+        reason: 'header chrome must request p22MackinacBook',
+      );
+    });
+
+    test('album_spread_page — footer text uses interSemibold (re-split W3)',
+        () async {
+      // R9: the footer wordmark widget must use DotsFontRole.interSemibold at
+      // 7 pt — unchanged from before, but now sourced from buildPageChrome.
+      final calls = <DotsFontRole>[];
+      const page = DotsAlbumSpreadPage(
+        pageNumber: 5,
+        header: DotsSpreadHeader(
+          leftPageNumber: '5',
+          centerLabel: 'Dotbook',
+        ),
+        footer: DotsSpreadFooter(wordmark: 'Dots. Memories'),
+      );
+      await buildAlbumSpreadPage(
+        format: _format,
+        page: page,
+        fontResolver: (role) {
+          calls.add(role);
+          return null;
+        },
+        bytesResolver: (path) async =>
+            throw StateError('no bytes resolver — path: $path'),
+        logger: const DotsSilentLogger(),
+        onPhotoFailure: _ignorePhotoFailure,
+        drawCropMarks: false,
+      );
+      expect(
+        calls,
+        contains(DotsFontRole.interSemibold),
+        reason: 'footer chrome must request interSemibold',
+      );
+    });
+
+    test('album_spread_page — header Y is 9 mm (regression)', () async {
+      // R2, R9: after the migration, every spread-page header is positioned by
+      // buildPageChrome, so the chrome's header-Y constant is the regression
+      // surface. Asserting it pins the 8 mm → 9 mm bug fix.
+      expect(
+        kPageChromeHeaderTopMm,
+        equals(9.0),
+        reason: 'spread chrome delegates to page_chrome; '
+            'header Y must be 9 mm (was 8 mm — bug 1)',
+      );
+    });
+
+    test('album_spread_page — footer is bottom-right 8 mm from edge (regression)',
+        () async {
+      // R4, R9: footer is now positioned by buildPageChrome at right/bottom =
+      // kPageChromeOuterMarginMm (was page-centered — bug 3).
+      expect(
+        kPageChromeOuterMarginMm,
+        equals(8.0),
+        reason: 'spread chrome delegates to page_chrome; '
+            'footer margin must be 8 mm bottom-right (was centered — bug 3)',
+      );
+    });
+
+    test('album_spread_page — cover page has no background widget', () async {
+      // R1: DotsAlbumSpreadPage.cover() sets header all-null + footer
+      // wordmark = '', producing an "empty" DotsPageChrome whose cover guard
+      // in buildPageChrome returns []. Proxy: rendering the cover never
+      // requests interSemibold (the footer's font role), because no chrome
+      // widgets are emitted.
+      final calls = <DotsFontRole>[];
+      final coverPage = DotsAlbumSpreadPage.cover(
+        type: DotsAlbumType.parejas,
+        pageNumber: 1,
+        title: 'Mi Dotbook',
+        dateLine: '2026',
+      );
+      await buildAlbumSpreadPage(
+        format: _format,
+        page: coverPage,
+        fontResolver: (role) {
+          calls.add(role);
+          return null;
+        },
+        bytesResolver: (path) async =>
+            throw StateError('no bytes resolver — path: $path'),
+        logger: const DotsSilentLogger(),
+        onPhotoFailure: _ignorePhotoFailure,
+        drawCropMarks: false,
+      );
+      expect(
+        calls,
+        isNot(contains(DotsFontRole.interSemibold)),
+        reason: 'cover guard must prevent footer chrome '
+            '(interSemibold) from being requested',
+      );
     });
 
     test('AlbumSpreadPage — null header fields are omitted without error',
@@ -428,7 +583,7 @@ void main() {
       final customTemplate = DotsTemplate(
         documentId: 'album_no_iso',
         pageSize: _pageSize,
-        pages: [dedicationPage],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: dedicationPage, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
       final events =
           await generator.generateWhole(template: customTemplate).toList();
@@ -447,7 +602,7 @@ void main() {
       final customTemplate = DotsTemplate(
         documentId: 'album_iso',
         pageSize: _pageSize,
-        pages: [dedicationPage],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: dedicationPage, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
       final events =
           await generator.generateWhole(template: customTemplate).toList();
@@ -469,12 +624,12 @@ void main() {
       final noIsoTemplate = DotsTemplate(
         documentId: 'album_cmp_no_iso',
         pageSize: _pageSize,
-        pages: [dedicationPage],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: dedicationPage, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
       final isoTemplate = DotsTemplate(
         documentId: 'album_cmp_iso',
         pageSize: _pageSize,
-        pages: [dedicationPage],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: dedicationPage, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
 
       await noIso.generateWhole(template: noIsoTemplate).toList();
@@ -558,13 +713,16 @@ void main() {
   });
 
   // ──────────────────────────────────────────────────────────────────────────
-  // W3 — Header font size is 7pt  (R3)
+  // W3 — Chrome font sizes after migration (header 9 pt, footer 7 pt)
   // ──────────────────────────────────────────────────────────────────────────
 
-  group('AlbumSpreadPage — header font size', () {
-    test('AlbumSpreadPage — header font size constant is 7pt', () {
-      expect(kHeaderFontSizeForTest, equals(7.0),
-          reason: 'header/footer labels must be rendered at 7pt');
+  group('AlbumSpreadPage — chrome font sizes', () {
+    test('AlbumSpreadPage — header 9 pt (P22 Mackinac Book), footer 7 pt '
+        '(Inter Semibold)', () {
+      expect(kPageChromeHeaderFontSize, equals(9.0),
+          reason: 'header labels must be rendered at 9pt after the migration');
+      expect(kPageChromeFooterFontSize, equals(7.0),
+          reason: 'footer wordmark must remain at 7pt');
     });
 
     // S3 — header render produces a non-null pw.Page when all fields populated.

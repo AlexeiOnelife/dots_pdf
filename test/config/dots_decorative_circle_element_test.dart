@@ -53,6 +53,50 @@ void main() {
       );
       expect(element.gaussianFadeMm, equals(1.764));
     });
+
+    test('opacityAlpha defaults to 1.0 (fully opaque)', () {
+      const element = DotsDecorativeCircleElement(
+        x: 0,
+        y: 0,
+        diameter: 45.0,
+        colorHex: '#CDE7F2',
+      );
+      expect(element.opacityAlpha, equals(1.0));
+    });
+
+    test('opacityAlpha can be set in (0.0, 1.0)', () {
+      const element = DotsDecorativeCircleElement(
+        x: 0,
+        y: 0,
+        diameter: 45.0,
+        colorHex: '#CDE7F2',
+        opacityAlpha: 0.35,
+      );
+      expect(element.opacityAlpha, equals(0.35));
+    });
+
+    test('opacityAlpha < 0 or > 1 trips the assert', () {
+      expect(
+        () => DotsDecorativeCircleElement(
+          x: 0,
+          y: 0,
+          diameter: 45.0,
+          colorHex: '#CDE7F2',
+          opacityAlpha: -0.1,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+      expect(
+        () => DotsDecorativeCircleElement(
+          x: 0,
+          y: 0,
+          diameter: 45.0,
+          colorHex: '#CDE7F2',
+          opacityAlpha: 1.1,
+        ),
+        throwsA(isA<AssertionError>()),
+      );
+    });
   });
 
   group('DotsDecorativeCircleElement — equality and hashCode (R1)', () {

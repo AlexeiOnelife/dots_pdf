@@ -256,7 +256,7 @@ void main() {
           width: 406.0 * _mmToPt,
           height: 254.0 * _mmToPt,
         ),
-        pages: [page],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: page, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
 
       final events =
@@ -317,7 +317,7 @@ void main() {
           width: 406.0 * _mmToPt,
           height: 254.0 * _mmToPt,
         ),
-        pages: [page],
+        pliegos: [DotsLayoutPliego(pliegoNumber: 1, left: page, right: const DotsElementsPage(pageNumber: 2, elements: []))],
       );
 
       final events =

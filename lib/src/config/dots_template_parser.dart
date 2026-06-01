@@ -87,80 +87,75 @@ class DotsTemplateParser {
       r'$.pageSize',
     );
 
-    // Parse optional albumType field.
-    final albumTypeRaw = json['albumType'];
-    DotsAlbumType? albumType;
-    if (albumTypeRaw != null) {
-      if (albumTypeRaw is! String) {
+    // Reject the deprecated `albumType` JSON key with a migration-helpful
+    // exception pointing at the new `category` field. Task 2 of the
+    // `final-render-refinement` series renamed this; clients must migrate.
+    if (json.containsKey('albumType')) {
+      throw const DotsConfigException(
+        'field "albumType" was renamed to "category" in the '
+        'pliego-first-category change; replace the JSON key',
+        pointer: r'$.albumType',
+      );
+    }
+
+    // Reject the deprecated `pages` JSON key with a migration-helpful
+    // exception pointing at `pliegos`. The page-level JSON contract was
+    // removed in the same change.
+    if (json.containsKey('pages')) {
+      throw const DotsConfigException(
+        'field "pages" was removed in the pliego-first-category change; '
+        'rewrite the template using "pliegos"',
+        pointer: r'$.pages',
+      );
+    }
+
+    // Parse the category field. Optional in JSON; defaults to
+    // DotsAlbumType.generalEventos when omitted.
+    DotsAlbumType category = DotsAlbumType.generalEventos;
+    final categoryRaw = json['category'];
+    if (categoryRaw != null) {
+      if (categoryRaw is! String) {
         throw const DotsConfigException(
-          'field "albumType" must be a string',
-          pointer: r'$.albumType',
+          'field "category" must be a string',
+          pointer: r'$.category',
         );
       }
       try {
-        albumType = DotsAlbumType.values.byName(albumTypeRaw);
+        category = DotsAlbumType.values.byName(categoryRaw);
       } on ArgumentError {
         throw DotsConfigException(
-          'unknown albumType "$albumTypeRaw" '
-          '(expected one of: boda, parejas, hijos, individuales, otros)',
-          pointer: r'$.albumType',
+          'unknown category "$categoryRaw" (expected one of: '
+          'boda, parejas, hijos, individuales, otros, generalEventos)',
+          pointer: r'$.category',
         );
       }
     }
 
-    final hasPages = json.containsKey('pages');
-    final hasPliegos = json.containsKey('pliegos');
-    if (hasPages && hasPliegos) {
+    // The JSON contract now requires "pliegos".
+    if (!json.containsKey('pliegos')) {
       throw const DotsConfigException(
-        'template must declare "pages" OR "pliegos", not both',
-        pointer: r'$',
-      );
-    }
-    if (!hasPages && !hasPliegos) {
-      throw const DotsConfigException(
-        'template must declare "pages" or "pliegos"',
+        'template must declare "pliegos"',
         pointer: r'$',
       );
     }
 
-    if (hasPliegos) {
-      final pliegosRaw = _requireList(json, 'pliegos', r'$');
-      final pliegos = <DotsPliego>[];
-      for (var i = 0; i < pliegosRaw.length; i++) {
-        final entry = pliegosRaw[i];
-        if (entry is! Map<String, dynamic>) {
-          throw DotsConfigException(
-            'pliego entry must be an object',
-            pointer: r'$.pliegos[' '$i' ']',
-          );
-        }
-        pliegos.add(_parsePliego(entry, r'$.pliegos[' '$i' ']', variables));
-      }
-      return DotsTemplate(
-        documentId: documentId,
-        pageSize: pageSize,
-        albumType: albumType,
-        pliegos: List<DotsPliego>.unmodifiable(pliegos),
-      );
-    }
-
-    final pagesRaw = _requireList(json, 'pages', r'$');
-    final pages = <DotsPage>[];
-    for (var i = 0; i < pagesRaw.length; i++) {
-      final entry = pagesRaw[i];
+    final pliegosRaw = _requireList(json, 'pliegos', r'$');
+    final pliegos = <DotsPliego>[];
+    for (var i = 0; i < pliegosRaw.length; i++) {
+      final entry = pliegosRaw[i];
       if (entry is! Map<String, dynamic>) {
         throw DotsConfigException(
-          'page entry must be an object',
-          pointer: r'$.pages[' '$i' ']',
+          'pliego entry must be an object',
+          pointer: r'$.pliegos[' '$i' ']',
         );
       }
-      pages.add(_parsePage(entry, r'$.pages[' '$i' ']', variables));
+      pliegos.add(_parsePliego(entry, r'$.pliegos[' '$i' ']', variables));
     }
     return DotsTemplate(
       documentId: documentId,
       pageSize: pageSize,
-      albumType: albumType,
-      pages: List<DotsPage>.unmodifiable(pages),
+      category: category,
+      pliegos: List<DotsPliego>.unmodifiable(pliegos),
     );
   }
 
@@ -461,7 +456,10 @@ class DotsTemplateParser {
     final geometry = DotsPageGeometry.dotbookDefault();
     final List<DotsSlotRect> slots;
     try {
-      slots = solver.solve(layoutCode, geometry);
+      // Parser validation calls the solver canonically as a left page —
+      // it only validates that dimensions fit; per-page x parity is
+      // resolved at render time by the renderer/isolate call sites.
+      slots = solver.solve(layoutCode, geometry, isLeftPage: true);
     } on StateError catch (e) {
       throw DotsConfigException(
         'layout "${layoutCode.name}" does not fit the configured '

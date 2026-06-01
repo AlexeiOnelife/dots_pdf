@@ -4,9 +4,16 @@ Derived from `Informacion.interiores.dotbook.2 (1).pdf` (73 pages, source
 file is a 1167.87 × 737.008 pt artboard = 412 × 260 mm = two 203 × 254 mm
 pages + 3 mm bleed all around).
 
-Units are millimeters. `AUTO` in the source means "distributed by available
-margin" — the library should compute it from the surrounding fixed
-dimensions, not hard-code a value.
+Units are millimeters.
+
+> **Task 3 update (`general-body-layouts-fidelity`)**: the positioning
+> model is now **outer-edge aligned** — every photo block sits 8 mm
+> from the OUTER (non-binding) trim edge of its page. On a left page
+> the outer edge is the LEFT edge; on a right page, the RIGHT edge.
+> The `DotsLayoutSolver` resolves this per-page via `isLeftPage`. The
+> previous "AUTO = page-centered" convention only matched the printed
+> design for L3.A by coincidence (its block width 186.81 mm leaves an
+> ≈8 mm side margin when centered).
 
 ---
 
@@ -34,13 +41,17 @@ the caller injects (page numbers, album name, dates, milestone titles).
 The same three-element header runs across every interior page; the footer
 is a single wordmark.
 
-| Element                  | Position                       | Style                                       |
-|--------------------------|--------------------------------|---------------------------------------------|
-| Top-left `Nº página`     | inside margin (binding side)   | Inter Semibold 7 pt / 8.4 pt                |
-| Top-center (left page)   | gutter-adjacent on left page   | `{NombreDelAlbum}` — P22 Mackinac book 9 pt / 10.8 pt |
-| Top-center (right page)  | gutter-adjacent on right page  | context label (see below)                   |
-| Top-right `Nº página`    | outside margin                 | Inter Semibold 7 pt / 8.4 pt                |
-| Bottom-center wordmark   | bottom margin                  | "Dots. Memories" — Inter Semibold 7 pt      |
+| Element                  | Position                                  | Style                                              |
+|--------------------------|-------------------------------------------|----------------------------------------------------|
+| Top outer-left `Nº página`  | outer margin (left page), 8 mm in, 9 mm down | P22 Mackinac **book** 9 pt / 10.8 pt              |
+| Top-center (left page)   | left page, gutter-adjacent column, 9 mm down | `{NombreDelAlbum}` — P22 Mackinac **book** 9 pt / 10.8 pt |
+| Top-center (right page)  | right page, gutter-adjacent column, 9 mm down | context label (see below) — P22 Mackinac **book** 9 pt / 10.8 pt |
+| Top outer-right `Nº página` | outer margin (right page), 8 mm in, 9 mm down | P22 Mackinac **book** 9 pt / 10.8 pt              |
+| **Bottom-right** wordmark   | outer margin (right page), 8 mm in, 8 mm up  | "Dots. Memories" — Inter Semibold 7 pt / 8.4 pt   |
+
+> Source of truth: `docs/templates/final_templates/pdf01_general_base.pdf` (page 1). The footer
+> moved from bottom-center to bottom-right; all header labels (page numbers
+> and centre labels alike) use P22 Mackinac *book* 9 pt — not Inter Semibold.
 
 ### Right-page top-center context label, per album type
 
@@ -104,7 +115,7 @@ Alternative single-photo variants observed in the source:
 
 - **L2.A — side-by-side**: two **86 × 110 mm** photos in one row, 16 mm
   horizontal gutter, vertically centered (AUTO above and below).
-- **L2.B — stacked vertical (full-bleed pair)**: two **115.5 × 86 mm**
+- **L2.B — stacked vertical (landscape pair)**: two **175 × 107 mm**
   photos stacked with 3 mm vertical gap.
 - **L2.C — small framed pair**: two **65 × 74 mm** with 3 mm gap.
 
@@ -115,7 +126,7 @@ Alternative single-photo variants observed in the source:
 
 ### L4 — Four photos
 
-- **L4.A — 2×2 grid**: four **86 × 110 mm** photos, 3 mm gaps, AUTO
+- **L4.A — 2×2 grid**: four **86 × 86 mm SQUARE** photos, 3 mm gaps, y=71 mm,
   outer margins. (The 2×2 is the most common 4-up layout in the PDF.)
 - **L4.B — 2×2 stacked-pair grid**: same dimensions but rendered across a
   spread (4 photos = 2 per page).
@@ -135,7 +146,7 @@ as an L4 (2×2) + L1 (1 small) hybrid. **Open question.**
 
 ### L7 — Four-pane caption page (collage with text)
 
-- Four **142 × 105 mm** photos in a row with 67 mm caption columns between
+- Four **86 × 110 mm** photos arranged as 2 panes per page with 7.5 mm photo-to-caption gaps; caption columns between
   pairs, 91 mm vertical, with date + body Inter 9 pt under each.
 - Caption: **350 char** body max, P22 Mackinac medium 11 pt for title,
   Inter Book 9 pt for body. "Not every photo needs text to use this

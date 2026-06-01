@@ -49,13 +49,17 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_l1',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: ['/assets/a.png'],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -79,8 +83,10 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_l4a',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l4a,
             photoAssetPaths: [
@@ -90,7 +96,9 @@ void main() {
               '/assets/d.png',
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -107,8 +115,10 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_hito',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.lhito,
             captions: <DotsSlotKind, String>{
@@ -118,7 +128,9 @@ void main() {
               DotsSlotKind.qrCard: 'https://example.com/album',
             },
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -141,8 +153,10 @@ void main() {
       const template = DotsTemplate(
         documentId: 'doc_bad_slot',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l4a,
             photoAssetPaths: [
@@ -152,7 +166,9 @@ void main() {
               '/assets/bad.png',
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -172,6 +188,275 @@ void main() {
       final outPath = await generator.wholePathFor('doc_bad_slot');
       final bytes = await fs.file(outPath).readAsBytes();
       expect(_hasPdfMagic(bytes), isTrue);
+    });
+  });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // T1.2 — Chrome-presence integration tests (RED in PR 1, GREEN in PR 2)
+  //
+  // These tests are intentional RED placeholders. The renderer wiring that
+  // reads DotsTemplate.defaultChrome and calls buildPageChrome is implemented
+  // in PR 2 (tasks T6.1–T6.3). Each test body calls fail() so the suite
+  // compiles cleanly but the tests fail with the expected PR-2 message.
+  // ──────────────────────────────────────────────────────────────────────────
+
+  group('Chrome-presence — renderer integration (PR 2 wiring)', () {
+    const chrome = DotsPageChrome(
+      pageNumber: '3',
+      centerLabel: 'My Album',
+      wordmark: 'Dots. Memories',
+      isLeftPage: true,
+    );
+
+    Future<Uint8List> generateAndRead(DotsTemplate template) async {
+      final events =
+          await generator.generateWhole(template: template).toList();
+      expect(
+        events.last,
+        isA<PdfGenerationCompleted>(),
+        reason: 'expected success but saw ${events.last}',
+      );
+      final outPath = await generator.wholePathFor(template.documentId);
+      return fs.file(outPath).readAsBytes();
+    }
+
+    test('DotsLayoutPage render — chrome present: background + header + footer',
+        () async {
+      await _writePixel(fs, '/assets/a.png');
+      const withChrome = DotsTemplate(
+        documentId: 'doc_chrome_present',
+        pageSize: _dotbookPageSize,
+        defaultChrome: chrome,
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
+            pageNumber: 1,
+            layoutCode: DotsLayoutCode.l1,
+            photoAssetPaths: ['/assets/a.png'],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      const noChrome = DotsTemplate(
+        documentId: 'doc_chrome_present_baseline',
+        pageSize: _dotbookPageSize,
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
+            pageNumber: 1,
+            layoutCode: DotsLayoutCode.l1,
+            photoAssetPaths: ['/assets/a.png'],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      final bytesWithChrome = await generateAndRead(withChrome);
+      final bytesNoChrome = await generateAndRead(noChrome);
+      expect(_hasPdfMagic(bytesWithChrome), isTrue);
+      expect(_hasPdfMagic(bytesNoChrome), isTrue);
+      expect(
+        bytesWithChrome.length,
+        greaterThan(bytesNoChrome.length),
+        reason: 'chrome adds background + header + footer content',
+      );
+    });
+
+    test(
+        'DotsLayoutPage render — bleedTop slot suppresses header; '
+        'background present', () async {
+      await _writePixel(fs, '/assets/a.png');
+      // l1b is the only catalog layout with a bleedTop slot (yMm ≈ 8 mm,
+      // which is below the 12 mm header band ceiling — triggers suppression).
+      const bleedTopL1b = DotsTemplate(
+        documentId: 'doc_bleedtop_suppress',
+        pageSize: _dotbookPageSize,
+        defaultChrome: chrome,
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
+            pageNumber: 1,
+            layoutCode: DotsLayoutCode.l1b,
+            photoAssetPaths: ['/assets/a.png'],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      const noBleed = DotsTemplate(
+        documentId: 'doc_bleedtop_baseline',
+        pageSize: _dotbookPageSize,
+        defaultChrome: chrome,
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
+            pageNumber: 1,
+            layoutCode: DotsLayoutCode.l1,
+            photoAssetPaths: ['/assets/a.png'],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      final bytesSuppressed = await generateAndRead(bleedTopL1b);
+      final bytesFull = await generateAndRead(noBleed);
+      expect(_hasPdfMagic(bytesSuppressed), isTrue);
+      // Suppressed-header build emits fewer chrome text widgets than the
+      // unsuppressed l1 build at the same chrome settings.
+      expect(
+        bytesSuppressed.length,
+        lessThan(bytesFull.length),
+        reason: 'bleedTop must omit header text while keeping the background',
+      );
+    });
+
+    test(
+        'DotsLayoutPage render — footer renders when no slot has bleedBottom '
+        '(integration coverage of the non-suppression path)', () async {
+      // Honest scope note: no catalog layout currently carries
+      // `bleedBottom: true`, so the *suppression* branch is unreachable from
+      // the renderer pipeline today. It IS covered at the predicate level by
+      // `deriveSuppressFooterForChrome` in `page_chrome_test.dart`. This
+      // integration test pins the non-suppression path — the footer renders
+      // when no slot bleeds — which is what the renderer actually exercises.
+      await _writePixel(fs, '/assets/a.png');
+      const tpl = DotsTemplate(
+        documentId: 'doc_no_bleedbottom',
+        pageSize: _dotbookPageSize,
+        defaultChrome: chrome,
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
+            pageNumber: 1,
+            layoutCode: DotsLayoutCode.l1,
+            photoAssetPaths: ['/assets/a.png'],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      final bytes = await generateAndRead(tpl);
+      expect(_hasPdfMagic(bytes), isTrue);
+    });
+
+    test('DotsLayoutPage render — no bleed slots: header and footer both render',
+        () async {
+      await _writePixel(fs, '/assets/a.png');
+      // L1 has no bleed flags → both chrome bands render.
+      const tpl = DotsTemplate(
+        documentId: 'doc_no_bleed',
+        pageSize: _dotbookPageSize,
+        defaultChrome: chrome,
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
+            pageNumber: 1,
+            layoutCode: DotsLayoutCode.l1,
+            photoAssetPaths: ['/assets/a.png'],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      const tplNoChrome = DotsTemplate(
+        documentId: 'doc_no_bleed_baseline',
+        pageSize: _dotbookPageSize,
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
+            pageNumber: 1,
+            layoutCode: DotsLayoutCode.l1,
+            photoAssetPaths: ['/assets/a.png'],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      final withChrome = await generateAndRead(tpl);
+      final baseline = await generateAndRead(tplNoChrome);
+      expect(
+        withChrome.length,
+        greaterThan(baseline.length),
+        reason: 'header + footer chrome both add bytes when no slot bleeds',
+      );
+    });
+
+    test('DotsElementsPage render — chrome always present unconditionally',
+        () async {
+      const tpl = DotsTemplate(
+        documentId: 'doc_elements_chrome',
+        pageSize: _dotbookPageSize,
+        defaultChrome: chrome,
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
+            pageNumber: 1,
+            elements: [],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      const tplNoChrome = DotsTemplate(
+        documentId: 'doc_elements_baseline',
+        pageSize: _dotbookPageSize,
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
+            pageNumber: 1,
+            elements: [],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      final withChrome = await generateAndRead(tpl);
+      final baseline = await generateAndRead(tplNoChrome);
+      expect(_hasPdfMagic(withChrome), isTrue);
+      expect(
+        withChrome.length,
+        greaterThan(baseline.length),
+        reason: 'elements page must render chrome unconditionally',
+      );
+    });
+
+    test(
+        'DotsTemplate — defaultChrome null is backward-compatible; '
+        'no chrome rendered', () async {
+      // The baseline-no-chrome templates above implicitly cover this: with
+      // defaultChrome: null the pipeline still succeeds and produces a smaller
+      // PDF than the chrome-on variant. This explicit smoke test pins the
+      // backward-compatible default by rendering a chrome-less template alone.
+      await _writePixel(fs, '/assets/a.png');
+      const tpl = DotsTemplate(
+        documentId: 'doc_no_chrome_compat',
+        pageSize: _dotbookPageSize,
+        // defaultChrome omitted → null
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
+            pageNumber: 1,
+            layoutCode: DotsLayoutCode.l1,
+            photoAssetPaths: ['/assets/a.png'],
+          ),
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
+      );
+      final bytes = await generateAndRead(tpl);
+      expect(_hasPdfMagic(bytes), isTrue);
+      expect(bytes.length, greaterThan(500));
     });
   });
 }

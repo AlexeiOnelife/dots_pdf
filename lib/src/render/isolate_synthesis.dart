@@ -242,7 +242,11 @@ class _IsolatePageRenderer {
   ) async {
     const DotsLayoutSolver solver = DotsLayoutSolver();
     final geometry = DotsPageGeometry.dotbookDefault();
-    final slots = solver.solve(page.layoutCode, geometry);
+    final slots = solver.solve(
+      page.layoutCode,
+      geometry,
+      isLeftPage: page.pageNumber.isOdd,
+    );
 
     final children = <pw.Widget>[];
     var photoCursor = 0;
@@ -310,6 +314,11 @@ class _IsolatePageRenderer {
         // they appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they
         // are not valid; skip silently (delegation pattern).
         return null;
+      case DotsDecorativeRectElement():
+        // Decorative rect elements are rendered by buildAlbumSpreadPage when
+        // they appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they
+        // are not valid; skip silently (delegation pattern).
+        return null;
       case DotsPhotoCircleElement():
         // Photo-circle elements are rendered by buildAlbumSpreadPage when they
         // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
@@ -330,6 +339,13 @@ class _IsolatePageRenderer {
         // appear inside a DotsAlbumSpreadPage. On a DotsElementsPage they are
         // not valid; skip silently (delegation pattern).
         return null;
+      case DotsUnimplementedElement():
+        // Stub element from a category factory whose body lands in a later
+        // task. Throw with the responsible task in the message so the
+        // failure mode is loud and unambiguous.
+        throw UnimplementedError(
+          '${element.taskId}: ${element.message}',
+        );
     }
   }
 
@@ -512,7 +528,10 @@ class _IsolatePageRenderer {
       case DotsSlotKind.captionTitle:
         return layoutCode == DotsLayoutCode.lhito ? 20.0 : 11.0;
       case DotsSlotKind.captionDate:
-        return layoutCode == DotsLayoutCode.lhito ? 9.0 : 11.0;
+        // L_hito subtitle is P22 Mackinac regular 20 pt per
+        // pdf01_general_base.pdf (Task 3 fidelity); see the matching
+        // override in DotsRenderer._captionFontSizeFor.
+        return layoutCode == DotsLayoutCode.lhito ? 20.0 : 11.0;
       case DotsSlotKind.captionBody:
         return 9.0;
       case DotsSlotKind.photo:

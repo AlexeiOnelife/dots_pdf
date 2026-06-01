@@ -23,7 +23,7 @@ void main() {
       const solver = DotsLayoutSolver();
       final geometry = DotsPageGeometry.dotbookDefault();
       for (final code in DotsLayoutCode.values) {
-        final slots = solver.solve(code, geometry);
+        final slots = solver.solve(code, geometry, isLeftPage: true);
         final photoSlots =
             slots.where((s) => s.kind == DotsSlotKind.photo).length;
         expect(
@@ -72,14 +72,19 @@ void main() {
       {
         "documentId": "d",
         "pageSize": { "width": 100, "height": 100 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "lhito",
             "captions": {
               "date": "May 17, 2026",
               "body": "Body without a title."
             }
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
@@ -102,21 +107,26 @@ void main() {
       {
         "documentId": "d",
         "pageSize": { "width": 100, "height": 100 },
-        "pages": [
+        "pliegos": [
           {
+            "pliegoNumber": 1,
+            "type": "layout",
+            "left": {
             "pageNumber": 1,
             "layout": "lhito",
             "captions": {
               "title": "A milestone",
               "body": "Body without date or QR."
             }
+          },
+            "right": { "pageNumber": 0, "elements": [] }
           }
         ]
       }
       ''';
       // Should not throw.
       final template = parser.parse(json);
-      final page = template.pages.single as DotsLayoutPage;
+      final page = template.effectivePages.first as DotsLayoutPage;
       expect(page.captions[DotsSlotKind.captionTitle], 'A milestone');
       expect(page.captions[DotsSlotKind.captionDate], isNull);
     });

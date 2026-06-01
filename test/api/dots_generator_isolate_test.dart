@@ -102,14 +102,18 @@ void main() {
       const template = DotsTemplate(
         documentId: 'iso_whole',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsElementsPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
             pageNumber: 1,
             elements: [
               DotsTextElement(x: 10, y: 20, value: 'Isolate test', fontSize: 12),
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -144,27 +148,35 @@ void main() {
       const isoTemplate = DotsTemplate(
         documentId: 'iso_whole_cmp',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsElementsPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
             pageNumber: 1,
             elements: [
               DotsTextElement(x: 10, y: 20, value: 'Compare test', fontSize: 12),
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       const noIsoTemplate = DotsTemplate(
         documentId: 'iso_whole_cmp_no',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsElementsPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
             pageNumber: 1,
             elements: [
               DotsTextElement(x: 10, y: 20, value: 'Compare test', fontSize: 12),
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       await withIsolate.generateWhole(template: isoTemplate).toList();
@@ -205,24 +217,31 @@ void main() {
       final template = DotsTemplate(
         documentId: 'iso_pairs',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: [assetPath],
           ),
-          DotsLayoutPage(
+          right: DotsLayoutPage(
             pageNumber: 2,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: [assetPath],
           ),
-          const DotsElementsPage(
+        ),
+        const DotsLayoutPliego(
+          pliegoNumber: 2,
+          left: DotsElementsPage(
             pageNumber: 3,
             elements: [
               DotsTextElement(x: 10, y: 20, value: 'Last page', fontSize: 10),
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -340,14 +359,18 @@ void main() {
       const template = DotsTemplate(
         documentId: 'iso_mem',
         pageSize: DotsPageSize(width: 200, height: 300),
-        pages: [
-          DotsElementsPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
             pageNumber: 1,
             elements: [
               DotsTextElement(x: 10, y: 20, value: 'mem test', fontSize: 12),
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       final events =
@@ -390,14 +413,18 @@ void main() {
       const template = DotsTemplate(
         documentId: 'iso_perf_whole',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsElementsPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
             pageNumber: 1,
             elements: [
               DotsTextElement(x: 10, y: 20, value: 'Perf test', fontSize: 12),
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       await generator.generateWhole(template: template).toList();
@@ -431,18 +458,21 @@ void main() {
       final template = DotsTemplate(
         documentId: 'iso_perf_pairs',
         pageSize: _dotbookPageSize,
-        pages: [
-          DotsLayoutPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsLayoutPage(
             pageNumber: 1,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: [assetPath],
           ),
-          DotsLayoutPage(
+          right: DotsLayoutPage(
             pageNumber: 2,
             layoutCode: DotsLayoutCode.l1,
             photoAssetPaths: [assetPath],
           ),
-        ],
+        ),
+      ],
       );
 
       await generator.generatePairs(template: template).toList();
@@ -521,14 +551,18 @@ void main() {
       const template = DotsTemplate(
         documentId: 'iso_off',
         pageSize: DotsPageSize(width: 200, height: 300),
-        pages: [
-          DotsElementsPage(
+        pliegos: [
+        DotsLayoutPliego(
+          pliegoNumber: 1,
+          left: DotsElementsPage(
             pageNumber: 1,
             elements: [
               DotsTextElement(x: 10, y: 20, value: 'Off test', fontSize: 12),
             ],
           ),
-        ],
+          right: DotsElementsPage(pageNumber: 0, elements: []),
+        ),
+      ],
       );
 
       await generator.generateWhole(template: template).toList();

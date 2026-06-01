@@ -1,0 +1,61 @@
+DOTBOOK PDF TEMPLATES — MANIFEST
+Source spreadsheet: https://docs.google.com/spreadsheets/d/1NNLjzLPVXJ1ePSotTsIdyCayoirWD0_r_CMao3L-e_Q/edit?gid=0#gid=0
+Generated: 2026-05-27
+Downloaded into: docs/templates/final_templates/
+
+Each entry maps a spreadsheet row to its local PDF file.
+Format: CATEGORY | LABEL | DESCRIPTION | DRIVE LINK -> LOCAL FILE
+
+========================================================================
+
+GENERAL | PDF 1 | Este documento sirve para hacer la base del proyecto. Colocación de imágenes y textos.
+  Drive: https://drive.google.com/file/d/1WZwIAqXaZlPBcdUONLbcSodCqVbIpj-_/view?usp=drive_link
+  Local: pdf01_general_base.pdf
+
+PAREJA | PDF 2 | Este documento corresponde a la parte inicial del Dotbook de pareja
+  Drive: https://drive.google.com/file/d/1UvvAqbr9QelJdCK5iAklAJYW0b_tEy8i/view?usp=drive_link
+  Local: pdf02_pareja_inicial.pdf
+
+PAREJA | PDF 3 | Este documento corresponde a la parte final del Dotbook de pareja
+  Drive: https://drive.google.com/file/d/1tD0slTbZn0CoIEcz5ISPP8pRiLz3DvQN/view?usp=drive_link
+  Local: pdf03_pareja_final.pdf
+
+OTROS | PDF 4 | Este documento corresponde a la parte inicial del Dotbook de otros
+  Drive: https://drive.google.com/file/d/1O7BKENccNPWqpmQNy4AfqhhKFqgr0swr/view?usp=drive_link
+  Local: pdf04_otros_inicial.pdf
+
+OTROS | PDF 5 | Este documento corresponde a la parte final del Dotbook de otros
+  Drive: https://drive.google.com/file/d/18tKxW-34NBW8luceJ50de6wn3qnMen4h/view?usp=drive_link
+  Local: pdf05_otros_final.pdf
+
+BODA | PDF 6 | Este documento corresponde a la parte inicial del Dotbook de boda
+  Drive: https://drive.google.com/file/d/1v44iWmgyp82Uaxl1M3lpZZ-JLBG6tIed/view?usp=drive_link
+  Local: pdf06_boda_inicial.pdf
+
+BODA | PDF 7 | Este documento corresponde a la parte final del Dotbook de Boda
+  Drive: https://drive.google.com/file/d/15vONcBWo7BH71qsSBKPg8uli11V-Mxp-/view?usp=drive_link
+  Local: pdf07_boda_final.pdf
+
+HIJOS | PDF 8 | Este documento corresponde a la parte inicial del Dotbook de hijos
+  Drive: https://drive.google.com/file/d/1afyW2bXjnipe41Ys84PSWu_TjoAFzO0z/view?usp=drive_link
+  Local: pdf08_hijos_inicial.pdf
+
+HIJOS | PDF 9 | Este documento corresponde a la parte final del Dotbook de Hijos
+  Drive: https://drive.google.com/file/d/1axQ8kEMOxtb5vTTswWAOMk0lxWW8Fw5k/view?usp=drive_link
+  Local: pdf09_hijos_final.pdf
+
+INDIVIDUAL | PDF 10 | Este documento corresponde a la parte inicial del Dotbook de Individual
+  Drive: https://drive.google.com/file/d/1-nTWihPWkE1SCd_uc6a47p2dtEjX6mS2/view?usp=drive_link
+  Local: pdf10_individual_inicial.pdf
+
+INDIVIDUAL | PDF 11 | Este documento corresponde a la parte final del Dotbook de Inidividual
+  Drive: https://drive.google.com/file/d/1AzG7PZUL7YDi8XF0lKqa-3qF9USMxNDz/view?usp=drive_link
+  Local: pdf11_individual_final.pdf
+
+GENERAL EVENTOS | PDF 12 | Este documento corresponde a la parte inicial del Dotbook Eventos General
+  Drive: https://drive.google.com/file/d/1hItEw8HdF7Q6J2V6nVal7-OtQsavfXo5/view?usp=drive_link
+  Local: pdf12_general_eventos_inicial.pdf
+
+GENERAL EVENTOS | PDF 13 | Este documento corresponde a la parte Final del Dotbook Eventos General
+  Drive: https://drive.google.com/file/d/1hC-6HyaxV4W_ArBi4CyHt-1Pa_40sjSu/view?usp=drive_link
+  Local: pdf13_general_eventos_final.pdf
