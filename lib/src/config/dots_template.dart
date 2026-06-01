@@ -1275,6 +1275,7 @@ class DotsPageChrome {
   /// full-bleed background is always rendered.
   const DotsPageChrome({
     this.pageNumber,
+    this.rightPageNumber,
     this.centerLabel,
     this.wordmark,
     this.isLeftPage = true,
@@ -1287,6 +1288,18 @@ class DotsPageChrome {
   ///
   /// A `null` value omits the page-number slot entirely.
   final String? pageNumber;
+
+  /// Optional second page-number string for SPREAD chrome — when set,
+  /// the renderer draws BOTH [pageNumber] at the left outer column AND
+  /// [rightPageNumber] at the right outer column.
+  ///
+  /// Populated by `buildAlbumSpreadPage` for 2-page-spread factories
+  /// (e.g. `closingQrSpread`, `beforeYouStart`, `beforeJourney`,
+  /// `photoArc`, `bodaCluster`, `bodaHalo`, `polaroidCollage`) where
+  /// the spread header carries BOTH `leftPageNumber=N` and
+  /// `rightPageNumber=N+1`. A `null` value falls back to the existing
+  /// single-page chrome rendering (one number, placed per [isLeftPage]).
+  final String? rightPageNumber;
 
   /// Context-label string placed in the centre column of the header band.
   ///
@@ -1323,6 +1336,7 @@ class DotsPageChrome {
   bool operator ==(Object other) =>
       other is DotsPageChrome &&
       other.pageNumber == pageNumber &&
+      other.rightPageNumber == rightPageNumber &&
       other.centerLabel == centerLabel &&
       other.wordmark == wordmark &&
       other.isLeftPage == isLeftPage &&
@@ -1332,6 +1346,7 @@ class DotsPageChrome {
   @override
   int get hashCode => Object.hash(
         pageNumber,
+        rightPageNumber,
         centerLabel,
         wordmark,
         isLeftPage,
