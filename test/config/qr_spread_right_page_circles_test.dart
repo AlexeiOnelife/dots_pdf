@@ -129,6 +129,57 @@ void main() {
       }
     });
 
+    test('opacity gradient: rightmost circle is fully opaque, leftmost '
+        'circle is at the alpha floor (0.2), per pdf13 p.1 transparency '
+        'annotation', () {
+      final p = DotsAlbumSpreadPage.closingQrSpread(
+        type: DotsAlbumType.generalEventos,
+        pageNumber: 13,
+        content: _closing(),
+      );
+      final circles =
+          p.elements.whereType<DotsDecorativeCircleElement>().toList();
+      // Find the leftmost and rightmost circle by x.
+      circles.sort((a, b) => a.x.compareTo(b.x));
+      final leftmost = circles.first;
+      final rightmost = circles.last;
+      // Leftmost ≈ x=137 mm → alpha clamps to 0.2 (floor).
+      expect(leftmost.opacityAlpha, closeTo(0.2, 0.001));
+      // Rightmost ≈ x=395 mm → alpha = 1.0 (full opacity).
+      expect(rightmost.opacityAlpha, closeTo(1.0, 0.001));
+    });
+
+    test('opacity is monotonic in x across all 28 circles', () {
+      final p = DotsAlbumSpreadPage.closingQrSpread(
+        type: DotsAlbumType.generalEventos,
+        pageNumber: 13,
+        content: _closing(),
+      );
+      final circles =
+          p.elements.whereType<DotsDecorativeCircleElement>().toList();
+      circles.sort((a, b) => a.x.compareTo(b.x));
+      for (var i = 1; i < circles.length; i++) {
+        expect(
+          circles[i].opacityAlpha,
+          greaterThanOrEqualTo(circles[i - 1].opacityAlpha - 1e-9),
+          reason: 'opacity must increase with x',
+        );
+      }
+    });
+
+    test('all alphas land in [0.2, 1.0]', () {
+      final p = DotsAlbumSpreadPage.closingQrSpread(
+        type: DotsAlbumType.generalEventos,
+        pageNumber: 13,
+        content: _closing(),
+      );
+      for (final c
+          in p.elements.whereType<DotsDecorativeCircleElement>()) {
+        expect(c.opacityAlpha, greaterThanOrEqualTo(0.2));
+        expect(c.opacityAlpha, lessThanOrEqualTo(1.0));
+      }
+    });
+
     test('existing left-page content (title/body/QR/caption/bottom) is '
         'unchanged: 5 left-page text+QR elements', () {
       final p = DotsAlbumSpreadPage.closingQrSpread(
