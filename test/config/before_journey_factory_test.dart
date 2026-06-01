@@ -22,19 +22,108 @@ DotsAlbumSpreadPage _page(DotsAlbumType type, {String? bodyOverride}) =>
 
 void main() {
   group('DotsAlbumSpreadPage.beforeJourney — element shape', () {
-    test('emits exactly 3 elements: title L1, title L2, body', () {
-      for (final type in DotsAlbumType.values) {
+    test('parejas/hijos/individuales/otros emit 5 elements: '
+        'title L1 + L2 + body + protagonist names + CTA', () {
+      for (final type in const [
+        DotsAlbumType.parejas,
+        DotsAlbumType.hijos,
+        DotsAlbumType.individuales,
+        DotsAlbumType.otros,
+      ]) {
+        final p = _page(type);
+        expect(p.elements, hasLength(5),
+            reason: '$type should emit 5 elements');
+        expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(5),
+            reason: '$type elements should all be DotsTextBlockElement');
+      }
+    });
+
+    test('boda and generalEventos emit only 3 elements: '
+        'title L1 + L2 + body (no right-page chrome)', () {
+      for (final type in const [
+        DotsAlbumType.boda,
+        DotsAlbumType.generalEventos,
+      ]) {
         final p = _page(type);
         expect(p.elements, hasLength(3),
-            reason: '$type should emit 3 elements');
-        expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(3),
-            reason: '$type elements should all be DotsTextBlockElement');
+            reason: '$type should emit 3 elements (no chrome)');
       }
     });
 
     test('all 6 categories construct without throwing', () {
       for (final type in DotsAlbumType.values) {
         expect(() => _page(type), returnsNormally, reason: '$type');
+      }
+    });
+  });
+
+  group('DotsAlbumSpreadPage.beforeJourney — right-page chrome', () {
+    test('parejas / hijos CTA reads "Pasad la página para empezar '
+        'esta experiencia" (pdf02 p.10 / pdf08 p.10)', () {
+      for (final type in const [
+        DotsAlbumType.parejas,
+        DotsAlbumType.hijos,
+      ]) {
+        final cta =
+            _page(type).elements.whereType<DotsTextBlockElement>().toList()[4];
+        expect(cta.value,
+            equals('Pasad la página para empezar esta experiencia'));
+        expect(cta.fontSize, equals(15.0));
+        expect(cta.fontFamily, equals('P22 Mackinac Medium'));
+        expect(cta.width, closeTo(65 * _mmToPt, 0.01));
+        // x = 203 + (203 - 65) / 2 = 272 mm.
+        expect(cta.x, closeTo((203 + (203 - 65) / 2) * _mmToPt, 0.01));
+      }
+    });
+
+    test('individuales / otros CTA reads "Pasad la página para vivir '
+        'la experiencia" (pdf10 p.8 / pdf04 p.8)', () {
+      for (final type in const [
+        DotsAlbumType.individuales,
+        DotsAlbumType.otros,
+      ]) {
+        final cta =
+            _page(type).elements.whereType<DotsTextBlockElement>().toList()[4];
+        expect(cta.value,
+            equals('Pasad la página para vivir la experiencia'));
+      }
+    });
+
+    test('protagonist-names line uses contextLabelValue when provided', () {
+      final p = DotsAlbumSpreadPage.beforeJourney(
+        type: DotsAlbumType.parejas,
+        pageNumber: 11,
+        content: const AlbumBeforeJourneyContent(),
+        contextLabelValue: 'Ana y Luis',
+      );
+      final names =
+          p.elements.whereType<DotsTextBlockElement>().toList()[3];
+      expect(names.value, equals('Ana y Luis'));
+      expect(names.fontSize, equals(9.0));
+      expect(names.fontFamily, equals('Inter'));
+      expect(names.width, closeTo(100 * _mmToPt, 0.01));
+    });
+
+    test('protagonist-names line falls back to "{Protagonistas}" when '
+        'contextLabelValue is empty', () {
+      final names =
+          _page(DotsAlbumType.hijos).elements.whereType<DotsTextBlockElement>().toList()[3];
+      expect(names.value, equals('{Protagonistas}'));
+    });
+
+    test('boda and generalEventos do NOT include the CTA or '
+        'protagonist-names line', () {
+      for (final type in const [
+        DotsAlbumType.boda,
+        DotsAlbumType.generalEventos,
+      ]) {
+        final p = _page(type);
+        for (final b in p.elements.whereType<DotsTextBlockElement>()) {
+          expect(b.value, isNot(contains('Pasad la página')),
+              reason: '$type should not include CTA');
+          expect(b.value, isNot(contains('{Protagonistas}')),
+              reason: '$type should not include protagonist-names line');
+        }
       }
     });
   });
