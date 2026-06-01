@@ -3,7 +3,6 @@ import 'package:meta/meta.dart';
 import '../api/album_before_journey_content.dart';
 import '../api/album_before_you_start_content.dart';
 import '../api/album_boda_cluster_content.dart';
-import '../api/album_boda_cover_content.dart';
 import '../api/album_boda_halo_content.dart';
 import '../api/album_eventos_closing_content.dart';
 import '../api/album_photo_arc_content.dart';
@@ -2170,7 +2169,8 @@ class DotsAlbumSpreadPage extends DotsPage {
           'type',
           'DotsAlbumSpreadPage.photoOnlyCover only supports '
               'DotsAlbumType.individuales, otros, and generalEventos '
-              '(parejas/hijos use cover(...); boda uses bodaCover).',
+              '(parejas/hijos use cover(...); boda has no cover layout '
+              'in docs/templates/final_templates/).',
         );
     }
     assert(content.photoPath.isNotEmpty);
@@ -2887,43 +2887,6 @@ class DotsAlbumSpreadPage extends DotsPage {
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: elements,
-    );
-  }
-
-  /// Boda cover — DEFERRED per the existing album-type series memo
-  /// (boda p.1/p.2/p.5 lack coordinate extraction). Body lands in Task 6
-  /// only when coordinates are available; today the renderer throws
-  /// `UnimplementedError('Task 6: boda cover — deferred per album-type
-  /// series')`.
-  factory DotsAlbumSpreadPage.bodaCover({
-    required DotsAlbumType type,
-    required int pageNumber,
-    required AlbumBodaCoverContent content,
-    String contextLabelValue = '',
-  }) {
-    if (type != DotsAlbumType.boda) {
-      throw ArgumentError.value(
-        type,
-        'type',
-        'DotsAlbumSpreadPage.bodaCover only supports DotsAlbumType.boda.',
-      );
-    }
-    final _ = content.title;
-    return DotsAlbumSpreadPage(
-      pageNumber: pageNumber,
-      header: DotsSpreadHeader(
-        leftPageNumber: pageNumber.isOdd ? '$pageNumber' : null,
-        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
-        rightPageNumber: pageNumber.isOdd ? null : '$pageNumber',
-      ),
-      footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: const [
-        DotsUnimplementedElement(
-          taskId: 'Task 6',
-          message: 'boda cover — deferred per album-type series '
-              '(coordinates not yet extracted)',
-        ),
-      ],
     );
   }
 
