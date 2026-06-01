@@ -129,6 +129,7 @@ List<DotsAlbumSpreadPage> _parejasPages() => [
         pageNumber: 1,
         title: 'Nuestra historia juntos',
         dateLine: '14 de febrero de 2024 — 14 de febrero de 2025',
+        contextLabelValue: 'Ana y Luis',
       ),
       DotsAlbumSpreadPage.dedication(
         type: DotsAlbumType.parejas,
@@ -192,6 +193,7 @@ List<DotsAlbumSpreadPage> _hijosPages() => [
         pageNumber: 1,
         title: 'Mateo, tu primer año',
         dateLine: '5 de marzo de 2024 — 5 de marzo de 2025',
+        contextLabelValue: 'Mateo',
       ),
       DotsAlbumSpreadPage.dedication(
         type: DotsAlbumType.hijos,

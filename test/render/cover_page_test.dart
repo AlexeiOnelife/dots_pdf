@@ -212,6 +212,43 @@ void main() {
       expect(eyebrow(page).value, equals('CUSTOM'));
     });
 
+    test('buildCoverPageFor — contextLabelValue substitutes {PROTAGONISTA} '
+        'in the canonical eyebrow', () {
+      final page = buildCoverPageFor(
+        DotsAlbumType.parejas,
+        const AlbumCoverContent(title: 'T', dateLine: 'D'),
+        pageNumber: 1,
+        contextLabelValue: 'Ana y Luis',
+      );
+      expect(eyebrow(page).value, equals('DOTBOOK DE Ana y Luis'));
+    });
+
+    test('buildCoverPageFor — contextLabelValue substitutes {PROTAGONISTA} '
+        'inside eyebrowOverride too', () {
+      final page = buildCoverPageFor(
+        DotsAlbumType.hijos,
+        const AlbumCoverContent(
+          title: 'T',
+          dateLine: 'D',
+          eyebrowOverride: 'EL ÁLBUM DE {PROTAGONISTA}',
+        ),
+        pageNumber: 1,
+        contextLabelValue: 'Mateo',
+      );
+      expect(eyebrow(page).value, equals('EL ÁLBUM DE Mateo'));
+    });
+
+    test('buildCoverPageFor — empty contextLabelValue leaves the token '
+        'literal (preview / placeholder behaviour)', () {
+      final page = buildCoverPageFor(
+        DotsAlbumType.parejas,
+        const AlbumCoverContent(title: 'T', dateLine: 'D'),
+        pageNumber: 1,
+        // contextLabelValue defaults to '' — no substitution.
+      );
+      expect(eyebrow(page).value, equals('DOTBOOK DE {PROTAGONISTA}'));
+    });
+
     test(
         'buildCoverPageFor — throws ArgumentError for DotsAlbumType.individuales',
         () {
