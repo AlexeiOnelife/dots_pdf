@@ -18,6 +18,13 @@
 // photoOnlyCover, welcomeJourney, eventosClosing) show their content
 // on the left half with the right half blank — acceptable for a
 // visual-QA artefact.
+//
+// In addition to the per-category PDFs, this test emits
+// `general-base-layouts.pdf` exercising every `DotsLayoutCode`
+// (l1, l1a-e, l2a-c, l3a, l4a-b, l6a, l7, l8, lhito) — the inner
+// body-page layouts shown in `docs/templates/final_templates/
+// pdf01_general_base.pdf`. Two layouts per spread page so the
+// comparison against the source template is straightforward.
 import 'dart:io' as io;
 import 'dart:typed_data';
 
@@ -119,6 +126,111 @@ Future<void> _renderCategory({
   fs.file(wholePath).copySync(destPath);
   // ignore: avoid_print
   print('  $categoryName → $destPath');
+}
+
+/// Builds one `DotsLayoutPage` for the given [code], populating the
+/// exact number of photo paths and captions the layout requires.
+///
+/// Captions are sample strings ("Layout L2.A", a fake date, lorem-ipsum
+/// body, an example.com URL for the QR card) — they exist to make the
+/// rendered output visually comparable against `pdf01_general_base.pdf`.
+DotsLayoutPage _generalBaseLayoutPage(
+  DotsLayoutCode code, {
+  required int pageNumber,
+}) {
+  final requirements = code.requirements;
+  final photoPaths = <String>[
+    for (var i = 0; i < requirements.photoCount; i++)
+      _photo('gb_${code.name}_$i'),
+  ];
+  final captions = <DotsSlotKind, String>{
+    for (final kind in requirements.allCaptionKinds)
+      kind: _generalBaseCaption(kind, code),
+  };
+  return DotsLayoutPage(
+    pageNumber: pageNumber,
+    layoutCode: code,
+    photoAssetPaths: photoPaths,
+    captions: captions,
+  );
+}
+
+String _generalBaseCaption(DotsSlotKind kind, DotsLayoutCode code) {
+  switch (kind) {
+    case DotsSlotKind.captionTitle:
+      return 'Layout ${code.name.toUpperCase()}';
+    case DotsSlotKind.captionDate:
+      return '12 de marzo de 2024';
+    case DotsSlotKind.captionBody:
+      return 'Texto de muestra para demostrar este layout. '
+          'Lorem ipsum dolor sit amet, consectetur adipiscing elit, '
+          'sed do eiusmod tempor incididunt ut labore et dolore magna '
+          'aliqua. Ut enim ad minim veniam, quis nostrud exercitation.';
+    case DotsSlotKind.qrCard:
+      return 'https://example.com/${code.name}';
+    case DotsSlotKind.photo:
+      // Photos come through `photoAssetPaths`; this branch is unreachable
+      // because `allCaptionKinds` never includes `DotsSlotKind.photo`.
+      return '';
+  }
+}
+
+Future<void> _renderGeneralBaseLayoutsPdf({
+  required DotsFontBundle fontBundle,
+  required FileSystem fs,
+  required Directory outDir,
+}) async {
+  // One DotsLayoutPage per DotsLayoutCode, in enum declaration order.
+  final pages = <DotsLayoutPage>[
+    for (var i = 0; i < DotsLayoutCode.values.length; i++)
+      _generalBaseLayoutPage(
+        DotsLayoutCode.values[i],
+        // Start at page 2 so page 1 stays reserved (matches pdf01 source).
+        pageNumber: i + 2,
+      ),
+  ];
+
+  // Pair layouts onto spreads: layout[2k] on the LEFT, layout[2k+1] on
+  // the RIGHT. If there's an odd one out, the right is a blank elements
+  // page so the trailing layout still gets a full LEFT-page render.
+  final pliegos = <DotsPliego>[];
+  for (var i = 0; i < pages.length; i += 2) {
+    final left = pages[i];
+    final DotsPage right = (i + 1 < pages.length)
+        ? pages[i + 1]
+        : DotsElementsPage(
+            pageNumber: left.pageNumber + 1,
+            elements: const [],
+          );
+    pliegos.add(DotsLayoutPliego(
+      pliegoNumber: (i ~/ 2) + 1,
+      left: left,
+      right: right,
+    ));
+  }
+
+  final template = DotsTemplate(
+    documentId: 'sample_general_base_layouts',
+    pageSize: _spreadSize,
+    pliegos: List<DotsPliego>.unmodifiable(pliegos),
+  );
+
+  final docsDir = outDir.childDirectory('docs');
+  if (!docsDir.existsSync()) docsDir.createSync(recursive: true);
+
+  final generator = DotsGenerator(
+    fileSystem: fs,
+    documentsDir: docsDir,
+    fontBundle: fontBundle,
+  );
+
+  await generator.generateWhole(template: template).toList();
+
+  final wholePath = await generator.wholePathFor(template.documentId);
+  final destPath = outDir.childFile('general-base-layouts.pdf').path;
+  fs.file(wholePath).copySync(destPath);
+  // ignore: avoid_print
+  print('  general-base-layouts → $destPath');
 }
 
 // ── Per-category page builders ────────────────────────────────────────────
@@ -570,8 +682,20 @@ void main() {
       );
     }
 
+    // Companion PDF: every DotsLayoutCode rendered in enum order, two
+    // layouts per spread page, for visual diff against pdf01_general_base.
+    await _renderGeneralBaseLayoutsPdf(
+      fontBundle: fontBundle,
+      fs: fs,
+      outDir: outDir,
+    );
+
     // Assert each PDF was actually produced and has the PDF magic header.
-    for (final name in categories.keys) {
+    final expectedPdfs = <String>[
+      ...categories.keys,
+      'general-base-layouts',
+    ];
+    for (final name in expectedPdfs) {
       final pdf = fs.file('${outDir.path}/$name.pdf');
       expect(pdf.existsSync(), isTrue, reason: '$name.pdf should exist');
       final bytes = pdf.readAsBytesSync();
