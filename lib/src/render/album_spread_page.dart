@@ -155,8 +155,15 @@ Future<pw.Page> buildAlbumSpreadPage({
   // chrome-free (R1).
   final leftNum = page.header.leftPageNumber;
   final rightNum = page.header.rightPageNumber;
+  // Detect SPREAD chrome: both page numbers set AND they differ. Single-page
+  // factories set leftPageNumber == rightPageNumber (same number on both
+  // header slots so the page renders correctly whether it lands on a left
+  // or right side); spread factories set them to N and N+1.
+  final bool isSpreadChrome =
+      leftNum != null && rightNum != null && leftNum != rightNum;
   final spreadChrome = DotsPageChrome(
     pageNumber: leftNum ?? rightNum,
+    rightPageNumber: isSpreadChrome ? rightNum : null,
     isLeftPage: leftNum != null,
     centerLabel: page.header.centerLabel,
     wordmark: page.footer.wordmark,

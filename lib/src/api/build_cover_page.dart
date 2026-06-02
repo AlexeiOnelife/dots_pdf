@@ -14,6 +14,7 @@ DotsAlbumSpreadPage buildCoverPageFor(
   DotsAlbumType type,
   AlbumCoverContent content, {
   required int pageNumber,
+  String contextLabelValue = '',
 }) {
   if (type != DotsAlbumType.parejas && type != DotsAlbumType.hijos) {
     throw ArgumentError.value(
@@ -28,6 +29,7 @@ DotsAlbumSpreadPage buildCoverPageFor(
     pageNumber: pageNumber,
     title: content.title,
     dateLine: content.dateLine,
+    contextLabelValue: contextLabelValue,
     eyebrowOverride: content.eyebrowOverride,
   );
 }
