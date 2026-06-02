@@ -1,23 +1,21 @@
 // Sample-render integration test.
 //
-// Produces one PDF per album category exercising every factory that
-// applies to that category. Photo content is fetched from picsum.photos
-// (deterministic seeds for repeatability). Output lands in
-// `build/sample_renders/<category>.pdf`.
+// Per-category visual-QA artefacts. Each category produces TWO PDFs:
+//   - `<category>-singles.pdf` (203 × 254 mm pages) for single-page
+//     factories: cover, dedication, closing, photoOnlyCover,
+//     welcomeJourney, eventosClosing.
+//   - `<category>-spreads.pdf` (406 × 254 mm pages) for 2-page-spread
+//     factories: beforeYouStart, beforeJourney, photoArc,
+//     bodaCluster, bodaHalo, polaroidCollage, openingQrSpread,
+//     closingQrSpread.
+//
+// Photo content is fetched from picsum.photos (deterministic seeds).
+// Output lands in `build/sample_renders/`.
 //
 // Run with:
 //   flutter test test/integration/sample_render_test.dart
 //
-// Network-dependent: requires outbound HTTPS to picsum.photos. Each
-// PDF takes a few seconds to render.
-//
-// Page format: spread (406×254 mm) so the full-spread factories
-// (beforeYouStart, closingQrSpread, beforeJourney, photoArc,
-// bodaCluster, bodaHalo, etc.) render their right-page elements
-// correctly. Single-page factories (cover, dedication, closing,
-// photoOnlyCover, welcomeJourney, eventosClosing) show their content
-// on the left half with the right half blank — acceptable for a
-// visual-QA artefact.
+// Network-dependent: requires outbound HTTPS to picsum.photos.
 //
 // In addition to the per-category PDFs, this test emits
 // `general-base-layouts.pdf` exercising every `DotsLayoutCode`
@@ -34,6 +32,12 @@ import 'package:file/local.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const double _mmToPt = 2.834645669;
+
+/// 203 × 254 mm — single-page format (no bleed).
+const DotsPageSize _singleSize = DotsPageSize(
+  width: 203 * _mmToPt,
+  height: 254 * _mmToPt,
+);
 
 /// 406 × 254 mm — full spread, no bleed.
 const DotsPageSize _spreadSize = DotsPageSize(
@@ -93,20 +97,21 @@ DotsFontBundle _loadBundledFonts() => DotsFontBundle(
       ),
     );
 
-Future<void> _renderCategory({
-  required String categoryName,
+Future<void> _renderPdf({
+  required String name,
   required List<DotsAlbumSpreadPage> pages,
+  required DotsPageSize pageSize,
   required DotsFontBundle fontBundle,
   required FileSystem fs,
   required Directory outDir,
 }) async {
-  // Each page becomes the LEFT slot of its own pliego with a blank RIGHT.
+  if (pages.isEmpty) return;
   final pliegos = <DotsPliego>[
     for (var i = 0; i < pages.length; i++) _wrap(pages[i], i + 1),
   ];
   final template = DotsTemplate(
-    documentId: 'sample_$categoryName',
-    pageSize: _spreadSize,
+    documentId: 'sample_$name',
+    pageSize: pageSize,
     pliegos: List<DotsPliego>.unmodifiable(pliegos),
   );
 
@@ -122,10 +127,10 @@ Future<void> _renderCategory({
   await generator.generateWhole(template: template).toList();
 
   final wholePath = await generator.wholePathFor(template.documentId);
-  final destPath = outDir.childFile('$categoryName.pdf').path;
+  final destPath = outDir.childFile('$name.pdf').path;
   fs.file(wholePath).copySync(destPath);
   // ignore: avoid_print
-  print('  $categoryName → $destPath');
+  print('  $name → $destPath');
 }
 
 /// Builds one `DotsLayoutPage` for the given [code], populating the
@@ -234,424 +239,466 @@ Future<void> _renderGeneralBaseLayoutsPdf({
 }
 
 // ── Per-category page builders ────────────────────────────────────────────
+// Each returns a (singles, spreads) tuple so the caller can render each
+// list to its own page format.
 
-List<DotsAlbumSpreadPage> _parejasPages() => [
-      DotsAlbumSpreadPage.cover(
-        type: DotsAlbumType.parejas,
-        pageNumber: 1,
-        title: 'Nuestra historia juntos',
-        dateLine: '14 de febrero de 2024 — 14 de febrero de 2025',
-      ),
-      DotsAlbumSpreadPage.dedication(
-        type: DotsAlbumType.parejas,
-        pageNumber: 3,
-        contextLabelValue: 'Ana y Luis',
-        title: 'Nuestro mensaje especial',
-        body: 'Hace más de 3 años que te conocí y me parece increible '
-            'todo lo que hemos vivido juntos. Cada etapa que hemos '
-            'pasado y todo lo que hemos construido por y para nosotros.',
-        signature: 'Ana',
-      ),
-      DotsAlbumSpreadPage.beforeYouStart(
-        type: DotsAlbumType.parejas,
-        pageNumber: 5,
-        content: AlbumBeforeYouStartContent(
-          photoPaths: [
-            for (var i = 0; i < 10; i++) _photo('parejas_$i'),
+({List<DotsAlbumSpreadPage> singles, List<DotsAlbumSpreadPage> spreads})
+    _parejasPages() => (
+          singles: [
+            DotsAlbumSpreadPage.cover(
+              type: DotsAlbumType.parejas,
+              pageNumber: 1,
+              title: 'Nuestra historia juntos',
+              dateLine: '14 de febrero de 2024 — 14 de febrero de 2025',
+            ),
+            DotsAlbumSpreadPage.dedication(
+              type: DotsAlbumType.parejas,
+              pageNumber: 3,
+              contextLabelValue: 'Ana y Luis',
+              title: 'Nuestro mensaje especial',
+              body: 'Hace más de 3 años que te conocí y me parece increible '
+                  'todo lo que hemos vivido juntos. Cada etapa que hemos '
+                  'pasado y todo lo que hemos construido por y para nosotros.',
+              signature: 'Ana',
+            ),
+            DotsAlbumSpreadPage.closing(
+              type: DotsAlbumType.parejas,
+              pageNumber: 5,
+              contextLabelValue: 'Ana y Luis',
+              photoPath: _photo('parejas_closing'),
+              title: 'Vividlo de nuevo',
+              subtitle: 'Ana y Luis',
+            ),
           ],
-        ),
-        contextLabelValue: 'Ana y Luis',
-      ),
-      DotsAlbumSpreadPage.beforeJourney(
-        type: DotsAlbumType.parejas,
-        pageNumber: 7,
-        contextLabelValue: 'Ana y Luis',
-      ),
-      DotsAlbumSpreadPage.photoArc(
-        type: DotsAlbumType.parejas,
-        pageNumber: 9,
-        contextLabelValue: 'Ana y Luis',
-        content: AlbumPhotoArcContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('parejas_arc_$i')],
-          qrPayloadLeft: 'https://example.com/parejas-left',
-          qrPayloadRight: 'https://example.com/parejas-right',
-          dateSubtitle: '2024 — 2025',
-          title: 'Un año lleno de recuerdos',
-        ),
-      ),
-      DotsAlbumSpreadPage.closingQrSpread(
-        type: DotsAlbumType.parejas,
-        pageNumber: 11,
-        contextLabelValue: 'Ana y Luis',
-        content: const AlbumQrSpreadContent(
-          qrPayload: 'https://example.com/parejas-final',
-          placement: AlbumQrSpreadPlacement.closing,
-        ),
-      ),
-      DotsAlbumSpreadPage.closing(
-        type: DotsAlbumType.parejas,
-        pageNumber: 13,
-        contextLabelValue: 'Ana y Luis',
-        photoPath: _photo('parejas_closing'),
-        title: 'Vividlo de nuevo',
-        subtitle: 'Ana y Luis',
-      ),
-    ];
-
-List<DotsAlbumSpreadPage> _hijosPages() => [
-      DotsAlbumSpreadPage.cover(
-        type: DotsAlbumType.hijos,
-        pageNumber: 1,
-        title: 'Mateo, tu primer año',
-        dateLine: '5 de marzo de 2024 — 5 de marzo de 2025',
-      ),
-      DotsAlbumSpreadPage.dedication(
-        type: DotsAlbumType.hijos,
-        pageNumber: 3,
-        contextLabelValue: 'Mateo',
-        title: 'Para ti, mi pequeño',
-        body: 'Desde el día en que llegaste a nuestras vidas todo cambió. '
-            'Cada sonrisa, cada paso, cada palabra nueva nos ha enseñado '
-            'lo que es el amor incondicional.',
-        signature: 'Mamá y Papá',
-      ),
-      DotsAlbumSpreadPage.beforeYouStart(
-        type: DotsAlbumType.hijos,
-        pageNumber: 5,
-        content: AlbumBeforeYouStartContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('hijos_$i')],
-        ),
-        contextLabelValue: 'Mateo',
-      ),
-      DotsAlbumSpreadPage.beforeJourney(
-        type: DotsAlbumType.hijos,
-        pageNumber: 7,
-        contextLabelValue: 'Mateo',
-      ),
-      DotsAlbumSpreadPage.photoArc(
-        type: DotsAlbumType.hijos,
-        pageNumber: 9,
-        contextLabelValue: 'Mateo',
-        content: AlbumPhotoArcContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('hijos_arc_$i')],
-          qrPayloadLeft: 'https://example.com/hijos-left',
-          qrPayloadRight: 'https://example.com/hijos-right',
-          dateSubtitle: '2024 — 2025',
-          title: 'Tu primer año en imágenes',
-        ),
-      ),
-      DotsAlbumSpreadPage.closingQrSpread(
-        type: DotsAlbumType.hijos,
-        pageNumber: 11,
-        contextLabelValue: 'Mateo',
-        content: const AlbumQrSpreadContent(
-          qrPayload: 'https://example.com/hijos-final',
-          placement: AlbumQrSpreadPlacement.closing,
-        ),
-      ),
-      DotsAlbumSpreadPage.closing(
-        type: DotsAlbumType.hijos,
-        pageNumber: 13,
-        contextLabelValue: 'Mateo',
-        photoPath: _photo('hijos_closing'),
-        title: 'Y la vida sigue',
-        subtitle: 'Con todo el amor de papá y mamá',
-      ),
-    ];
-
-List<DotsAlbumSpreadPage> _individualesPages() => [
-      DotsAlbumSpreadPage.photoOnlyCover(
-        type: DotsAlbumType.individuales,
-        pageNumber: 1,
-        content: AlbumPhotoOnlyCoverContent(
-          photoPath: _photo('individuales_cover', w: 800, h: 1000),
-          title: 'Mi viaje al pasado',
-          dateLine: 'Enero 2024 — Diciembre 2024',
-        ),
-        contextLabelValue: '2024',
-      ),
-      DotsAlbumSpreadPage.dedication(
-        type: DotsAlbumType.individuales,
-        pageNumber: 3,
-        contextLabelValue: '2024',
-        title: 'Un año para mí',
-        body: 'Estas páginas son el reflejo de un año que decidí vivir '
-            'con intención. Cada foto guarda una pequeña victoria, '
-            'una lección, un momento que merece ser recordado.',
-        signature: '',
-      ),
-      DotsAlbumSpreadPage.beforeYouStart(
-        type: DotsAlbumType.individuales,
-        pageNumber: 5,
-        content: AlbumBeforeYouStartContent(
-          photoPaths: [
-            for (var i = 0; i < 10; i++) _photo('individuales_$i'),
+          spreads: [
+            DotsAlbumSpreadPage.beforeYouStart(
+              type: DotsAlbumType.parejas,
+              pageNumber: 1,
+              content: AlbumBeforeYouStartContent(
+                photoPaths: [
+                  for (var i = 0; i < 10; i++) _photo('parejas_$i'),
+                ],
+              ),
+              contextLabelValue: 'Ana y Luis',
+            ),
+            DotsAlbumSpreadPage.beforeJourney(
+              type: DotsAlbumType.parejas,
+              pageNumber: 3,
+              contextLabelValue: 'Ana y Luis',
+            ),
+            DotsAlbumSpreadPage.photoArc(
+              type: DotsAlbumType.parejas,
+              pageNumber: 5,
+              contextLabelValue: 'Ana y Luis',
+              content: AlbumPhotoArcContent(
+                photoPaths: [
+                  for (var i = 0; i < 10; i++) _photo('parejas_arc_$i'),
+                ],
+                qrPayloadLeft: 'https://example.com/parejas-left',
+                qrPayloadRight: 'https://example.com/parejas-right',
+                dateSubtitle: '2024 — 2025',
+                title: 'Un año lleno de recuerdos',
+              ),
+            ),
+            DotsAlbumSpreadPage.closingQrSpread(
+              type: DotsAlbumType.parejas,
+              pageNumber: 7,
+              contextLabelValue: 'Ana y Luis',
+              content: const AlbumQrSpreadContent(
+                qrPayload: 'https://example.com/parejas-final',
+                placement: AlbumQrSpreadPlacement.closing,
+              ),
+            ),
           ],
-        ),
-        contextLabelValue: '2024',
-      ),
-      DotsAlbumSpreadPage.beforeJourney(
-        type: DotsAlbumType.individuales,
-        pageNumber: 7,
-        contextLabelValue: '2024',
-      ),
-      DotsAlbumSpreadPage.polaroidCollage(
-        type: DotsAlbumType.individuales,
-        pageNumber: 9,
-        contextLabelValue: '2024',
-        photoPaths: [
-          for (var i = 0; i < 6; i++) _photo('individuales_polaroid_$i'),
-        ],
-      ),
-      DotsAlbumSpreadPage.photoArc(
-        type: DotsAlbumType.individuales,
-        pageNumber: 11,
-        contextLabelValue: '2024',
-        content: AlbumPhotoArcContent(
-          photoPaths: [
-            for (var i = 0; i < 10; i++) _photo('individuales_arc_$i'),
-          ],
-          qrPayloadLeft: 'https://example.com/individuales-left',
-          qrPayloadRight: 'https://example.com/individuales-right',
-          dateSubtitle: '2024',
-          title: 'Un año a mi manera',
-        ),
-      ),
-      DotsAlbumSpreadPage.closingQrSpread(
-        type: DotsAlbumType.individuales,
-        pageNumber: 13,
-        contextLabelValue: '2024',
-        content: const AlbumQrSpreadContent(
-          qrPayload: 'https://example.com/individuales-final',
-          placement: AlbumQrSpreadPlacement.closing,
-        ),
-      ),
-      DotsAlbumSpreadPage.closing(
-        type: DotsAlbumType.individuales,
-        pageNumber: 15,
-        contextLabelValue: '2024',
-        photoPath: _photo('individuales_closing'),
-        title: 'Hasta el próximo año',
-        subtitle: '',
-      ),
-    ];
+        );
 
-List<DotsAlbumSpreadPage> _otrosPages() => [
-      DotsAlbumSpreadPage.photoOnlyCover(
-        type: DotsAlbumType.otros,
-        pageNumber: 1,
-        content: AlbumPhotoOnlyCoverContent(
-          photoPath: _photo('otros_cover', w: 800, h: 1000),
-          title: 'Nuestro viaje juntos',
-          dateLine: 'Verano 2024 — Verano 2025',
-        ),
-        contextLabelValue: '2024 — 2025',
-      ),
-      DotsAlbumSpreadPage.dedication(
-        type: DotsAlbumType.otros,
-        pageNumber: 3,
-        contextLabelValue: '2024 — 2025',
-        title: 'Para todos los que pasaron por aquí',
-        body: 'Estas páginas son la historia de un grupo, de unos viajes, '
-            'de una etapa compartida. Cada foto es una memoria de algo '
-            'vivido entre todos.',
-        signature: '',
-      ),
-      DotsAlbumSpreadPage.beforeYouStart(
-        type: DotsAlbumType.otros,
-        pageNumber: 5,
-        content: AlbumBeforeYouStartContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('otros_$i')],
-        ),
-        contextLabelValue: 'Todos',
-      ),
-      DotsAlbumSpreadPage.beforeJourney(
-        type: DotsAlbumType.otros,
-        pageNumber: 7,
-        contextLabelValue: 'Todos',
-      ),
-      DotsAlbumSpreadPage.polaroidCollage(
-        type: DotsAlbumType.otros,
-        pageNumber: 9,
-        contextLabelValue: 'Todos',
-        photoPaths: [
-          for (var i = 0; i < 6; i++) _photo('otros_polaroid_$i'),
-        ],
-        applyOtrosGradient: true,
-      ),
-      DotsAlbumSpreadPage.photoArc(
-        type: DotsAlbumType.otros,
-        pageNumber: 11,
-        contextLabelValue: 'Todos',
-        content: AlbumPhotoArcContent(
-          photoPaths: [
-            for (var i = 0; i < 10; i++) _photo('otros_arc_$i'),
+({List<DotsAlbumSpreadPage> singles, List<DotsAlbumSpreadPage> spreads})
+    _hijosPages() => (
+          singles: [
+            DotsAlbumSpreadPage.cover(
+              type: DotsAlbumType.hijos,
+              pageNumber: 1,
+              title: 'Mateo, tu primer año',
+              dateLine: '5 de marzo de 2024 — 5 de marzo de 2025',
+            ),
+            DotsAlbumSpreadPage.dedication(
+              type: DotsAlbumType.hijos,
+              pageNumber: 3,
+              contextLabelValue: 'Mateo',
+              title: 'Para ti, mi pequeño',
+              body:
+                  'Desde el día en que llegaste a nuestras vidas todo cambió. '
+                  'Cada sonrisa, cada paso, cada palabra nueva nos ha enseñado '
+                  'lo que es el amor incondicional.',
+              signature: 'Mamá y Papá',
+            ),
+            DotsAlbumSpreadPage.closing(
+              type: DotsAlbumType.hijos,
+              pageNumber: 5,
+              contextLabelValue: 'Mateo',
+              photoPath: _photo('hijos_closing'),
+              title: 'Y la vida sigue',
+              subtitle: 'Con todo el amor de papá y mamá',
+            ),
           ],
-          qrPayloadLeft: 'https://example.com/otros-left',
-          qrPayloadRight: 'https://example.com/otros-right',
-          dateSubtitle: 'Verano 2024 — Verano 2025',
-          title: 'Todo lo que vivimos juntos',
-        ),
-      ),
-      DotsAlbumSpreadPage.closingQrSpread(
-        type: DotsAlbumType.otros,
-        pageNumber: 13,
-        contextLabelValue: 'Todos',
-        content: const AlbumQrSpreadContent(
-          qrPayload: 'https://example.com/otros-final',
-          placement: AlbumQrSpreadPlacement.closing,
-        ),
-      ),
-      DotsAlbumSpreadPage.closing(
-        type: DotsAlbumType.otros,
-        pageNumber: 15,
-        contextLabelValue: 'Todos',
-        photoPath: _photo('otros_closing'),
-        title: 'Hasta la próxima',
-        subtitle: '',
-      ),
-    ];
-
-List<DotsAlbumSpreadPage> _bodaPages() => [
-      DotsAlbumSpreadPage.dedication(
-        type: DotsAlbumType.boda,
-        pageNumber: 1,
-        contextLabelValue: 'Ana y Luis',
-        title: 'Para siempre',
-        body: 'El día en que nos casamos cambió todo. Estas páginas son '
-            'el inicio de una nueva historia: la de un nosotros que '
-            'empieza con un sí.',
-        signature: 'Ana y Luis',
-      ),
-      DotsAlbumSpreadPage.bodaCluster(
-        type: DotsAlbumType.boda,
-        pageNumber: 3,
-        contextLabelValue: 'Ana y Luis',
-        content: AlbumBodaClusterContent(
-          photoPaths: [
-            for (var i = 0; i < 7; i++) _photo('boda_cluster_$i'),
+          spreads: [
+            DotsAlbumSpreadPage.beforeYouStart(
+              type: DotsAlbumType.hijos,
+              pageNumber: 1,
+              content: AlbumBeforeYouStartContent(
+                photoPaths: [for (var i = 0; i < 10; i++) _photo('hijos_$i')],
+              ),
+              contextLabelValue: 'Mateo',
+            ),
+            DotsAlbumSpreadPage.beforeJourney(
+              type: DotsAlbumType.hijos,
+              pageNumber: 3,
+              contextLabelValue: 'Mateo',
+            ),
+            DotsAlbumSpreadPage.photoArc(
+              type: DotsAlbumType.hijos,
+              pageNumber: 5,
+              contextLabelValue: 'Mateo',
+              content: AlbumPhotoArcContent(
+                photoPaths: [
+                  for (var i = 0; i < 10; i++) _photo('hijos_arc_$i'),
+                ],
+                qrPayloadLeft: 'https://example.com/hijos-left',
+                qrPayloadRight: 'https://example.com/hijos-right',
+                dateSubtitle: '2024 — 2025',
+                title: 'Tu primer año en imágenes',
+              ),
+            ),
+            DotsAlbumSpreadPage.closingQrSpread(
+              type: DotsAlbumType.hijos,
+              pageNumber: 7,
+              contextLabelValue: 'Mateo',
+              content: const AlbumQrSpreadContent(
+                qrPayload: 'https://example.com/hijos-final',
+                placement: AlbumQrSpreadPlacement.closing,
+              ),
+            ),
           ],
-          title: 'Antes de empezar',
-          titleItalicLine: 'el viaje',
-          body: 'Antes de revivir aquel día, párate un momento. Respira. '
-              'Y vuelve a entrar en él como si fuera la primera vez.',
-        ),
-      ),
-      DotsAlbumSpreadPage.bodaHalo(
-        type: DotsAlbumType.boda,
-        pageNumber: 5,
-        contextLabelValue: 'Ana y Luis',
-        content: AlbumBodaHaloContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('boda_halo_$i')],
-          titleLine1: 'Ese día',
-          titleLine2: 'nos cambió',
-          dateSubtitle: '14 de mayo de 2025',
-          qrPayloadLeft: 'https://example.com/boda-left',
-          qrPayloadRight: 'https://example.com/boda-right',
-        ),
-      ),
-      DotsAlbumSpreadPage.welcomeJourney(
-        type: DotsAlbumType.boda,
-        pageNumber: 7,
-        contextLabelValue: 'Ana y Luis',
-        content: const AlbumWelcomeJourneyContent(),
-      ),
-      DotsAlbumSpreadPage.beforeYouStart(
-        type: DotsAlbumType.boda,
-        pageNumber: 9,
-        content: AlbumBeforeYouStartContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('boda_$i')],
-        ),
-        contextLabelValue: 'Ana y Luis',
-      ),
-      DotsAlbumSpreadPage.beforeJourney(
-        type: DotsAlbumType.boda,
-        pageNumber: 11,
-        contextLabelValue: 'Ana y Luis',
-      ),
-      DotsAlbumSpreadPage.closingQrSpread(
-        type: DotsAlbumType.boda,
-        pageNumber: 13,
-        contextLabelValue: 'Ana y Luis',
-        content: const AlbumQrSpreadContent(
-          qrPayload: 'https://example.com/boda-final',
-          placement: AlbumQrSpreadPlacement.closing,
-        ),
-      ),
-      DotsAlbumSpreadPage.closing(
-        type: DotsAlbumType.boda,
-        pageNumber: 15,
-        contextLabelValue: 'Ana y Luis',
-        photoPath: _photo('boda_closing'),
-        title: 'Que la vida siga reencontrándoos, una y otra vez',
-        subtitle: '',
-      ),
-    ];
+        );
 
-List<DotsAlbumSpreadPage> _generalEventosPages() => [
-      DotsAlbumSpreadPage.openingQrSpread(
-        type: DotsAlbumType.generalEventos,
-        pageNumber: 1,
-        contextLabelValue: 'Festival 2024',
-        content: const AlbumQrSpreadContent(
-          qrPayload: 'https://example.com/eventos-opening',
-          placement: AlbumQrSpreadPlacement.opening,
-        ),
-      ),
-      DotsAlbumSpreadPage.photoOnlyCover(
-        type: DotsAlbumType.generalEventos,
-        pageNumber: 3,
-        content: AlbumPhotoOnlyCoverContent(
-          photoPath: _photo('eventos_cover', w: 800, h: 1000),
-          title: 'Festival de Verano',
-          dateLine: '12 — 14 de julio de 2024',
-        ),
-        contextLabelValue: 'Festival 2024',
-      ),
-      DotsAlbumSpreadPage.welcomeJourney(
-        type: DotsAlbumType.generalEventos,
-        pageNumber: 5,
-        contextLabelValue: 'Festival 2024',
-        content: const AlbumWelcomeJourneyContent(),
-      ),
-      DotsAlbumSpreadPage.beforeYouStart(
-        type: DotsAlbumType.generalEventos,
-        pageNumber: 7,
-        content: AlbumBeforeYouStartContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('eventos_$i')],
-        ),
-        contextLabelValue: 'Festival 2024',
-      ),
-      DotsAlbumSpreadPage.beforeJourney(
-        type: DotsAlbumType.generalEventos,
-        pageNumber: 9,
-        contextLabelValue: 'Festival 2024',
-      ),
-      DotsAlbumSpreadPage.closingQrSpread(
-        type: DotsAlbumType.generalEventos,
-        pageNumber: 11,
-        contextLabelValue: 'Festival 2024',
-        content: const AlbumQrSpreadContent(
-          qrPayload: 'https://example.com/eventos-final',
-          placement: AlbumQrSpreadPlacement.closing,
-        ),
-      ),
-      DotsAlbumSpreadPage.eventosClosing(
-        type: DotsAlbumType.generalEventos,
-        pageNumber: 13,
-        contextLabelValue: 'Festival 2024',
-        content: AlbumEventosClosingContent(
-          photoPath: _photo('eventos_closing'),
-          title: 'Festival de Verano 2024',
-          signature1: 'María',
-          signature2: 'José',
-        ),
-      ),
-    ];
+({List<DotsAlbumSpreadPage> singles, List<DotsAlbumSpreadPage> spreads})
+    _individualesPages() => (
+          singles: [
+            DotsAlbumSpreadPage.photoOnlyCover(
+              type: DotsAlbumType.individuales,
+              pageNumber: 1,
+              content: AlbumPhotoOnlyCoverContent(
+                photoPath: _photo('individuales_cover', w: 800, h: 1000),
+                title: 'Mi viaje al pasado',
+                dateLine: 'Enero 2024 — Diciembre 2024',
+              ),
+              contextLabelValue: '2024',
+            ),
+            DotsAlbumSpreadPage.dedication(
+              type: DotsAlbumType.individuales,
+              pageNumber: 3,
+              contextLabelValue: '2024',
+              title: 'Un año para mí',
+              body: 'Estas páginas son el reflejo de un año que decidí vivir '
+                  'con intención. Cada foto guarda una pequeña victoria, '
+                  'una lección, un momento que merece ser recordado.',
+              signature: '',
+            ),
+            DotsAlbumSpreadPage.closing(
+              type: DotsAlbumType.individuales,
+              pageNumber: 5,
+              contextLabelValue: '2024',
+              photoPath: _photo('individuales_closing'),
+              title: 'Hasta el próximo año',
+              subtitle: '',
+            ),
+          ],
+          spreads: [
+            DotsAlbumSpreadPage.beforeYouStart(
+              type: DotsAlbumType.individuales,
+              pageNumber: 1,
+              content: AlbumBeforeYouStartContent(
+                photoPaths: [
+                  for (var i = 0; i < 10; i++) _photo('individuales_$i'),
+                ],
+              ),
+              contextLabelValue: '2024',
+            ),
+            DotsAlbumSpreadPage.beforeJourney(
+              type: DotsAlbumType.individuales,
+              pageNumber: 3,
+              contextLabelValue: '2024',
+            ),
+            DotsAlbumSpreadPage.polaroidCollage(
+              type: DotsAlbumType.individuales,
+              pageNumber: 5,
+              contextLabelValue: '2024',
+              photoPaths: [
+                for (var i = 0; i < 6; i++) _photo('individuales_polaroid_$i'),
+              ],
+            ),
+            DotsAlbumSpreadPage.photoArc(
+              type: DotsAlbumType.individuales,
+              pageNumber: 7,
+              contextLabelValue: '2024',
+              content: AlbumPhotoArcContent(
+                photoPaths: [
+                  for (var i = 0; i < 10; i++) _photo('individuales_arc_$i'),
+                ],
+                qrPayloadLeft: 'https://example.com/individuales-left',
+                qrPayloadRight: 'https://example.com/individuales-right',
+                dateSubtitle: '2024',
+                title: 'Un año a mi manera',
+              ),
+            ),
+            DotsAlbumSpreadPage.closingQrSpread(
+              type: DotsAlbumType.individuales,
+              pageNumber: 9,
+              contextLabelValue: '2024',
+              content: const AlbumQrSpreadContent(
+                qrPayload: 'https://example.com/individuales-final',
+                placement: AlbumQrSpreadPlacement.closing,
+              ),
+            ),
+          ],
+        );
+
+({List<DotsAlbumSpreadPage> singles, List<DotsAlbumSpreadPage> spreads})
+    _otrosPages() => (
+          singles: [
+            DotsAlbumSpreadPage.photoOnlyCover(
+              type: DotsAlbumType.otros,
+              pageNumber: 1,
+              content: AlbumPhotoOnlyCoverContent(
+                photoPath: _photo('otros_cover', w: 800, h: 1000),
+                title: 'Nuestro viaje juntos',
+                dateLine: 'Verano 2024 — Verano 2025',
+              ),
+              contextLabelValue: '2024 — 2025',
+            ),
+            DotsAlbumSpreadPage.dedication(
+              type: DotsAlbumType.otros,
+              pageNumber: 3,
+              contextLabelValue: '2024 — 2025',
+              title: 'Para todos los que pasaron por aquí',
+              body: 'Estas páginas son la historia de un grupo, de unos viajes, '
+                  'de una etapa compartida. Cada foto es una memoria de algo '
+                  'vivido entre todos.',
+              signature: '',
+            ),
+            DotsAlbumSpreadPage.closing(
+              type: DotsAlbumType.otros,
+              pageNumber: 5,
+              contextLabelValue: 'Todos',
+              photoPath: _photo('otros_closing'),
+              title: 'Hasta la próxima',
+              subtitle: '',
+            ),
+          ],
+          spreads: [
+            DotsAlbumSpreadPage.beforeYouStart(
+              type: DotsAlbumType.otros,
+              pageNumber: 1,
+              content: AlbumBeforeYouStartContent(
+                photoPaths: [for (var i = 0; i < 10; i++) _photo('otros_$i')],
+              ),
+              contextLabelValue: 'Todos',
+            ),
+            DotsAlbumSpreadPage.beforeJourney(
+              type: DotsAlbumType.otros,
+              pageNumber: 3,
+              contextLabelValue: 'Todos',
+            ),
+            DotsAlbumSpreadPage.polaroidCollage(
+              type: DotsAlbumType.otros,
+              pageNumber: 5,
+              contextLabelValue: 'Todos',
+              photoPaths: [
+                for (var i = 0; i < 6; i++) _photo('otros_polaroid_$i'),
+              ],
+              applyOtrosGradient: true,
+            ),
+            DotsAlbumSpreadPage.photoArc(
+              type: DotsAlbumType.otros,
+              pageNumber: 7,
+              contextLabelValue: 'Todos',
+              content: AlbumPhotoArcContent(
+                photoPaths: [
+                  for (var i = 0; i < 10; i++) _photo('otros_arc_$i'),
+                ],
+                qrPayloadLeft: 'https://example.com/otros-left',
+                qrPayloadRight: 'https://example.com/otros-right',
+                dateSubtitle: 'Verano 2024 — Verano 2025',
+                title: 'Todo lo que vivimos juntos',
+              ),
+            ),
+            DotsAlbumSpreadPage.closingQrSpread(
+              type: DotsAlbumType.otros,
+              pageNumber: 9,
+              contextLabelValue: 'Todos',
+              content: const AlbumQrSpreadContent(
+                qrPayload: 'https://example.com/otros-final',
+                placement: AlbumQrSpreadPlacement.closing,
+              ),
+            ),
+          ],
+        );
+
+({List<DotsAlbumSpreadPage> singles, List<DotsAlbumSpreadPage> spreads})
+    _bodaPages() => (
+          singles: [
+            DotsAlbumSpreadPage.dedication(
+              type: DotsAlbumType.boda,
+              pageNumber: 1,
+              contextLabelValue: 'Ana y Luis',
+              title: 'Para siempre',
+              body: 'El día en que nos casamos cambió todo. Estas páginas son '
+                  'el inicio de una nueva historia: la de un nosotros que '
+                  'empieza con un sí.',
+              signature: 'Ana y Luis',
+            ),
+            DotsAlbumSpreadPage.welcomeJourney(
+              type: DotsAlbumType.boda,
+              pageNumber: 3,
+              contextLabelValue: 'Ana y Luis',
+              content: const AlbumWelcomeJourneyContent(),
+            ),
+            DotsAlbumSpreadPage.closing(
+              type: DotsAlbumType.boda,
+              pageNumber: 5,
+              contextLabelValue: 'Ana y Luis',
+              photoPath: _photo('boda_closing'),
+              title: 'Que la vida siga reencontrándoos, una y otra vez',
+              subtitle: '',
+            ),
+          ],
+          spreads: [
+            DotsAlbumSpreadPage.bodaCluster(
+              type: DotsAlbumType.boda,
+              pageNumber: 1,
+              contextLabelValue: 'Ana y Luis',
+              content: AlbumBodaClusterContent(
+                photoPaths: [
+                  for (var i = 0; i < 7; i++) _photo('boda_cluster_$i'),
+                ],
+                title: 'Antes de empezar',
+                titleItalicLine: 'el viaje',
+                body: 'Antes de revivir aquel día, párate un momento. Respira. '
+                    'Y vuelve a entrar en él como si fuera la primera vez.',
+              ),
+            ),
+            DotsAlbumSpreadPage.bodaHalo(
+              type: DotsAlbumType.boda,
+              pageNumber: 3,
+              contextLabelValue: 'Ana y Luis',
+              content: AlbumBodaHaloContent(
+                photoPaths: [
+                  for (var i = 0; i < 10; i++) _photo('boda_halo_$i'),
+                ],
+                titleLine1: 'Ese día',
+                titleLine2: 'nos cambió',
+                dateSubtitle: '14 de mayo de 2025',
+                qrPayloadLeft: 'https://example.com/boda-left',
+                qrPayloadRight: 'https://example.com/boda-right',
+              ),
+            ),
+            DotsAlbumSpreadPage.beforeYouStart(
+              type: DotsAlbumType.boda,
+              pageNumber: 5,
+              content: AlbumBeforeYouStartContent(
+                photoPaths: [for (var i = 0; i < 10; i++) _photo('boda_$i')],
+              ),
+              contextLabelValue: 'Ana y Luis',
+            ),
+            DotsAlbumSpreadPage.beforeJourney(
+              type: DotsAlbumType.boda,
+              pageNumber: 7,
+              contextLabelValue: 'Ana y Luis',
+            ),
+            DotsAlbumSpreadPage.closingQrSpread(
+              type: DotsAlbumType.boda,
+              pageNumber: 9,
+              contextLabelValue: 'Ana y Luis',
+              content: const AlbumQrSpreadContent(
+                qrPayload: 'https://example.com/boda-final',
+                placement: AlbumQrSpreadPlacement.closing,
+              ),
+            ),
+          ],
+        );
+
+({List<DotsAlbumSpreadPage> singles, List<DotsAlbumSpreadPage> spreads})
+    _generalEventosPages() => (
+          singles: [
+            DotsAlbumSpreadPage.photoOnlyCover(
+              type: DotsAlbumType.generalEventos,
+              pageNumber: 1,
+              content: AlbumPhotoOnlyCoverContent(
+                photoPath: _photo('eventos_cover', w: 800, h: 1000),
+                title: 'Festival de Verano',
+                dateLine: '12 — 14 de julio de 2024',
+              ),
+              contextLabelValue: 'Festival 2024',
+            ),
+            DotsAlbumSpreadPage.welcomeJourney(
+              type: DotsAlbumType.generalEventos,
+              pageNumber: 3,
+              contextLabelValue: 'Festival 2024',
+              content: const AlbumWelcomeJourneyContent(),
+            ),
+            DotsAlbumSpreadPage.eventosClosing(
+              type: DotsAlbumType.generalEventos,
+              pageNumber: 5,
+              contextLabelValue: 'Festival 2024',
+              content: AlbumEventosClosingContent(
+                photoPath: _photo('eventos_closing'),
+                title: 'Festival de Verano 2024',
+                signature1: 'María',
+                signature2: 'José',
+              ),
+            ),
+          ],
+          spreads: [
+            DotsAlbumSpreadPage.openingQrSpread(
+              type: DotsAlbumType.generalEventos,
+              pageNumber: 1,
+              contextLabelValue: 'Festival 2024',
+              content: const AlbumQrSpreadContent(
+                qrPayload: 'https://example.com/eventos-opening',
+                placement: AlbumQrSpreadPlacement.opening,
+              ),
+            ),
+            DotsAlbumSpreadPage.beforeYouStart(
+              type: DotsAlbumType.generalEventos,
+              pageNumber: 3,
+              content: AlbumBeforeYouStartContent(
+                photoPaths: [
+                  for (var i = 0; i < 10; i++) _photo('eventos_$i'),
+                ],
+              ),
+              contextLabelValue: 'Festival 2024',
+            ),
+            DotsAlbumSpreadPage.beforeJourney(
+              type: DotsAlbumType.generalEventos,
+              pageNumber: 5,
+              contextLabelValue: 'Festival 2024',
+            ),
+            DotsAlbumSpreadPage.closingQrSpread(
+              type: DotsAlbumType.generalEventos,
+              pageNumber: 7,
+              contextLabelValue: 'Festival 2024',
+              content: const AlbumQrSpreadContent(
+                qrPayload: 'https://example.com/eventos-final',
+                placement: AlbumQrSpreadPlacement.closing,
+              ),
+            ),
+          ],
+        );
 
 void main() {
-  test('sample render — emits one PDF per category with every factory '
-      'exercised against picsum.photos photos', () async {
+  test('sample render — emits one singles PDF + one spreads PDF per '
+      'category, picsum photos, separate native formats (203 vs 406 mm)',
+      () async {
     const FileSystem fs = LocalFileSystem();
     final projectRoot = io.Directory.current.path;
     final outDir = fs.directory('$projectRoot/build/sample_renders');
@@ -663,7 +710,11 @@ void main() {
 
     final fontBundle = _loadBundledFonts();
 
-    final categories = <String, List<DotsAlbumSpreadPage>>{
+    final categoryPages = <String,
+        ({
+      List<DotsAlbumSpreadPage> singles,
+      List<DotsAlbumSpreadPage> spreads,
+    })>{
       'parejas': _parejasPages(),
       'hijos': _hijosPages(),
       'individuales': _individualesPages(),
@@ -672,14 +723,28 @@ void main() {
       'generalEventos': _generalEventosPages(),
     };
 
-    for (final entry in categories.entries) {
-      await _renderCategory(
-        categoryName: entry.key,
-        pages: entry.value,
+    final emittedNames = <String>[];
+    for (final entry in categoryPages.entries) {
+      final name = entry.key;
+      final lists = entry.value;
+      await _renderPdf(
+        name: '$name-singles',
+        pages: lists.singles,
+        pageSize: _singleSize,
         fontBundle: fontBundle,
         fs: fs,
         outDir: outDir,
       );
+      emittedNames.add('$name-singles');
+      await _renderPdf(
+        name: '$name-spreads',
+        pages: lists.spreads,
+        pageSize: _spreadSize,
+        fontBundle: fontBundle,
+        fs: fs,
+        outDir: outDir,
+      );
+      emittedNames.add('$name-spreads');
     }
 
     // Companion PDF: every DotsLayoutCode rendered in enum order, two
@@ -691,11 +756,8 @@ void main() {
     );
 
     // Assert each PDF was actually produced and has the PDF magic header.
-    final expectedPdfs = <String>[
-      ...categories.keys,
-      'general-base-layouts',
-    ];
-    for (final name in expectedPdfs) {
+    emittedNames.add('general-base-layouts');
+    for (final name in emittedNames) {
       final pdf = fs.file('${outDir.path}/$name.pdf');
       expect(pdf.existsSync(), isTrue, reason: '$name.pdf should exist');
       final bytes = pdf.readAsBytesSync();

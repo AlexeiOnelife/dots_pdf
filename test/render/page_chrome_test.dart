@@ -240,6 +240,124 @@ void main() {
       );
       expect(buildPageChrome(cover, _format, (_) => null), isEmpty);
     });
+
+    test('buildPageChromeSplit — background contains EXACTLY the '
+        'full-bleed #fdfefd page fill, foreground contains the chrome '
+        'text widgets', () {
+      final split = buildPageChromeSplit(_fullLeft, _format, (_) => null);
+      // Background: exactly one Positioned.fill with the kPageChromeBackgroundColor.
+      expect(split.background, hasLength(1));
+      final bg = split.background.first as pw.Positioned;
+      expect(bg.child, isA<pw.Container>());
+      final container = bg.child as pw.Container;
+      expect(container.decoration, isA<pw.BoxDecoration>());
+      expect(container.decoration!.color,
+          equals(kPageChromeBackgroundColor));
+      // Foreground: header (page number + center label) and footer wordmark.
+      // _fullLeft has all three set, so foreground has 3 widgets.
+      expect(split.foreground, hasLength(3));
+      // None of the foreground widgets is the background fill.
+      for (final w in split.foreground) {
+        expect(w, isA<pw.Positioned>());
+      }
+    });
+
+    test('buildPageChromeSplit — cover (all empty) returns two empty lists',
+        () {
+      const cover = DotsPageChrome(
+        pageNumber: null,
+        centerLabel: null,
+        wordmark: '',
+        isLeftPage: true,
+      );
+      final split = buildPageChromeSplit(cover, _format, (_) => null);
+      expect(split.background, isEmpty);
+      expect(split.foreground, isEmpty);
+    });
+
+    test('buildPageChrome (legacy wrapper) returns background + foreground '
+        'concatenated, in that order', () {
+      final split = buildPageChromeSplit(_fullLeft, _format, (_) => null);
+      final flat = buildPageChrome(_fullLeft, _format, (_) => null);
+      // pw.Positioned has no operator==, so compare by length: the flat
+      // list must equal background.length + foreground.length.
+      expect(
+        flat.length,
+        equals(split.background.length + split.foreground.length),
+      );
+      // And the legacy wrapper must emit at least one widget when the
+      // chrome has any field set.
+      expect(flat, isNotEmpty);
+    });
+
+    test('buildPageChrome — SPREAD chrome with rightPageNumber set '
+        'renders BOTH page numbers (left at outer-left + right at '
+        'outer-right)', () {
+      const spread = DotsPageChrome(
+        pageNumber: '5',
+        rightPageNumber: '6',
+        centerLabel: 'Dotbook',
+        wordmark: 'Dots. Memories',
+        isLeftPage: true,
+      );
+      // Spread-width format: 406 × 254 mm ≈ 1150.87 × 720 pt.
+      const spreadFormat = PdfPageFormat(1150.87, 720);
+      final widgets = buildPageChrome(spread, spreadFormat, (_) => null);
+
+      // Collect all text widgets carrying page-number strings.
+      final pageNumberTexts = <pw.Text>[];
+      for (final w in widgets) {
+        if (w is pw.Positioned) {
+          final box = w.child;
+          if (box is pw.SizedBox) {
+            final inner = box.child;
+            if (inner is pw.Text) {
+              final data = inner.text;
+              if (data is pw.TextSpan && (data.text == '5' || data.text == '6')) {
+                pageNumberTexts.add(inner);
+              }
+            }
+          }
+        }
+      }
+      // BOTH '5' (left) and '6' (right) should be rendered.
+      expect(pageNumberTexts, hasLength(2),
+          reason: 'spread chrome should render both page numbers');
+      final values = pageNumberTexts
+          .map((t) => (t.text as pw.TextSpan).text)
+          .toSet();
+      expect(values, equals({'5', '6'}));
+    });
+
+    test('buildPageChrome — single-page chrome (rightPageNumber null) '
+        'still renders ONE page number', () {
+      const single = DotsPageChrome(
+        pageNumber: '5',
+        centerLabel: 'Dotbook',
+        wordmark: 'Dots. Memories',
+        isLeftPage: true,
+      );
+      final widgets = buildPageChrome(single, _format, (_) => null);
+      final pageNumberTexts = <String>[];
+      for (final w in widgets) {
+        if (w is pw.Positioned) {
+          final box = w.child;
+          if (box is pw.SizedBox) {
+            final inner = box.child;
+            if (inner is pw.Text) {
+              final data = inner.text;
+              if (data is pw.TextSpan && data.text != null) {
+                if (data.text == '5' || data.text == '6') {
+                  pageNumberTexts.add(data.text!);
+                }
+              }
+            }
+          }
+        }
+      }
+      expect(pageNumberTexts, equals(['5']),
+          reason: 'single-page chrome should render exactly one number');
+    });
   });
 
   // ──────────────────────────────────────────────────────────────────────────

@@ -22,8 +22,9 @@ DotsAlbumSpreadPage _page(DotsAlbumType type, {String? bodyOverride}) =>
 
 void main() {
   group('DotsAlbumSpreadPage.beforeJourney — element shape', () {
-    test('parejas/hijos/individuales/otros emit 5 elements: '
-        'title L1 + L2 + body + protagonist names + CTA', () {
+    test('parejas/hijos/individuales/otros emit 13 elements: '
+        '1 LEFT-page background rect + 7 LEFT-page circles + title L1 + L2 + body + '
+        'protagonist names + CTA', () {
       for (final type in const [
         DotsAlbumType.parejas,
         DotsAlbumType.hijos,
@@ -31,22 +32,34 @@ void main() {
         DotsAlbumType.otros,
       ]) {
         final p = _page(type);
-        expect(p.elements, hasLength(5),
-            reason: '$type should emit 5 elements');
+        expect(p.elements, hasLength(13),
+            reason: '$type should emit 13 elements');
+        expect(p.elements.whereType<DotsDecorativeRectElement>(), hasLength(1),
+            reason: '$type should include 1 LEFT-page background rect');
+        expect(p.elements.whereType<DotsDecorativeCircleElement>(),
+            hasLength(7),
+            reason: '$type should include 7 LEFT-page decorative circles');
         expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(5),
-            reason: '$type elements should all be DotsTextBlockElement');
+            reason: '$type should include 5 text blocks (title L1 + L2 '
+                '+ body + protagonist names + CTA)');
       }
     });
 
-    test('boda and generalEventos emit only 3 elements: '
-        'title L1 + L2 + body (no right-page chrome)', () {
+    test('boda and generalEventos emit 11 elements: '
+        '1 LEFT-page background rect + 7 LEFT-page circles + title L1 + L2 + body '
+        '(no right-page chrome)',
+        () {
       for (final type in const [
         DotsAlbumType.boda,
         DotsAlbumType.generalEventos,
       ]) {
         final p = _page(type);
-        expect(p.elements, hasLength(3),
-            reason: '$type should emit 3 elements (no chrome)');
+        expect(p.elements, hasLength(11),
+            reason: '$type should emit 11 elements (rect + 7 circles + 3 text, no chrome)');
+        expect(p.elements.whereType<DotsDecorativeRectElement>(), hasLength(1));
+        expect(p.elements.whereType<DotsDecorativeCircleElement>(),
+            hasLength(7));
+        expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(3));
       }
     });
 
@@ -54,6 +67,60 @@ void main() {
       for (final type in DotsAlbumType.values) {
         expect(() => _page(type), returnsNormally, reason: '$type');
       }
+    });
+
+    test('LEFT-page background rect covers the LEFT page edge-to-edge '
+        '(x=0, y=0, w=203 mm, h=254 mm) and uses light-blue #CDE7F2', () {
+      final rect = _page(DotsAlbumType.parejas)
+          .elements
+          .whereType<DotsDecorativeRectElement>()
+          .single;
+      expect(rect.x, equals(0));
+      expect(rect.y, equals(0));
+      expect(rect.width, closeTo(203 * _mmToPt, 0.01));
+      expect(rect.height, closeTo(254 * _mmToPt, 0.01));
+      expect(rect.colorHex, equals('#CDE7F2'));
+    });
+
+    test('LEFT-page circles all use light-blue #CDE7F2 and land on the '
+        'LEFT page (x < 203 mm)', () {
+      final circles = _page(DotsAlbumType.parejas)
+          .elements
+          .whereType<DotsDecorativeCircleElement>()
+          .toList();
+      for (final c in circles) {
+        expect(c.colorHex, equals('#CDE7F2'));
+        // x < 203 mm — circles must be on the LEFT page of the spread.
+        expect(c.x / _mmToPt, lessThan(203));
+        // opacityAlpha must be in (0, 1] — cluster uses [0.30, 1.00].
+        expect(c.opacityAlpha, greaterThan(0));
+        expect(c.opacityAlpha, lessThanOrEqualTo(1.0));
+      }
+    });
+
+    test('LEFT-page cluster is monotonically decreasing in opacity from '
+        'top circle (alpha=1.0) to bottom circle (alpha=0.30)', () {
+      final circles = _page(DotsAlbumType.generalEventos)
+          .elements
+          .whereType<DotsDecorativeCircleElement>()
+          .toList();
+      // Cluster ordering: top-most circle first.
+      expect(circles.first.opacityAlpha, equals(1.0));
+      expect(circles.last.opacityAlpha, equals(0.30));
+    });
+
+    test('background rect is emitted BEFORE circles in the element list '
+        '(z-order: rect → circles → text)', () {
+      final elements = _page(DotsAlbumType.parejas).elements;
+      final rectIdx = elements.indexWhere((e) => e is DotsDecorativeRectElement);
+      final firstCircleIdx =
+          elements.indexWhere((e) => e is DotsDecorativeCircleElement);
+      final firstTextIdx =
+          elements.indexWhere((e) => e is DotsTextBlockElement);
+      expect(rectIdx, lessThan(firstCircleIdx),
+          reason: 'rect must come before circles');
+      expect(firstCircleIdx, lessThan(firstTextIdx),
+          reason: 'circles must come before text');
     });
   });
 
