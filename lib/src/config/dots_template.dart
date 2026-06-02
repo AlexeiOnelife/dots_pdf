@@ -3153,12 +3153,11 @@ class DotsAlbumSpreadPage extends DotsPage {
     // the cluster pattern rather than a strict transcription. Refine
     // via visual QA against the source PDFs.
     //
-    // The full-page light-blue background visible in the source PDFs is
-    // NOT emitted — a DotsDecorativeRectElement covering 203×254 mm
-    // would draw OVER the chrome text widgets (page numbers, center
-    // label, wordmark) because elements stack ABOVE chrome in the
-    // current renderer architecture. Z-order reform is a separate
-    // follow-up.
+    // The full-page light-blue background is emitted as a
+    // DotsDecorativeRectElement BEFORE the circles — the chrome split
+    // pass (buildPageChromeSplit) ensures the chrome text widgets render
+    // ON TOP of both the background rect and the circles, so page
+    // numbers and the footer wordmark remain legible.
     const List<({double xMm, double yMm, double diameterMm, double alpha})>
         leftCircles = [
       (xMm: 105, yMm: 18, diameterMm: 78, alpha: 1.00),
@@ -3185,9 +3184,24 @@ class DotsAlbumSpreadPage extends DotsPage {
     };
 
     final elements = <DotsElement>[
-      // ── LEFT-page decorative circles — emitted FIRST so they sit
-      //    behind the right-page text in the z-order (within the
-      //    element stack; chrome already drew before this point).
+      // ── LEFT-page full-page light-blue background ──────────────────────
+      // The source PDFs (pdf02 p.10, pdf06 p.3, pdf08 p.10, pdf10 p.8,
+      // pdf04 p.8, pdf12 p.3) show the LEFT page of this spread filled
+      // edge-to-edge with light-blue #CDE7F2. Renders BETWEEN the chrome
+      // page-fill (#fdfefd) and the chrome header/footer text thanks to
+      // the split-pass rendering in `buildAlbumSpreadPage` — chrome text
+      // (page number on the outer-left edge of the LEFT page) draws on
+      // top of this rect and stays legible.
+      const DotsDecorativeRectElement(
+        x: 0,
+        y: 0,
+        width: 203 * _mmToPt,
+        height: 254 * _mmToPt,
+        colorHex: '#CDE7F2',
+      ),
+      // ── LEFT-page decorative circles — emitted AFTER the background rect
+      //    so they sit on top of it, but BEFORE the right-page text in the
+      //    z-order (within the element stack; chrome foreground renders last).
       for (final c in leftCircles)
         DotsDecorativeCircleElement(
           x: c.xMm * _mmToPt,

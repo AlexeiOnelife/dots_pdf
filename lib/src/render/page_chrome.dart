@@ -90,19 +90,36 @@ List<pw.Widget> buildPageChrome(
   PdfPageFormat format,
   pw.Font? Function(DotsFontRole) fontResolver,
 ) {
+  final split = buildPageChromeSplit(chrome, format, fontResolver);
+  return [...split.background, ...split.foreground];
+}
+
+/// Split-pass variant of [buildPageChrome] returning the background
+/// pass (full-bleed page fill) separately from the foreground pass
+/// (header trio + footer wordmark).
+///
+/// Callers that want decorative elements to render BETWEEN the page
+/// background and the chrome text widgets (e.g.
+/// [DotsAlbumSpreadPage.beforeJourney] with its full-page LEFT-side
+/// light-blue rectangle) can interleave:
+///   1. background widgets (the #fdfefd page fill),
+///   2. their own decorative elements,
+///   3. foreground widgets (page numbers, centre label, footer
+///      wordmark) — drawn LAST so text is never hidden.
+///
+/// Cover guard: when every chrome field is null/empty, returns two
+/// empty lists — matching the original [buildPageChrome] cover-page
+/// contract.
+({List<pw.Widget> background, List<pw.Widget> foreground})
+    buildPageChromeSplit(
+  DotsPageChrome chrome,
+  PdfPageFormat format,
+  pw.Font? Function(DotsFontRole) fontResolver,
+) {
   // ── Cover guard ────────────────────────────────────────────────────────────
   // Return no widgets (not even the background) when every chrome field is
   // null or empty. This is the cover-page contract: DotsAlbumSpreadPage.cover()
   // sets header trio all-null and wordmark to '', so cover pages stay chrome-free.
-  //
-  // CALLER CONTRACT: this empty-chrome path is intended ONLY for cover pages.
-  // A non-cover caller that passes a chrome with all three text fields
-  // null/empty (and would normally expect just the #fdfefd background to
-  // paint) will silently get no background either — which violates R1 for
-  // that page. Producing an all-empty chrome from a non-cover surface is a
-  // caller bug; the renderer derives chrome from `DotsTemplate.defaultChrome`
-  // for layout/elements pages, so this only fires for spread pages that go
-  // through `buildAlbumSpreadPage` with the cover factory.
   final hasPageNumber =
       chrome.pageNumber != null && chrome.pageNumber!.isNotEmpty;
   final hasRightPageNumber =
@@ -112,15 +129,16 @@ List<pw.Widget> buildPageChrome(
   final hasWordmark = chrome.wordmark != null && chrome.wordmark!.isNotEmpty;
 
   if (!hasPageNumber && !hasRightPageNumber && !hasCenterLabel && !hasWordmark) {
-    return [];
+    return (background: const [], foreground: const []);
   }
 
-  final widgets = <pw.Widget>[];
+  final background = <pw.Widget>[];
+  final widgets = <pw.Widget>[]; // foreground accumulator.
 
   // ── 1. Background — always first ──────────────────────────────────────────
   // The colour is wrapped in a BoxDecoration so tests can read it back via
   // `container.decoration` (pw.Container does not expose `color` as a getter).
-  widgets.add(pw.Positioned.fill(
+  background.add(pw.Positioned.fill(
     child: pw.Container(
       decoration: const pw.BoxDecoration(color: _kBackgroundColor),
     ),
@@ -241,7 +259,7 @@ List<pw.Widget> buildPageChrome(
     ));
   }
 
-  return widgets;
+  return (background: background, foreground: widgets);
 }
 
 // ---------------------------------------------------------------------------
