@@ -3117,6 +3117,35 @@ class DotsAlbumSpreadPage extends DotsPage {
     // Title height 19.1 mm + 5 mm gap below L2 baseline.
     const double bodyYMm = titleL1YMm + 19.1 + 5;
 
+    // ── LEFT-page decorative circles (best-effort approximation) ──────
+    //
+    // The source PDFs (pdf02 p.10, pdf06 p.3, pdf08 p.10, pdf10 p.8,
+    // pdf04 p.8, pdf12 p.3) annotate a cascading column of 7 circles on
+    // the LEFT page with per-circle opacity gradients ("Perdida de
+    // opacidad de arriba a abajo desde 100% a 30% a partir del 1,6mm
+    // en Y", etc.). The annotated X/Y values in those PDFs are
+    // ambiguous (no clear separation between positions, dimensions, and
+    // gradient parameters) so this table is a visual approximation of
+    // the cluster pattern rather than a strict transcription. Refine
+    // via visual QA against the source PDFs.
+    //
+    // The full-page light-blue background visible in the source PDFs is
+    // NOT emitted — a DotsDecorativeRectElement covering 203×254 mm
+    // would draw OVER the chrome text widgets (page numbers, center
+    // label, wordmark) because elements stack ABOVE chrome in the
+    // current renderer architecture. Z-order reform is a separate
+    // follow-up.
+    const List<({double xMm, double yMm, double diameterMm, double alpha})>
+        leftCircles = [
+      (xMm: 105, yMm: 18, diameterMm: 78, alpha: 1.00),
+      (xMm: 70, yMm: 62, diameterMm: 42, alpha: 0.85),
+      (xMm: 115, yMm: 95, diameterMm: 32, alpha: 0.70),
+      (xMm: 78, yMm: 122, diameterMm: 28, alpha: 0.55),
+      (xMm: 102, yMm: 148, diameterMm: 22, alpha: 0.45),
+      (xMm: 90, yMm: 172, diameterMm: 12, alpha: 0.35),
+      (xMm: 85, yMm: 188, diameterMm: 8, alpha: 0.30),
+    ];
+
     final String body = content.bodyOverride ?? defaultBody;
 
     // Per-category right-page CTA. parejas/hijos use the "empezar"
@@ -3132,6 +3161,17 @@ class DotsAlbumSpreadPage extends DotsPage {
     };
 
     final elements = <DotsElement>[
+      // ── LEFT-page decorative circles — emitted FIRST so they sit
+      //    behind the right-page text in the z-order (within the
+      //    element stack; chrome already drew before this point).
+      for (final c in leftCircles)
+        DotsDecorativeCircleElement(
+          x: c.xMm * _mmToPt,
+          y: c.yMm * _mmToPt,
+          diameter: c.diameterMm * _mmToPt,
+          colorHex: '#CDE7F2',
+          opacityAlpha: c.alpha,
+        ),
       // Title line 1 — "Antes de empezar" (P22 Mackinac Medium 27pt).
       const DotsTextBlockElement(
         x: titleXMm * _mmToPt,
