@@ -22,8 +22,9 @@ DotsAlbumSpreadPage _page(DotsAlbumType type, {String? bodyOverride}) =>
 
 void main() {
   group('DotsAlbumSpreadPage.beforeJourney — element shape', () {
-    test('parejas/hijos/individuales/otros emit 5 elements: '
-        'title L1 + L2 + body + protagonist names + CTA', () {
+    test('parejas/hijos/individuales/otros emit 6 elements: '
+        '1 LEFT-page background rect + title L1 + L2 + body + '
+        'protagonist names + CTA', () {
       for (final type in const [
         DotsAlbumType.parejas,
         DotsAlbumType.hijos,
@@ -31,22 +32,27 @@ void main() {
         DotsAlbumType.otros,
       ]) {
         final p = _page(type);
-        expect(p.elements, hasLength(5),
-            reason: '$type should emit 5 elements');
+        expect(p.elements, hasLength(6),
+            reason: '$type should emit 6 elements');
+        expect(p.elements.whereType<DotsDecorativeRectElement>(), hasLength(1),
+            reason: '$type should include 1 LEFT-page background rect');
         expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(5),
-            reason: '$type elements should all be DotsTextBlockElement');
+            reason: '$type should include 5 text blocks');
       }
     });
 
-    test('boda and generalEventos emit only 3 elements: '
-        'title L1 + L2 + body (no right-page chrome)', () {
+    test('boda and generalEventos emit 4 elements: '
+        '1 LEFT-page background rect + title L1 + L2 + body '
+        '(no right-page chrome)', () {
       for (final type in const [
         DotsAlbumType.boda,
         DotsAlbumType.generalEventos,
       ]) {
         final p = _page(type);
-        expect(p.elements, hasLength(3),
-            reason: '$type should emit 3 elements (no chrome)');
+        expect(p.elements, hasLength(4),
+            reason: '$type should emit 4 elements (rect + 3 text, no chrome)');
+        expect(p.elements.whereType<DotsDecorativeRectElement>(), hasLength(1));
+        expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(3));
       }
     });
 
@@ -54,6 +60,19 @@ void main() {
       for (final type in DotsAlbumType.values) {
         expect(() => _page(type), returnsNormally, reason: '$type');
       }
+    });
+
+    test('LEFT-page background rect covers the LEFT page edge-to-edge '
+        '(x=0, y=0, w=203 mm, h=254 mm) and uses light-blue #CDE7F2', () {
+      final rect = _page(DotsAlbumType.parejas)
+          .elements
+          .whereType<DotsDecorativeRectElement>()
+          .single;
+      expect(rect.x, equals(0));
+      expect(rect.y, equals(0));
+      expect(rect.width, closeTo(203 * _mmToPt, 0.01));
+      expect(rect.height, closeTo(254 * _mmToPt, 0.01));
+      expect(rect.colorHex, equals('#CDE7F2'));
     });
   });
 

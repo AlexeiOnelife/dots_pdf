@@ -3132,6 +3132,21 @@ class DotsAlbumSpreadPage extends DotsPage {
     };
 
     final elements = <DotsElement>[
+      // ── LEFT-page full-page light-blue background ──────────────────────
+      // The source PDFs (pdf02 p.10, pdf06 p.3, pdf08 p.10, pdf10 p.8,
+      // pdf04 p.8, pdf12 p.3) show the LEFT page of this spread filled
+      // edge-to-edge with light-blue #CDE7F2. Renders BETWEEN the chrome
+      // page-fill (#fdfefd) and the chrome header/footer text thanks to
+      // the split-pass rendering in `buildAlbumSpreadPage` — chrome text
+      // (page number on the outer-left edge of the LEFT page) draws on
+      // top of this rect and stays legible.
+      const DotsDecorativeRectElement(
+        x: 0,
+        y: 0,
+        width: 203 * _mmToPt,
+        height: 254 * _mmToPt,
+        colorHex: '#CDE7F2',
+      ),
       // Title line 1 — "Antes de empezar" (P22 Mackinac Medium 27pt).
       const DotsTextBlockElement(
         x: titleXMm * _mmToPt,
