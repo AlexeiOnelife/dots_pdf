@@ -1275,6 +1275,7 @@ class DotsPageChrome {
   /// full-bleed background is always rendered.
   const DotsPageChrome({
     this.pageNumber,
+    this.rightPageNumber,
     this.centerLabel,
     this.wordmark,
     this.isLeftPage = true,
@@ -1287,6 +1288,18 @@ class DotsPageChrome {
   ///
   /// A `null` value omits the page-number slot entirely.
   final String? pageNumber;
+
+  /// Optional second page-number string for SPREAD chrome — when set,
+  /// the renderer draws BOTH [pageNumber] at the left outer column AND
+  /// [rightPageNumber] at the right outer column.
+  ///
+  /// Populated by `buildAlbumSpreadPage` for 2-page-spread factories
+  /// (e.g. `closingQrSpread`, `beforeYouStart`, `beforeJourney`,
+  /// `photoArc`, `bodaCluster`, `bodaHalo`, `polaroidCollage`) where
+  /// the spread header carries BOTH `leftPageNumber=N` and
+  /// `rightPageNumber=N+1`. A `null` value falls back to the existing
+  /// single-page chrome rendering (one number, placed per [isLeftPage]).
+  final String? rightPageNumber;
 
   /// Context-label string placed in the centre column of the header band.
   ///
@@ -1323,6 +1336,7 @@ class DotsPageChrome {
   bool operator ==(Object other) =>
       other is DotsPageChrome &&
       other.pageNumber == pageNumber &&
+      other.rightPageNumber == rightPageNumber &&
       other.centerLabel == centerLabel &&
       other.wordmark == wordmark &&
       other.isLeftPage == isLeftPage &&
@@ -1332,6 +1346,7 @@ class DotsPageChrome {
   @override
   int get hashCode => Object.hash(
         pageNumber,
+        rightPageNumber,
         centerLabel,
         wordmark,
         isLeftPage,
@@ -1647,14 +1662,16 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///
   /// The eyebrow is resolved as follows:
   ///   - [eyebrowOverride] wins when non-null.
-  ///   - [DotsAlbumType.parejas] default → `"DOTBOOK DE {PROTAGONISTA}"`.
-  ///   - [DotsAlbumType.hijos]   default → `"DOTBOOK DE {PROTAGONISTA}"`.
-  ///
-  /// The eyebrow token `{PROTAGONISTA}` is resolved by the caller's
-  /// variables map at parse time. The literal eyebrow text was corrected
-  /// in Task 4 of `final-render-refinement` against
-  /// `pdf02_pareja_inicial.pdf` p.2 and `pdf08_hijos_inicial.pdf` p.2;
-  /// both PDFs use the same eyebrow format.
+  ///   - Otherwise the canonical `"DOTBOOK DE {PROTAGONISTA}"` template
+  ///     is used (per pdf02 p.2 / pdf08 p.2 — both parejas and hijos
+  ///     share the same format).
+  ///   - The `{PROTAGONISTA}` token is then substituted with the
+  ///     [contextLabelValue] argument when non-empty. When empty, the
+  ///     token remains literal — useful for previews / placeholder
+  ///     rendering. Callers parsing JSON templates pass the resolved
+  ///     protagonist name via [contextLabelValue]; the templates-level
+  ///     `variables` map no longer needs to substitute the token before
+  ///     reaching this factory.
   ///
   /// [header] and [footer] are set so that no page-number trio or wordmark
   /// appears on the cover (header trio is all-null; footer wordmark is empty).
@@ -1663,12 +1680,12 @@ class DotsAlbumSpreadPage extends DotsPage {
     required int pageNumber,
     required String title,
     required String dateLine,
+    String contextLabelValue = '',
     String? eyebrowOverride,
   }) {
     // Resolve per-type eyebrow; throw for unsupported types.
     // Both parejas and hijos use the same eyebrow text per the PDF spec
-    // sheet (pdf02 p.2 + pdf08 p.2); the {PROTAGONISTA} token is
-    // resolved by the variables-map at JSON parse time.
+    // sheet (pdf02 p.2 + pdf08 p.2).
     final String defaultEyebrow = switch (type) {
       DotsAlbumType.parejas ||
       DotsAlbumType.hijos =>
@@ -1680,7 +1697,14 @@ class DotsAlbumSpreadPage extends DotsPage {
               'DotsAlbumType.parejas and DotsAlbumType.hijos; got $type',
         ),
     };
-    final String eyebrow = eyebrowOverride ?? defaultEyebrow;
+    // Substitute the {PROTAGONISTA} token with the caller-provided value
+    // when non-empty. The substitution applies to BOTH the default
+    // eyebrow AND any `eyebrowOverride` the caller passes — overrides
+    // may also contain the token.
+    final String rawEyebrow = eyebrowOverride ?? defaultEyebrow;
+    final String eyebrow = contextLabelValue.isEmpty
+        ? rawEyebrow
+        : rawEyebrow.replaceAll('{PROTAGONISTA}', contextLabelValue);
 
     // ── 14 decorative circles from kCoverCircleLayout ────────────────────────
     final circles = kCoverCircleLayout

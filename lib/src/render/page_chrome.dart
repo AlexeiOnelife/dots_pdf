@@ -105,11 +105,13 @@ List<pw.Widget> buildPageChrome(
   // through `buildAlbumSpreadPage` with the cover factory.
   final hasPageNumber =
       chrome.pageNumber != null && chrome.pageNumber!.isNotEmpty;
+  final hasRightPageNumber =
+      chrome.rightPageNumber != null && chrome.rightPageNumber!.isNotEmpty;
   final hasCenterLabel =
       chrome.centerLabel != null && chrome.centerLabel!.isNotEmpty;
   final hasWordmark = chrome.wordmark != null && chrome.wordmark!.isNotEmpty;
 
-  if (!hasPageNumber && !hasCenterLabel && !hasWordmark) {
+  if (!hasPageNumber && !hasRightPageNumber && !hasCenterLabel && !hasWordmark) {
     return [];
   }
 
@@ -125,7 +127,8 @@ List<pw.Widget> buildPageChrome(
   ));
 
   // ── 2. Header ─────────────────────────────────────────────────────────────
-  if (!chrome.suppressHeader && (hasPageNumber || hasCenterLabel)) {
+  if (!chrome.suppressHeader &&
+      (hasPageNumber || hasRightPageNumber || hasCenterLabel)) {
     final headerFont = fontResolver(DotsFontRole.p22MackinacBook);
     final headerStyle = pw.TextStyle(
       font: headerFont,
@@ -192,6 +195,28 @@ List<pw.Widget> buildPageChrome(
           ),
         ));
       }
+    }
+
+    // ── Spread chrome: render the second page number at the right outer
+    //    column whenever [rightPageNumber] is set. This composes on top
+    //    of the existing single-page rendering — when both `pageNumber`
+    //    and `rightPageNumber` are set, the first lands at the left
+    //    outer column (per `isLeftPage`) and this second one lands at
+    //    the right outer column.
+    if (hasRightPageNumber) {
+      widgets.add(pw.Positioned(
+        right: outerMarginPt,
+        top: topPt,
+        child: pw.SizedBox(
+          width: outerColWidth - outerMarginPt,
+          height: heightPt,
+          child: pw.Text(
+            chrome.rightPageNumber!,
+            style: headerStyle,
+            textAlign: pw.TextAlign.right,
+          ),
+        ),
+      ));
     }
   }
 
