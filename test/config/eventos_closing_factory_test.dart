@@ -1,6 +1,7 @@
 // Tests for DotsAlbumSpreadPage.eventosClosing — Task 7 of
 // `final-render-refinement`. The factory targets the generalEventos
-// final pliego 2 (photo + {TítuloDelAlbum} + dual-signature subtitle).
+// final pliego 2 (photo + {TítuloDelAlbum} title; no signature subtitle
+// per docs/specs/07-general-eventos.md §final p3).
 import 'package:dots_pdf/dots_pdf.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -10,15 +11,7 @@ const double _pageWidthPt = 575.43;
 AlbumEventosClosingContent _content({
   String? photoPath = 'photo.jpg',
   String title = 'Boda de Ana y Luis',
-  String signature1 = 'Ana',
-  String signature2 = 'Luis',
-}) =>
-    AlbumEventosClosingContent(
-      photoPath: photoPath,
-      title: title,
-      signature1: signature1,
-      signature2: signature2,
-    );
+}) => AlbumEventosClosingContent(photoPath: photoPath, title: title);
 
 void main() {
   group('DotsAlbumSpreadPage.eventosClosing — guards', () {
@@ -31,11 +24,7 @@ void main() {
         DotsAlbumType.boda,
       ]) {
         expect(
-          () => DotsAlbumSpreadPage.eventosClosing(
-            type: type,
-            pageNumber: 14,
-            content: _content(),
-          ),
+          () => DotsAlbumSpreadPage.eventosClosing(type: type, pageNumber: 14, content: _content()),
           throwsArgumentError,
           reason: '$type should be rejected',
         );
@@ -73,19 +62,19 @@ void main() {
           content: _content(photoPath: photoPath),
         );
 
-    test('emits photo + title + subtitle when photoPath is non-null', () {
+    test('emits photo + title only when photoPath is non-null', () {
       final p = page();
-      expect(p.elements, hasLength(3));
+      expect(p.elements, hasLength(2));
       expect(p.elements.whereType<DotsImageElement>(), hasLength(1));
-      // Title + subtitle are both DotsTextBlockElement: the title is a
-      // centered 115 mm box per docs/specs/07-general-eventos.md §final p3.
+      // Title is a centered 115 mm box per docs/specs/07-general-eventos.md
+      // §final p3. The base-truth PDF p3 carries no signature subtitle.
       expect(p.elements.whereType<DotsTextElement>(), isEmpty);
-      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(2));
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(1));
     });
 
     test('omits photo when photoPath is null', () {
       final p = page(photoPath: null);
-      expect(p.elements, hasLength(2));
+      expect(p.elements, hasLength(1));
       expect(p.elements.whereType<DotsImageElement>(), isEmpty);
     });
 
@@ -101,10 +90,7 @@ void main() {
 
     test('title is content.title at 20pt P22 Mackinac Medium, centered in a '
         '115 mm box at x=44 mm', () {
-      final title = page()
-          .elements
-          .whereType<DotsTextBlockElement>()
-          .firstWhere((b) => b.value == 'Boda de Ana y Luis');
+      final title = page().elements.whereType<DotsTextBlockElement>().single;
       expect(title.value, equals('Boda de Ana y Luis'));
       expect(title.fontSize, equals(20.0));
       expect(title.fontFamily, equals('P22 Mackinac Medium'));
@@ -116,30 +102,12 @@ void main() {
       expect(title.y, closeTo((71.534 + 86 + 5) * _mmToPt, 0.01));
     });
 
-    test('subtitle composes "Vivido con mucho amor por: …" from signatures',
-        () {
-      final sub = page()
-          .elements
-          .whereType<DotsTextBlockElement>()
-          .firstWhere((b) => b.value.startsWith('Vivido con mucho amor'));
-      expect(sub.value, equals('Vivido con mucho amor por: Ana y Luis'));
-      expect(sub.fontSize, equals(9.0));
-      expect(sub.fontFamily, equals('P22 Mackinac Book'));
-      expect(sub.textAlign, equals(DotsTextAlign.center));
-      expect(sub.x, closeTo(44 * _mmToPt, 0.01));
-      expect(sub.width, closeTo(115 * _mmToPt, 0.01));
-    });
-
-    test('subtitle reflects different signature1/signature2 values', () {
-      final p = DotsAlbumSpreadPage.eventosClosing(
-        type: DotsAlbumType.generalEventos,
-        pageNumber: 14,
-        content: _content(signature1: 'María', signature2: 'José'),
+    test('no signature subtitle is rendered (matches pdf13 p.3)', () {
+      final blocks = page().elements.whereType<DotsTextBlockElement>();
+      expect(
+        blocks.where((b) => b.value.startsWith('Vivido con mucho amor')),
+        isEmpty,
       );
-      final sub = p.elements
-          .whereType<DotsTextBlockElement>()
-          .firstWhere((b) => b.value.startsWith('Vivido con mucho amor'));
-      expect(sub.value, equals('Vivido con mucho amor por: María y José'));
     });
   });
 
