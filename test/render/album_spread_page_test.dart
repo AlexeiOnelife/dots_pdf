@@ -135,6 +135,22 @@ void main() {
       // §p5 ("Body … 102 wide"). The spec is the contract.
       expect(body.width, closeTo(102.0 * _mmToPt, 0.01));
     });
+
+    test(
+        'AlbumSpreadPage — otros/individuales dedication body is 120 mm wide',
+        () {
+      // docs/specs/03-otros.md p3 + docs/specs/06-individual.md p3:
+      // "body Inter Book 9 / 10.8 pt, 120 mm wide" (vs 102 mm pareja/hijos).
+      for (final type in [
+        DotsAlbumType.otros,
+        DotsAlbumType.individuales,
+      ]) {
+        final page = _dedicationPage(type);
+        final body = page.elements.whereType<DotsTextBlockElement>().first;
+        expect(body.width, closeTo(120.0 * _mmToPt, 0.01),
+            reason: '$type dedication body width should be 120 mm');
+      }
+    });
   });
 
   // ──────────────────────────────────────────────────────────────────────────

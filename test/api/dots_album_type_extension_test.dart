@@ -24,8 +24,10 @@ void main() {
       expect(DotsAlbumType.individuales.contextLabelToken, equals('{Año}'));
     });
 
-    test('DotsAlbumType contextLabel — otros returns {Año}', () {
-      expect(DotsAlbumType.otros.contextLabelToken, equals('{Año}'));
+    test('DotsAlbumType contextLabel — otros returns {Año} | {Año}', () {
+      // docs/specs/03-otros.md header + docs/specs/06-individual.md
+      // "Differences vs otros": otros = `{Año} | {Año}`, individual = `{Año}`.
+      expect(DotsAlbumType.otros.contextLabelToken, equals('{Año} | {Año}'));
     });
 
     // ---- exhaustiveness: every enum value returns a non-null, non-empty string ----

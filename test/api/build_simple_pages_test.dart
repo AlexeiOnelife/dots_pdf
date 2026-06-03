@@ -115,10 +115,11 @@ void main() {
       }
     });
 
-    test('buildSimplePagesFor — otros header.centerLabel equals {Año}', () {
+    test('buildSimplePagesFor — otros header.centerLabel equals {Año} | {Año}',
+        () {
       final pages = _build(DotsAlbumType.otros, _fullContent);
       for (final p in pages) {
-        expect(p.header.centerLabel, equals('{Año}'));
+        expect(p.header.centerLabel, equals('{Año} | {Año}'));
       }
     });
 

@@ -1315,7 +1315,8 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///
   /// Assembles:
   ///   - TITLE: [DotsTextElement] in P22 Mackinac Medium 23pt
-  ///   - BODY:  [DotsTextBlockElement] in Inter Book 9pt, 102mm wide, centred,
+  ///   - BODY:  [DotsTextBlockElement] in Inter Book 9pt, per-type width
+  ///            (102 mm parejas/hijos; 120 mm individuales/otros), centred,
   ///            with maxChars=1000 and maxLines=32 warn thresholds
   ///   - SIGNATURE (when [signature] is non-empty):
   ///     [DotsRotatedTextElement] in Biro Script Plus 12pt at 2°
@@ -1337,8 +1338,11 @@ class DotsAlbumSpreadPage extends DotsPage {
     // Canonical element positions corrected against docs/specs/02-pareja.md
     // §p5 (dedication):
     //   - text x = 50.53 mm from the (right-page) trim left edge.
-    //   - body width = 102 mm (spec: "Body … 102 wide"). The spec is the
-    //     contract and overrides the earlier 120 mm reading.
+    //   - body width is per-category (the spec is the contract):
+    //       * parejas / hijos    → 102 mm  (docs/specs/02-pareja.md §p5)
+    //       * individuales / otros → 120 mm (docs/specs/03-otros.md p3,
+    //         docs/specs/06-individual.md p3 — "body … 120 mm wide")
+    //       * boda has no dedication; generalEventos is not emitted here.
     //   - y values stay near the previous defaults until the relative-y
     //     refinement lands (deferred follow-up: title→body 6.5 mm gap,
     //     body→signature 8 mm gap).
@@ -1346,8 +1350,14 @@ class DotsAlbumSpreadPage extends DotsPage {
     const double titleY = 60 * _mmToPt;
     const double bodyY = 90 * _mmToPt;
     const double signatureY = 160 * _mmToPt;
-    const double bodyWidthMm = 102;
-    const double bodyWidthPt = bodyWidthMm * _mmToPt;
+    final double bodyWidthMm = switch (type) {
+      DotsAlbumType.individuales || DotsAlbumType.otros => 120.0,
+      DotsAlbumType.parejas ||
+      DotsAlbumType.hijos ||
+      DotsAlbumType.boda ||
+      DotsAlbumType.generalEventos => 102.0,
+    };
+    final double bodyWidthPt = bodyWidthMm * _mmToPt;
 
     final elements = <DotsElement>[
       DotsTextElement(
