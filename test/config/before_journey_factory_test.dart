@@ -104,11 +104,26 @@ void main() {
       expect(names.width, closeTo(100 * _mmToPt, 0.01));
     });
 
-    test('protagonist-names line falls back to "{Protagonistas}" when '
-        'contextLabelValue is empty', () {
+    test('protagonist-names line falls back to "{Protagonista}" (singular) '
+        'for hijos when contextLabelValue is empty '
+        '(docs/specs/05-hijos.md p10 label)', () {
       final names =
           _page(DotsAlbumType.hijos).elements.whereType<DotsTextBlockElement>().toList()[3];
-      expect(names.value, equals('{Protagonistas}'));
+      expect(names.value, equals('{Protagonista}'));
+    });
+
+    test('protagonist-names line falls back to "{Protagonistas}" (plural) for '
+        'non-hijos categories — hijos singular label is gated', () {
+      for (final type in const [
+        DotsAlbumType.parejas,
+        DotsAlbumType.individuales,
+        DotsAlbumType.otros,
+      ]) {
+        final names =
+            _page(type).elements.whereType<DotsTextBlockElement>().toList()[3];
+        expect(names.value, equals('{Protagonistas}'),
+            reason: '$type should keep the plural placeholder');
+      }
     });
 
     test('boda and generalEventos do NOT include the CTA or '
