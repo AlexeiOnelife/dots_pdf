@@ -14,13 +14,12 @@ enum DotsPaperSubstrate {
 
   /// Satin 170 gsm coated paper — source label **s45** (SPECS_cover.md Table 2).
   ///
-  /// Page-tier ceiling: 250 pages within the library's global cap (the
-  /// spreadsheet itself extends to 300 pages on letter F, but the
-  /// library hard-caps at 250).
+  /// Page-tier ceiling: 300 pages (letter F, 252–300), per Table 2 of
+  /// `FileSpecs.203x254.V1.xlsx`.
   satin170,
 
   /// Gloss 200 gsm coated paper — source label **s45** (SPECS_cover.md Table 2).
   ///
-  /// Shares Table 2 with [satin170]; same page-tier ceiling.
+  /// Shares Table 2 with [satin170]; same 300-page page-tier ceiling.
   gloss200,
 }

@@ -148,10 +148,19 @@ void main() {
       expect(g.totalCoverHeightInclBleedMm, closeTo(306.0, _mmEpsilon));
     });
 
-    // Letter F on Table 2 starts at 252 pages, which sits above the
-    // library cap of 250. We therefore can't sample an in-tier value
-    // for F via the constructor — the cap-test below records that
-    // boundary explicitly.
+    test('satin170 F — 280 pages → 29.24 mm spine, 495.24 × 306', () {
+      // Letter F on Table 2 (252–300) is reachable for coated stock,
+      // whose per-substrate cap is 300 (not 250).
+      final DotsCoverGeometry g = DotsCoverGeometry(
+        pageCount: 280,
+        paperSubstrate: DotsPaperSubstrate.satin170,
+        supplier: DotsSupplier.europa,
+      );
+      expect(g.spineLetter, 'F');
+      expect(g.spineWidthMm, closeTo(29.24, _mmEpsilon));
+      expect(g.totalCoverWidthInclBleedMm, closeTo(495.24, _mmEpsilon));
+      expect(g.totalCoverHeightInclBleedMm, closeTo(306.0, _mmEpsilon));
+    });
   });
 
   group('DotsCoverGeometry — tier boundary transitions', () {
@@ -257,28 +266,53 @@ void main() {
       );
     });
 
-    test('satin170 caps near 250: 248 → E, 252 throws (>250 cap)', () {
-      final DotsCoverGeometry g = DotsCoverGeometry(
+    test('satin170 E→F transition: 248 → E, 252 → F (Table 2 to 300)', () {
+      final DotsCoverGeometry e = DotsCoverGeometry(
         pageCount: 248,
         paperSubstrate: DotsPaperSubstrate.satin170,
         supplier: DotsSupplier.europa,
       );
-      expect(g.spineLetter, 'E');
-      expect(g.spineWidthMm, closeTo(24.74, _mmEpsilon));
+      expect(e.spineLetter, 'E');
+      expect(e.spineWidthMm, closeTo(24.74, _mmEpsilon));
 
+      // 252 is in tier F for coated stock (252–300) and below the 300 cap.
+      final DotsCoverGeometry f = DotsCoverGeometry(
+        pageCount: 252,
+        paperSubstrate: DotsPaperSubstrate.satin170,
+        supplier: DotsSupplier.europa,
+      );
+      expect(f.spineLetter, 'F');
+      expect(f.spineWidthMm, closeTo(29.24, _mmEpsilon));
+
+      // 300 is the satin/gloss ceiling and a valid multiple of 4.
+      final DotsCoverGeometry top = DotsCoverGeometry(
+        pageCount: 300,
+        paperSubstrate: DotsPaperSubstrate.gloss200,
+        supplier: DotsSupplier.europa,
+      );
+      expect(top.spineLetter, 'F');
+
+      // 304 exceeds the 300 satin/gloss cap → throws at $.pageCount.
       expect(
         () => DotsCoverGeometry(
-          pageCount: 252,
+          pageCount: 304,
           paperSubstrate: DotsPaperSubstrate.satin170,
           supplier: DotsSupplier.europa,
         ),
-        throwsA(isA<DotsConfigException>()),
+        throwsA(
+          isA<DotsConfigException>().having(
+            (final DotsConfigException ex) => ex.pointer,
+            'pointer',
+            r'$.pageCount',
+          ),
+        ),
       );
-      // 250 itself is not %4 valid (250 mod 4 = 2) — also throws.
+
+      // 252 on uncoated150 still throws: its cap is 250 and tier ceiling 242.
       expect(
         () => DotsCoverGeometry(
-          pageCount: 250,
-          paperSubstrate: DotsPaperSubstrate.satin170,
+          pageCount: 252,
+          paperSubstrate: DotsPaperSubstrate.uncoated150,
           supplier: DotsSupplier.europa,
         ),
         throwsA(isA<DotsConfigException>()),
@@ -427,6 +461,29 @@ void main() {
       expect(g.totalCoverWidthExclBleedMm, closeTo(480.24, _mmEpsilon));
       // h = d + 2·f = 260 + 40 = 300 (see SPECS_cover.md height block).
       expect(g.totalCoverHeightExclBleedMm, closeTo(300, _mmEpsilon));
+    });
+
+    test('maxPageCountForSubstrate: uncoated=250, satin/gloss=300', () {
+      expect(DotsCoverGeometry.maxPageCount, 250);
+      expect(DotsCoverGeometry.satinGlossMaxPageCount, 300);
+      expect(
+        DotsCoverGeometry.maxPageCountForSubstrate(
+          DotsPaperSubstrate.uncoated150,
+        ),
+        250,
+      );
+      expect(
+        DotsCoverGeometry.maxPageCountForSubstrate(
+          DotsPaperSubstrate.satin170,
+        ),
+        300,
+      );
+      expect(
+        DotsCoverGeometry.maxPageCountForSubstrate(
+          DotsPaperSubstrate.gloss200,
+        ),
+        300,
+      );
     });
 
     test('value-equal instances compare ==', () {

@@ -18,9 +18,9 @@ enum DotsSupplier {
 
   /// Smallest interior page count accepted by this supplier.
   ///
-  /// Callers must additionally honour the global maximum of 250 pages
-  /// (and respect the per-substrate tier ceiling, which may be lower
-  /// for `uncoated150`).
+  /// Callers must additionally honour the per-substrate maximum (250
+  /// pages for `uncoated150`, 300 for `satin170` / `gloss200`) and the
+  /// per-substrate tier ceiling (242 pages for `uncoated150`).
   int get minPageCount {
     switch (this) {
       case DotsSupplier.europa:
