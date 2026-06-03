@@ -75,9 +75,11 @@ enum DotsFontRole {
   /// Inter, italic. Available for callers who need it.
   interItalic,
 
-  /// Inter SemiBold (static 600-weight TTF). Used for the header/footer
-  /// trio — page numbers, centre label, and wordmark — at 7 pt / 8.4 pt
-  /// leading. Inter v4.1 © Rasmus Andersson — SIL OFL 1.1.
+  /// Inter SemiBold (static 600-weight TTF). Used for the footer brand
+  /// wordmark (`Dots. Memories`) at 7 pt / 8.4 pt leading per
+  /// `docs/specs/00-foundation.md` §3–4. The header name/context labels use
+  /// [p22MackinacBook] 9 pt, not this role. Inter v4.1 © Rasmus Andersson —
+  /// SIL OFL 1.1.
   interSemibold,
 
   /// Biro Script Plus, regular. Used only for the rotated signature
