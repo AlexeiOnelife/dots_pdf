@@ -141,7 +141,7 @@ void main() {
       expect(p.elements, hasLength(16));
     });
 
-    test('parejas Q1 marker is "(Q1)" with parens per pdf02 p.9', () {
+    test('parejas section number is "(01)" with parens per spec p9', () {
       final p = DotsAlbumSpreadPage.beforeYouStart(
         type: DotsAlbumType.parejas,
         pageNumber: 5,
@@ -149,7 +149,7 @@ void main() {
       );
       final blocks =
           p.elements.whereType<DotsTextBlockElement>().toList();
-      expect(blocks[0].value, equals('(Q1)'));
+      expect(blocks[0].value, equals('(01)'));
       expect(blocks[1].value, equals('Buscad vuestro momento'));
       // Q1 body — canonical vosotros copy from pdf02 p.9.
       expect(blocks[2].value, contains('Encontrad un espacio'));
@@ -164,7 +164,7 @@ void main() {
       );
       final blocks =
           p.elements.whereType<DotsTextBlockElement>().toList();
-      expect(blocks[3].value, equals('(Q2)'));
+      expect(blocks[3].value, equals('(02)'));
       expect(blocks[4].value, equals('Escuchad vuestra historia'));
       // Q2 body — canonical "Hay recuerdos que no caben…" vosotros copy.
       expect(blocks[5].value, contains('habéis ido guardando'));

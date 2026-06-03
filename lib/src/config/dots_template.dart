@@ -1389,10 +1389,11 @@ class DotsAlbumSpreadPage extends DotsPage {
     required String body,
     required String signature,
   }) {
-    // Canonical element positions corrected against pdf02 p.5 / pdf08 p.5
-    // (Task 4 fidelity work):
+    // Canonical element positions corrected against docs/specs/02-pareja.md
+    // §p5 (dedication):
     //   - text x = 50.53 mm from the (right-page) trim left edge.
-    //   - body width = 120 mm (was 102 mm — too narrow).
+    //   - body width = 102 mm (spec: "Body … 102 wide"). The spec is the
+    //     contract and overrides the earlier 120 mm reading.
     //   - y values stay near the previous defaults until the relative-y
     //     refinement lands (deferred follow-up: title→body 6.5 mm gap,
     //     body→signature 8 mm gap).
@@ -1400,7 +1401,7 @@ class DotsAlbumSpreadPage extends DotsPage {
     const double titleY = 60 * _mmToPt;
     const double bodyY = 90 * _mmToPt;
     const double signatureY = 160 * _mmToPt;
-    const double bodyWidthMm = 120;
+    const double bodyWidthMm = 102;
     const double bodyWidthPt = bodyWidthMm * _mmToPt;
 
     final elements = <DotsElement>[
@@ -2292,8 +2293,8 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///     body centered in a 93 mm-wide box at x=55.309 mm.
   ///
   /// Per-category copy:
-  ///   - `parejas`, `hijos`: marker `(Q1)` / `(Q2)`, canonical bodies
-  ///     from the source PDFs.
+  ///   - `parejas`: marker `(01)` / `(02)` per docs/specs/02-pareja.md §p9.
+  ///   - `hijos`: marker `(Q1)` / `(Q2)`, canonical bodies from the source PDF.
   ///   - `individuales`, `otros`, `boda`, `generalEventos`: marker
   ///     `(01)` / `(02)`, per-category bodies.
   ///
@@ -2322,8 +2323,8 @@ class DotsAlbumSpreadPage extends DotsPage {
       String q2Body,
     ) = switch (type) {
       DotsAlbumType.parejas => (
-          // pdf02 p.9 — vosotros form, marker uses Q-letter prefix.
-          '(Q1)',
+          // pdf02 p.9 — vosotros form. Section numbers per spec p9: (01)/(02).
+          '(01)',
           'Buscad vuestro momento',
           'Encontrad un espacio donde podáis estar en calma. Sentaos. '
               'Respirad despacio. Dejad que el silencio os encuentre, '
@@ -2332,7 +2333,7 @@ class DotsAlbumSpreadPage extends DotsPage {
               'de fuera... En ese pequeño respiro, el tiempo se abre y '
               'con ello comienza vuestro viaje al pasado. Sentid. '
               'Dejaos llevar. Ese es el único objetivo.',
-          '(Q2)',
+          '(02)',
           'Escuchad vuestra historia',
           'Hay recuerdos que no caben en una foto. Durante todo este '
               'tiempo habéis ido guardando esos instantes que han '
