@@ -16,14 +16,15 @@ extension DotsAlbumTypeContext on DotsAlbumType {
   /// | generalEventos | `{Protagonistas}`  |
   /// | parejas        | `{tiempojuntos}`   |
   /// | individuales   | `{Año}`            |
-  /// | otros          | `{Año}`            |
+  /// | otros          | `{Año} | {Año}`    |
   String get contextLabelToken => switch (this) {
         DotsAlbumType.boda ||
         DotsAlbumType.hijos ||
         DotsAlbumType.generalEventos =>
           '{Protagonistas}',
         DotsAlbumType.parejas => '{tiempojuntos}',
-        DotsAlbumType.individuales || DotsAlbumType.otros => '{Año}',
+        DotsAlbumType.individuales => '{Año}',
+        DotsAlbumType.otros => '{Año} | {Año}',
       };
 }
 
