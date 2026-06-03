@@ -2941,6 +2941,17 @@ class DotsAlbumSpreadPage extends DotsPage {
       DotsAlbumType.boda || DotsAlbumType.generalEventos => null,
     };
 
+    // Per-category protagonist-names label fallback (used when the caller
+    // passes an empty contextLabelValue). Per docs/specs/05-hijos.md
+    // "Differences vs pareja", the inicial p10 label is the SINGULAR
+    // `{Protagonista}` for hijos, distinct from the plural `{Protagonistas}`
+    // header label used elsewhere. All other categories keep the plural
+    // placeholder.
+    final String labelFallback = switch (type) {
+      DotsAlbumType.hijos => '{Protagonista}',
+      _ => '{Protagonistas}',
+    };
+
     final elements = <DotsElement>[
       // Title line 1 — "Antes de empezar" (P22 Mackinac Medium 27pt).
       const DotsTextBlockElement(
@@ -2982,12 +2993,13 @@ class DotsAlbumSpreadPage extends DotsPage {
       // pdf12 p.3) only show title + body on the right page.
       if (cta != null) ...[
         // Protagonist-names line — Inter Medium 9pt, 100 mm wide,
-        // centered on the right page. Falls back to "{Protagonistas}"
-        // when caller passes empty contextLabelValue.
+        // centered on the right page. Falls back to the per-type
+        // placeholder (`{Protagonista}` singular for hijos; otherwise
+        // `{Protagonistas}`) when caller passes empty contextLabelValue.
         DotsTextBlockElement(
           x: (203 + (203 - 100) / 2) * _mmToPt,
           y: 210 * _mmToPt,
-          value: contextLabelValue.isEmpty ? '{Protagonistas}' : contextLabelValue,
+          value: contextLabelValue.isEmpty ? labelFallback : contextLabelValue,
           fontSize: 9,
           width: 100 * _mmToPt,
           fontFamily: 'Inter',
