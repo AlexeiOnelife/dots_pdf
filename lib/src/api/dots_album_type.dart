@@ -13,17 +13,22 @@ extension DotsAlbumTypeContext on DotsAlbumType {
   /// |----------------|--------------------|
   /// | boda           | `{Protagonistas}`  |
   /// | hijos          | `{Protagonistas}`  |
-  /// | generalEventos | `{Protagonistas}`  |
+  /// | generalEventos | `{Año}`            |
   /// | parejas        | `{tiempojuntos}`   |
   /// | individuales   | `{Año}`            |
   /// | otros          | `{Año} | {Año}`    |
+  ///
+  /// `generalEventos` uses `{Año}` for its album-spread right-page header
+  /// per docs/specs/07-general-eventos.md, confirmed by the inicial spread
+  /// (`pdf12_general_eventos_inicial.pdf` p.2 right page = `{año}`). This
+  /// is distinct from `boda`/`hijos`, which legitimately use the
+  /// `{Protagonistas}` label.
   String get contextLabelToken => switch (this) {
-        DotsAlbumType.boda ||
-        DotsAlbumType.hijos ||
-        DotsAlbumType.generalEventos =>
-          '{Protagonistas}',
+        DotsAlbumType.boda || DotsAlbumType.hijos => '{Protagonistas}',
         DotsAlbumType.parejas => '{tiempojuntos}',
-        DotsAlbumType.individuales => '{Año}',
+        DotsAlbumType.individuales ||
+        DotsAlbumType.generalEventos =>
+          '{Año}',
         DotsAlbumType.otros => '{Año} | {Año}',
       };
 }

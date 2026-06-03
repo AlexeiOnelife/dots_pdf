@@ -2814,12 +2814,19 @@ class DotsAlbumSpreadPage extends DotsPage {
           width: photoWidthPt,
           height: photoHeightPt,
         ),
-      DotsTextElement(
+      // Title `{TítuloDelAlbum}` — centered in a 115 mm box, P22 Mackinac
+      // Medium 20 / 24 pt per docs/specs/07-general-eventos.md §final p3
+      // (box height 5.793 mm "variable" — auto-grows, not modelled). The
+      // 115 mm box at x=44 mm centers on the 203 mm page (44+57.5=101.5).
+      DotsTextBlockElement(
         x: textBoxX,
         y: titleY,
         value: content.title,
         fontSize: titleFontSize,
+        width: textBoxWidthPt,
         fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 24.0 / 20.0,
       ),
       DotsTextBlockElement(
         x: textBoxX,

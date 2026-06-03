@@ -77,8 +77,10 @@ void main() {
       final p = page();
       expect(p.elements, hasLength(3));
       expect(p.elements.whereType<DotsImageElement>(), hasLength(1));
-      expect(p.elements.whereType<DotsTextElement>(), hasLength(1));
-      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(1));
+      // Title + subtitle are both DotsTextBlockElement: the title is a
+      // centered 115 mm box per docs/specs/07-general-eventos.md §final p3.
+      expect(p.elements.whereType<DotsTextElement>(), isEmpty);
+      expect(p.elements.whereType<DotsTextBlockElement>(), hasLength(2));
     });
 
     test('omits photo when photoPath is null', () {
@@ -97,11 +99,18 @@ void main() {
       expect(img.assetPath, equals('photo.jpg'));
     });
 
-    test('title is content.title at 20pt P22 Mackinac Medium, x=44 mm', () {
-      final title = page().elements.whereType<DotsTextElement>().single;
+    test('title is content.title at 20pt P22 Mackinac Medium, centered in a '
+        '115 mm box at x=44 mm', () {
+      final title = page()
+          .elements
+          .whereType<DotsTextBlockElement>()
+          .firstWhere((b) => b.value == 'Boda de Ana y Luis');
       expect(title.value, equals('Boda de Ana y Luis'));
       expect(title.fontSize, equals(20.0));
       expect(title.fontFamily, equals('P22 Mackinac Medium'));
+      expect(title.textAlign, equals(DotsTextAlign.center));
+      expect(title.lineHeight, closeTo(24.0 / 20.0, 1e-9));
+      expect(title.width, closeTo(115 * _mmToPt, 0.01));
       expect(title.x, closeTo(44 * _mmToPt, 0.01));
       // y = photo_y + photo_height + 5 mm.
       expect(title.y, closeTo((71.534 + 86 + 5) * _mmToPt, 0.01));
@@ -109,7 +118,10 @@ void main() {
 
     test('subtitle composes "Vivido con mucho amor por: …" from signatures',
         () {
-      final sub = page().elements.whereType<DotsTextBlockElement>().single;
+      final sub = page()
+          .elements
+          .whereType<DotsTextBlockElement>()
+          .firstWhere((b) => b.value.startsWith('Vivido con mucho amor'));
       expect(sub.value, equals('Vivido con mucho amor por: Ana y Luis'));
       expect(sub.fontSize, equals(9.0));
       expect(sub.fontFamily, equals('P22 Mackinac Book'));
@@ -124,7 +136,9 @@ void main() {
         pageNumber: 14,
         content: _content(signature1: 'María', signature2: 'José'),
       );
-      final sub = p.elements.whereType<DotsTextBlockElement>().single;
+      final sub = p.elements
+          .whereType<DotsTextBlockElement>()
+          .firstWhere((b) => b.value.startsWith('Vivido con mucho amor'));
       expect(sub.value, equals('Vivido con mucho amor por: María y José'));
     });
   });
