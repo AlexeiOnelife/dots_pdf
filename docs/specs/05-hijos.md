@@ -18,12 +18,14 @@ Same as pareja: inicial `1–4=single, 5–10=spread`; final `1–2=spread,
 
 | Page | Field | Pareja | Hijos |
 |---|---|---|---|
-| inicial p1/p2 | eyebrow | `DOTBOOK` | `DOTBOOK DE {PROTAGONISTA}` (Inter Book 9 pt, box 120 × 3.785 mm, not personalizable beyond protagonist) |
 | header (all) | right-page label | `{tiempojuntos}` | `{Protagonistas}` |
 | inicial p10 / final p1 | label | `{tiempojuntos}` | `{Protagonista}` |
 
 Everything else matches pareja:
 
+- **eyebrow** (p1/p2): `DOTBOOK DE {PROTAGONISTA}` — identical to pareja (the
+  base-truth PDFs `pdf02 p1/p2` and `pdf08 p1/p2` both use the personalized
+  form), so it is **not** a difference. Inter Book 9 pt, box 120 × 3.785 mm.
 - **p1 cover face**: `{NombreDelAlbum}` title P22 Mackinac medium 23 / 27.6 pt,
   box 120 × 6.635 mm, no word-break; date `{DiadeMesdeAñodeFechaDeInicio} | …`
   Inter Book 9 pt box 120 × 3.785 mm; circle field dia 16 / 28 / 47 mm, edge

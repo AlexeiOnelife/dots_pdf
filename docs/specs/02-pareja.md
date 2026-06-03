@@ -27,7 +27,7 @@ Decorative circle field + album title. Background `#fdfefd`.
 
 | Element | Text / placeholder | Box W×H (mm) | Font | Align | Editable | Notes |
 |---|---|---|---|---|---|---|
-| Eyebrow | `DOTBOOK` | — | Inter Book 9 pt | center | no | eyebrow above title |
+| Eyebrow | `DOTBOOK DE {PROTAGONISTA}` | 120 × 3.785 | Inter Book 9 pt | center | no | eyebrow above title; verified against `pdf02_pareja_inicial.pdf` p1/p2 (base truth shows the personalized form for pareja too) |
 | Title | `{NombreDelAlbum}` | 120 wide × 6.635 | P22 Mackinac medium 23 / 27.6 pt | center | yes | no word-break allowed |
 | Date line | `{DiadeMesdeAñodeFechaDeInicio} | {DiadeMesdeAñodeFechaDeInicio}` | 120 × 3.785 | Inter Book 9 / 10.8 pt | center | yes | start/end dates |
 | Circle field | decorative | dia 16 / 28 / 47 mm | — | — | no | each circle: edge fade **1.764 mm**; see circle table (p4) |
