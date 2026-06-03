@@ -1755,7 +1755,12 @@ class DotsAlbumSpreadPage extends DotsPage {
   // Named constructor — photo-arc spread
   // ---------------------------------------------------------------------------
 
-  /// Builds the "Un año lleno de recuerdos" photo-arc spread for [type].
+  /// Builds the final p2 photo arc/halo spread for [type].
+  ///
+  /// Per docs/specs/02-pareja.md §final p2 (shared across otros/hijos/
+  /// individual), the page is the photo arc/halo **alone** — 28 photo slots,
+  /// no title and no QR. The QR keep-alive (title/body/caption/QR card) is
+  /// final p1; see [DotsAlbumSpreadPage.closingQrSpread].
   ///
   /// Supported types: [DotsAlbumType.parejas], [DotsAlbumType.hijos],
   /// [DotsAlbumType.individuales], and [DotsAlbumType.otros].
@@ -1765,7 +1770,7 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// MUST have `width >= 406 mm (1150.87 pt)`. Elements with
   /// `x + diameter > pageWidth` will be clipped silently by the PDF viewer.
   ///
-  /// Throws a [RangeError] when `content.photoPaths.length != 10`.
+  /// Throws a [RangeError] when `content.photoPaths.length != 28`.
   ///
   /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
   ///         rightPageNumber = '${pageNumber + 1}'. This factory builds a
@@ -1798,37 +1803,12 @@ class DotsAlbumSpreadPage extends DotsPage {
       );
     }
 
-    // Per-type QR caption defaults.
-    const String rightCaption = 'Todos tus hitos en un lugar';
-    final String defaultLeftCaption = switch (type) {
-      DotsAlbumType.parejas => 'Vuestro álbum en digital',
-      DotsAlbumType.hijos ||
-      DotsAlbumType.individuales ||
-      DotsAlbumType.otros =>
-        'Tu album en digital',
-      DotsAlbumType.boda ||
-      DotsAlbumType.generalEventos =>
-        '', // unreachable — guarded above
-    };
-    final String leftCaption =
-        content.qrCaptionLeftOverride ?? defaultLeftCaption;
-    final String rightCaptionResolved =
-        content.qrCaptionRightOverride ?? rightCaption;
-
-    // Oval QR geometry constants (mm → pt).
-    // Source: parejas p.9 / boda p.4 canonical spec dimensions.
-    const double kOvalWidthMm = 25.841;
-    const double kOvalHeightMm = 43.127;
-    // Gutter centre at 203 mm; QR centres 27 mm each side.
-    // Left QR centre x = 203 - 27 = 176 mm → top-left x = 176 - 25.841/2 = 163.0795 mm.
-    // Right QR centre x = 203 + 27 = 230 mm → top-left x = 230 - 25.841/2 = 217.0795 mm.
-    // Top of QR caption: 20 mm above page bottom (254 mm) → caption top at 234 mm.
-    // Oval top-left y = 254 - 20 - 43.127 = 190.873 mm (caption-top interpretation).
-    const double ovalYMm = 190.873;
-    const double ovalLeftXMm = 163.0795;
-    const double ovalRightXMm = 217.0795;
-
-    // Build 10 photo-circle elements from kPhotoArcLayout.
+    // Build the 28 photo-circle elements from kPhotoArcLayout.
+    //
+    // Per docs/specs/02-pareja.md §final p2 the page is the photo arc/halo
+    // ALONE: no title, no date subtitle, no QR. The QR keep-alive (title,
+    // body, caption, single oval QR card) is final p1 — see
+    // [DotsAlbumSpreadPage.closingQrSpread].
     final circles = <DotsElement>[
       for (var i = 0; i < kPhotoArcLayout.length; i++)
         DotsPhotoCircleElement(
@@ -1839,53 +1819,6 @@ class DotsAlbumSpreadPage extends DotsPage {
         ),
     ];
 
-    // Build 2 oval-QR elements at the bottom gutter.
-    final ovals = <DotsElement>[
-      DotsOvalQrElement(
-        x: ovalLeftXMm * _mmToPt,
-        y: ovalYMm * _mmToPt,
-        ovalWidth: kOvalWidthMm * _mmToPt,
-        ovalHeight: kOvalHeightMm * _mmToPt,
-        qrPayload: content.qrPayloadLeft,
-        caption: leftCaption,
-      ),
-      DotsOvalQrElement(
-        x: ovalRightXMm * _mmToPt,
-        y: ovalYMm * _mmToPt,
-        ovalWidth: kOvalWidthMm * _mmToPt,
-        ovalHeight: kOvalHeightMm * _mmToPt,
-        qrPayload: content.qrPayloadRight,
-        caption: rightCaptionResolved,
-      ),
-    ];
-
-    // Build title text at (19 mm, 43 mm) — P22 Mackinac Medium 23pt.
-    // Build date subtitle at (19 mm, 43 mm + 23pt*1.2/mmToPt + 5 mm).
-    // 23pt * 1.2 = 27.6pt; 27.6pt / 2.834645669 ≈ 9.737 mm; + 5 mm = 14.737 mm gap.
-    const double titleXMm = 19.0;
-    const double titleYMm = 43.0;
-    const double titleFontSize = 23.0;
-    const double subtitleXMm = 19.0;
-    const double subtitleYMm =
-        titleYMm + (titleFontSize * 1.2 / _mmToPt) + 5.0;
-
-    final texts = <DotsElement>[
-      DotsTextElement(
-        x: titleXMm * _mmToPt,
-        y: titleYMm * _mmToPt,
-        value: content.title,
-        fontSize: titleFontSize,
-        fontFamily: 'P22 Mackinac Medium',
-      ),
-      DotsTextElement(
-        x: subtitleXMm * _mmToPt,
-        y: subtitleYMm * _mmToPt,
-        value: content.dateSubtitle,
-        fontSize: 9.0,
-        fontFamily: 'P22 Mackinac Book',
-      ),
-    ];
-
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
@@ -1894,7 +1827,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         rightPageNumber: '${pageNumber + 1}',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: [...circles, ...ovals, ...texts],
+      elements: circles,
     );
   }
 
@@ -2850,21 +2783,20 @@ class DotsAlbumSpreadPage extends DotsPage {
         fontSize: 23,
         width: titleWidthMm * _mmToPt,
         fontFamily: 'P22 Mackinac Medium',
-        textAlign: DotsTextAlign.left,
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.087, // 25 / 23.
       ),
-      // Body — fixed canonical copy.
+      // Body — fixed canonical copy (docs/specs/02-pareja.md §final p1).
       const DotsTextBlockElement(
         x: bodyXMm * _mmToPt,
         y: bodyYMm * _mmToPt,
-        value: 'Las fotografías capturan momentos. Las palabras los hacen '
-            'vivir. En este álbum, ambos viajan juntos para que el tiempo '
-            'no los borre.',
+        value: 'Las fotografías capturan momentos. Los vídeos conservan la '
+            'emoción…',
         fontSize: 9,
         width: bodyWidthMm * _mmToPt,
         fontFamily: 'Inter',
         colorHex: '#1e1e1e',
-        textAlign: DotsTextAlign.left,
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.2,
       ),
       // QR block. The PDF shows a SQUARE 27×27 mm block; we use the
@@ -2899,7 +2831,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         width: bottomWidthMm * _mmToPt,
         fontFamily: 'Inter',
         colorHex: '#1e1e1e',
-        textAlign: DotsTextAlign.left,
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.2,
       ),
       // Right-page decorative-circle scatter — 28 circles from
