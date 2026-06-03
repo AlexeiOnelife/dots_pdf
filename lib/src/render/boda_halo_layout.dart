@@ -1,16 +1,21 @@
-// Layout table for the 10 rotated photo slots on the boda-halo spread page
-// (boda p.4 "Boda de Nombre&Nombre" radial halo title spread).
+// Layout table for the boda final p2 "photo halo" spread.
 //
-// Source: extracted_coordinates.md §2 (AABB positions) converted to unrotated
-// top-left coords via center-preserving rotation arithmetic (design D1):
+// Source: docs/specs/04-boda.md §final p2 — "Same 28-slot coordinate set as
+// 02-pareja.md §final p2". Boda's final back matter matches the shared final:
+// the photo halo is the 28-slot arrangement alone (no QR card, no title — the
+// QR keep-alive is final p1; see DotsAlbumSpreadPage.closingQrSpread).
 //
-//   center      = (aabbX + aabbW/2, aabbY + aabbH/2)
-//   unrotatedTL = (center_x − widthMm/2, center_y − heightMm/2)
+// A prior revision of this file modelled a stale "Boda de Nombre&Nombre"
+// radial title spread (10 rotated photos + 2 oval QR cards + 3 title texts).
+// That page does not exist in the current spec — boda inicial is the short
+// three-page front matter (welcome, instructions, antes-cluster) and the boda
+// final mirrors the shared final. The layout has been reconciled to the
+// canonical 28-slot halo coordinate set per docs/specs/04-boda.md §final p2.
 //
-// Confidence: MEDIUM (±0.5 mm). Deferred follow-up to verify against the
-// InDesign/Illustrator source (Q3). The InDesign anchor (x = 37.477 mm,
-// y = 50.388 mm) cannot be matched to the PDF content stream; this discrepancy
-// is documented here pending access to the source file.
+// Coordinates are in millimetres from the top-left of the spread artboard.
+// All slots share diameter 44.45 mm (uniform — the spec lists slot
+// coordinates only and does not vary the slot size), matching the shared
+// photo-arc layout (see lib/src/render/photo_arc_layout.dart).
 //
 // This file is library-private: kBodaHaloLayout is NOT exported from
 // lib/dots_pdf.dart.
@@ -21,69 +26,60 @@ import 'package:meta/meta.dart';
 
 @immutable
 class _BodaHaloAnchor {
-  const _BodaHaloAnchor({
-    required this.xMm,
-    required this.yMm,
-    required this.angleDegrees,
-    this.bleedBottom = false,
-  });
+  const _BodaHaloAnchor({required this.xMm, required this.yMm});
 
   final double xMm;
   final double yMm;
-  final double angleDegrees;
-  final bool bleedBottom;
 
-  /// Uniform unrotated width for every halo photo (33.5 mm = 95.0 pt).
-  static const double widthMm = 33.5;
-
-  /// Uniform unrotated height for every halo photo (46.4 mm = 131.4 pt).
-  static const double heightMm = 46.4;
+  /// Uniform diameter for every halo photo. The spec
+  /// (docs/specs/04-boda.md §final p2) lists slot coordinates only — it does
+  /// not vary the slot size — so all 28 slots keep the established uniform
+  /// value, matching the shared photo-arc layout.
+  double get diameterMm => 44.45;
 }
 
-/// Canonical 10-slot layout for the boda-halo spread page.
+/// Canonical 28-slot layout for the boda final p2 photo halo spread.
 ///
-/// Each entry stores the **unrotated** top-left (xMm, yMm) in mm, a signed
-/// [angleDegrees], and a [bleedBottom] flag.
+/// All 28 entries use diameter 44.45 mm. Coordinates are in millimetres from
+/// the top-left of the spread artboard. The factory
+/// [DotsAlbumSpreadPage.bodaHalo] converts mm to PDF points at construction
+/// time using `mm * 72 / 25.4`.
 ///
-/// All 10 slots share uniform unrotated dimensions:
-///   - width  = 33.5 mm ([_BodaHaloAnchor.widthMm])
-///   - height = 46.4 mm ([_BodaHaloAnchor.heightMm])
+/// Per docs/specs/04-boda.md §final p2 this is the same 28-slot set as
+/// docs/specs/02-pareja.md §final p2 (the shared photo arc/halo).
 ///
-/// Indices 0–4 are right-page-relative (R1–R5, positive angles).
-/// Indices 5–9 are left-page-relative (L1–L5, negative angles).
-/// The factory [DotsAlbumSpreadPage.bodaHalo] adds 203 mm to R-slot x values
-/// when composing spread-relative [DotsRotatedPhotoElement] instances.
-///
-/// Slots at indices 4 (R5) and 9 (L5) have [bleedBottom] = true because
-/// they extend below the 254 mm page trim; [pw.Stack] does not clip, so
-/// this flag is informational only.
-///
-/// **Confidence: MEDIUM.** Coords derived from PDF content-stream AABBs ±0.5 mm.
-/// Deferred InDesign source verification per open question Q3.
-///
-/// This list is library-private — consumed by [DotsAlbumSpreadPage.bodaHalo]
-/// and MUST NOT be exported from `lib/dots_pdf.dart`.
+/// This list is library-private — it is consumed by
+/// [DotsAlbumSpreadPage.bodaHalo] and MUST NOT be exported from
+/// `lib/dots_pdf.dart`.
 const List<_BodaHaloAnchor> kBodaHaloLayout = <_BodaHaloAnchor>[
-  // R1 — right page, slot 1
-  _BodaHaloAnchor(xMm: 15.30, yMm: 94.95, angleDegrees: 3.2),
-  // R2 — right page, slot 2
-  _BodaHaloAnchor(xMm: 63.30, yMm: 111.30, angleDegrees: 20.7),
-  // R3 — right page, slot 3
-  _BodaHaloAnchor(xMm: 104.75, yMm: 141.00, angleDegrees: 37.2),
-  // R4 — right page, slot 4
-  _BodaHaloAnchor(xMm: 134.00, yMm: 181.90, angleDegrees: 55.2),
-  // R5 — right page, slot 5 (bleedBottom: extends below trim)
-  _BodaHaloAnchor(xMm: 151.80, yMm: 228.75, angleDegrees: 68.3, bleedBottom: true),
-  // L1 — left page, slot 1
-  _BodaHaloAnchor(xMm: 154.30, yMm: 94.20, angleDegrees: -3.2),
-  // L2 — left page, slot 2
-  _BodaHaloAnchor(xMm: 118.90, yMm: 108.80, angleDegrees: -20.7),
-  // L3 — left page, slot 3
-  _BodaHaloAnchor(xMm: 76.55, yMm: 138.50, angleDegrees: -37.2),
-  // L4 — left page, slot 4
-  _BodaHaloAnchor(xMm: 25.50, yMm: 179.10, angleDegrees: -55.2),
-  // L5 — left page, slot 5 (bleedBottom: extends below trim)
-  _BodaHaloAnchor(xMm: 17.90, yMm: 230.30, angleDegrees: -68.3, bleedBottom: true),
+  _BodaHaloAnchor(xMm: 390, yMm: 57),
+  _BodaHaloAnchor(xMm: 362, yMm: 77),
+  _BodaHaloAnchor(xMm: 338, yMm: 57),
+  _BodaHaloAnchor(xMm: 307, yMm: 94),
+  _BodaHaloAnchor(xMm: 266, yMm: 102),
+  _BodaHaloAnchor(xMm: 236, yMm: 140),
+  _BodaHaloAnchor(xMm: 202, yMm: 128),
+  _BodaHaloAnchor(xMm: 205, yMm: 160),
+  _BodaHaloAnchor(xMm: 137, yMm: 142),
+  _BodaHaloAnchor(xMm: 149, yMm: 142),
+  _BodaHaloAnchor(xMm: 163, yMm: 136),
+  _BodaHaloAnchor(xMm: 165, yMm: 154),
+  _BodaHaloAnchor(xMm: 182, yMm: 157),
+  _BodaHaloAnchor(xMm: 177, yMm: 140),
+  _BodaHaloAnchor(xMm: 185, yMm: 132),
+  _BodaHaloAnchor(xMm: 241, yMm: 186),
+  _BodaHaloAnchor(xMm: 389, yMm: 94),
+  _BodaHaloAnchor(xMm: 348, yMm: 138),
+  _BodaHaloAnchor(xMm: 310, yMm: 194),
+  _BodaHaloAnchor(xMm: 271, yMm: 203),
+  _BodaHaloAnchor(xMm: 291, yMm: 135),
+  _BodaHaloAnchor(xMm: 266, yMm: 151),
+  _BodaHaloAnchor(xMm: 307, yMm: 216),
+  _BodaHaloAnchor(xMm: 348, yMm: 232),
+  _BodaHaloAnchor(xMm: 395, yMm: 139),
+  _BodaHaloAnchor(xMm: 369, yMm: 182),
+  _BodaHaloAnchor(xMm: 391, yMm: 201),
+  _BodaHaloAnchor(xMm: 389, yMm: 238),
 ];
 
 // ---------------------------------------------------------------------------
@@ -93,15 +89,12 @@ const List<_BodaHaloAnchor> kBodaHaloLayout = <_BodaHaloAnchor>[
 // depending on the private class name.
 // ---------------------------------------------------------------------------
 
-/// Projected row for test inspection.
+/// Projected row for test inspection: x (mm), y (mm), diameter (mm).
 /// Exposed only for `boda_halo_layout_test.dart`.
 typedef BodaHaloAnchorForTest = ({
   double xMm,
   double yMm,
-  double angleDegrees,
-  bool bleedBottom,
-  double widthMm,
-  double heightMm,
+  double diameterMm,
 });
 
 /// Returns [kBodaHaloLayout] as an unmodifiable list of named records so
@@ -114,10 +107,7 @@ List<BodaHaloAnchorForTest> get kBodaHaloLayoutForTest =>
         (a) => (
           xMm: a.xMm,
           yMm: a.yMm,
-          angleDegrees: a.angleDegrees,
-          bleedBottom: a.bleedBottom,
-          widthMm: _BodaHaloAnchor.widthMm,
-          heightMm: _BodaHaloAnchor.heightMm,
+          diameterMm: a.diameterMm,
         ),
       ),
     );

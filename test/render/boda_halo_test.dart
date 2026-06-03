@@ -1,8 +1,7 @@
-// Tests for boda-halo render pipeline (R2, R7, R8).
-// Scenarios: S28 (main-isolate render), S29 (worker-isolate parity),
-//            S21 (ArgumentError via render path), S22 (RangeError length!=10),
-//            S9  (decode failure skips + fires onPhotoFailure),
-//            S32 (spread-width warning when pageSize.width < 406 mm).
+// Tests for boda final p2 photo-halo render pipeline.
+// Scenarios: main-isolate render, worker-isolate parity, ArgumentError on
+//            non-boda type, RangeError on length != 28, decode failure skips +
+//            fires onPhotoFailure, spread-width warning when width < 406 mm.
 import 'dart:typed_data';
 
 import 'package:dots_pdf/dots_pdf.dart';
@@ -35,12 +34,8 @@ class _SpyLogger implements DotsLogger {
 // Helpers
 // ---------------------------------------------------------------------------
 
-AlbumBodaHaloContent _content10() => AlbumBodaHaloContent(
-      photoPaths: List.generate(10, (i) => 'photo_$i.jpg'),
-      titleLine2: 'Ana & Luis',
-      dateSubtitle: '12 de octubre de 2024',
-      qrPayloadLeft: 'https://example.com/left',
-      qrPayloadRight: 'https://example.com/right',
+AlbumBodaHaloContent _content28() => AlbumBodaHaloContent(
+      photoPaths: List.generate(28, (i) => 'photo_$i.jpg'),
     );
 
 /// Returns a tiny valid PNG (10×10 white pixels).
@@ -85,9 +80,9 @@ Future<pw.Page> _renderPage(
 // ---------------------------------------------------------------------------
 
 void main() {
-  group('boda halo render — main-isolate (S28)', () {
+  group('boda halo render — main-isolate', () {
     test('renders non-empty PDF byte buffer via useIsolate: false', () async {
-      final pwPage = await _renderPage(_content10());
+      final pwPage = await _renderPage(_content28());
       expect(pwPage, isA<pw.Page>());
 
       final doc = pw.Document();
@@ -97,16 +92,16 @@ void main() {
     });
   });
 
-  group('boda halo render — worker-isolate parity (S29)', () {
+  group('boda halo render — worker-isolate parity', () {
     test('worker-isolate render matches main-isolate non-empty result',
         () async {
       // Both paths use buildAlbumSpreadPage. Run twice; compare PDF byte sizes.
       final doc1 = pw.Document();
-      doc1.addPage(await _renderPage(_content10()));
+      doc1.addPage(await _renderPage(_content28()));
       final bytes1 = await doc1.save();
 
       final doc2 = pw.Document();
-      doc2.addPage(await _renderPage(_content10()));
+      doc2.addPage(await _renderPage(_content28()));
       final bytes2 = await doc2.save();
 
       expect(bytes1.length, greaterThan(0));
@@ -121,12 +116,12 @@ void main() {
     });
   });
 
-  group('boda halo render — ArgumentError on non-boda type (S21)', () {
+  group('boda halo render — ArgumentError on non-boda type', () {
     test('throws ArgumentError when type is not DotsAlbumType.boda', () {
       expect(
         () => buildBodaHaloPageFor(
           DotsAlbumType.parejas,
-          _content10(),
+          _content28(),
           pageNumber: 4,
           contextLabelValue: 'Test',
         ),
@@ -135,17 +130,13 @@ void main() {
     });
   });
 
-  group('boda halo render — RangeError on photoPaths.length != 10 (S22)', () {
-    test('throws RangeError when photoPaths has 9 entries', () {
+  group('boda halo render — RangeError on photoPaths.length != 28', () {
+    test('throws RangeError when photoPaths has 27 entries', () {
       expect(
         () => buildBodaHaloPageFor(
           DotsAlbumType.boda,
           AlbumBodaHaloContent(
-            photoPaths: List.generate(9, (i) => 'photo_$i.jpg'),
-            titleLine2: 'Ana & Luis',
-            dateSubtitle: '12 oct 2024',
-            qrPayloadLeft: 'l',
-            qrPayloadRight: 'r',
+            photoPaths: List.generate(27, (i) => 'photo_$i.jpg'),
           ),
           pageNumber: 4,
           contextLabelValue: 'Test',
@@ -155,11 +146,11 @@ void main() {
     });
   });
 
-  group('boda halo render — decode failure (S9)', () {
+  group('boda halo render — decode failure', () {
     test('skips element and fires onPhotoFailure on decode error', () async {
       var failureCalled = false;
       final pwPage = await _renderPage(
-        _content10(),
+        _content28(),
         bytesResolver: (_) async => throw Exception('decode failure'),
         onPhotoFailure: (_, __) => failureCalled = true,
       );
@@ -169,11 +160,11 @@ void main() {
     });
   });
 
-  group('boda halo render — spread-width warning (S32)', () {
+  group('boda halo render — spread-width warning', () {
     test('emits logger warning when pageSize.width < 406 mm', () async {
       final spy = _SpyLogger();
       await _renderPage(
-        _content10(),
+        _content28(),
         logger: spy,
         pageWidthMm: 203.0, // narrower than 406 mm
       );
