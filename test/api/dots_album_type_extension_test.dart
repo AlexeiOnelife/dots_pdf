@@ -24,6 +24,15 @@ void main() {
       expect(DotsAlbumType.individuales.contextLabelToken, equals('{Año}'));
     });
 
+    test('DotsAlbumType contextLabel — generalEventos returns {Año}', () {
+      // docs/specs/07-general-eventos.md: right-page (album-spread) header
+      // label is `{Año}`, confirmed by pdf12 p.2 right page (`{año}`).
+      expect(
+        DotsAlbumType.generalEventos.contextLabelToken,
+        equals('{Año}'),
+      );
+    });
+
     test('DotsAlbumType contextLabel — otros returns {Año} | {Año}', () {
       // docs/specs/03-otros.md header + docs/specs/06-individual.md
       // "Differences vs otros": otros = `{Año} | {Año}`, individual = `{Año}`.

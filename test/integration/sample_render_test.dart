@@ -622,8 +622,6 @@ List<DotsAlbumSpreadPage> _generalEventosPages() => [
         content: AlbumEventosClosingContent(
           photoPath: _photo('eventos_closing'),
           title: 'Festival de Verano 2024',
-          signature1: 'María',
-          signature2: 'José',
         ),
       ),
     ];

@@ -2766,13 +2766,12 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// subtitle composes from two signature inputs unique to the
   /// generalEventos category.
   ///
-  /// Filled in Task 7 of `final-render-refinement` against
-  /// `pdf13_general_eventos_final.pdf` p.3. Layout mirrors the standard
-  /// `closing` factory: 66×86 mm photo centered horizontally at y=71.534,
-  /// 20pt title at y=photo_bottom+5, 9pt subtitle at y=title_bottom+5.
-  /// The dual-signature subtitle is composed from `content.signature1`
-  /// and `content.signature2` per the spec text "Vivido con mucho amor
-  /// por: {Firma 1} y {Firma 2}".
+  /// Filled against `pdf13_general_eventos_final.pdf` p.3 and
+  /// `docs/specs/07-general-eventos.md` §final p3: a 66×86 mm photo
+  /// centered horizontally at y=71.534 mm and a `{TítuloDelAlbum}` title
+  /// (P22 Mackinac medium 20/24 pt, centered in a 115 mm box) at
+  /// y=photo_bottom+5. The base-truth PDF p3 carries no signature
+  /// subtitle, so none is rendered.
   factory DotsAlbumSpreadPage.eventosClosing({
     required DotsAlbumType type,
     required int pageNumber,
@@ -2799,11 +2798,6 @@ class DotsAlbumSpreadPage extends DotsPage {
     const double textBoxWidthPt = 115.0 * _mmToPt;
     const double titleFontSize = 20.0;
     const double titleY = photoY + photoHeightPt + 5.0 * _mmToPt;
-    const double subtitleY = titleY + titleFontSize * 1.2 + 5.0 * _mmToPt;
-
-    final String subtitle =
-        'Vivido con mucho amor por: ${content.signature1} y '
-        '${content.signature2}';
 
     final elements = <DotsElement>[
       if (content.photoPath != null)
@@ -2814,24 +2808,19 @@ class DotsAlbumSpreadPage extends DotsPage {
           width: photoWidthPt,
           height: photoHeightPt,
         ),
-      DotsTextElement(
+      // Title `{TítuloDelAlbum}` — centered in a 115 mm box, P22 Mackinac
+      // Medium 20 / 24 pt per docs/specs/07-general-eventos.md §final p3
+      // (box height 5.793 mm "variable" — auto-grows, not modelled). The
+      // 115 mm box at x=44 mm centers on the 203 mm page (44+57.5=101.5).
+      DotsTextBlockElement(
         x: textBoxX,
         y: titleY,
         value: content.title,
         fontSize: titleFontSize,
-        fontFamily: 'P22 Mackinac Medium',
-      ),
-      DotsTextBlockElement(
-        x: textBoxX,
-        y: subtitleY,
-        value: subtitle,
-        fontSize: 9,
         width: textBoxWidthPt,
-        fontFamily: 'P22 Mackinac Book',
-        colorHex: '#1e1e1e',
+        fontFamily: 'P22 Mackinac Medium',
         textAlign: DotsTextAlign.center,
-        lineHeight: 1.2,
-        maxLines: 2,
+        lineHeight: 24.0 / 20.0,
       ),
     ];
 

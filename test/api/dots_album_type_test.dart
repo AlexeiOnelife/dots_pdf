@@ -11,11 +11,14 @@ void main() {
       expect(DotsAlbumType.values, contains(DotsAlbumType.generalEventos));
     });
 
-    test('DotsAlbumType.generalEventos — contextLabelToken is {Protagonistas}',
+    test('DotsAlbumType.generalEventos — contextLabelToken is {Año}',
         () {
+      // docs/specs/07-general-eventos.md: album-spread right-page header
+      // label is `{Año}` (pdf12 p.2 right page = `{año}`), distinct from
+      // boda/hijos `{Protagonistas}`.
       expect(
         DotsAlbumType.generalEventos.contextLabelToken,
-        equals('{Protagonistas}'),
+        equals('{Año}'),
       );
     });
 
