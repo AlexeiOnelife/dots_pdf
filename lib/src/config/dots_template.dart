@@ -1321,12 +1321,24 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///   - SIGNATURE (when [signature] is non-empty):
   ///     [DotsRotatedTextElement] in Biro Script Plus 12pt at 2°
   ///
-  /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
-  ///         rightPageNumber = '$pageNumber'.
+  /// Header: leftPageNumber = '$pageNumber', centerLabel = the dedication
+  ///         subject (see below), rightPageNumber = '$pageNumber'.
   /// Footer: wordmark = "Dots. Memories".
   ///
   /// [contextLabelValue] is a pre-resolved string (the caller is responsible
   /// for substituting the token before passing it here).
+  ///
+  /// **Dedication subject (centre header).** Per docs/specs/06-individual.md
+  /// "Differences vs otros", the individual dedication subject token is
+  /// `{Protagonista}` (the protagonist), distinct from the generic right-page
+  /// label `{Año}` carried by the cover face. The base-truth PDF confirms this:
+  /// `pdf10_individual_inicial.pdf` p3 shows `{Protagonista}` in the centre
+  /// header position (vs `{año}` on `pdf04_otros_inicial.pdf` p3). For
+  /// [DotsAlbumType.individuales] the centre label is therefore `{Protagonista}`
+  /// regardless of [contextLabelValue]; every other type renders
+  /// [contextLabelValue] unchanged. The signature (`{Firma}`) is supplied via
+  /// [signature], so the individual dedication carries `{Protagonista}` +
+  /// `{Firma}` exactly as the spec requires.
   factory DotsAlbumSpreadPage.dedication({
     required DotsAlbumType type,
     required int pageNumber,
@@ -1392,11 +1404,21 @@ class DotsAlbumSpreadPage extends DotsPage {
         ),
     ];
 
+    // Dedication subject (centre header). For individuales the dedication is
+    // addressed to the protagonist, so the centre label is `{Protagonista}`
+    // (docs/specs/06-individual.md "Differences vs otros"; base truth
+    // pdf10_individual_inicial.pdf p3). Every other type renders the
+    // caller-supplied contextLabelValue (empty → no label).
+    final String? dedicationSubject = switch (type) {
+      DotsAlbumType.individuales => '{Protagonista}',
+      _ => contextLabelValue.isEmpty ? null : contextLabelValue,
+    };
+
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
         leftPageNumber: '$pageNumber',
-        centerLabel: contextLabelValue.isEmpty ? null : contextLabelValue,
+        centerLabel: dedicationSubject,
         rightPageNumber: '$pageNumber',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),

@@ -151,6 +151,37 @@ void main() {
             reason: '$type dedication body width should be 120 mm');
       }
     });
+
+    test(
+        'AlbumSpreadPage — individuales dedication subject header is '
+        '{Protagonista}', () {
+      // docs/specs/06-individual.md "Differences vs otros": dedication subject
+      // token = `{Protagonista}` + `{Firma}`. Base truth
+      // pdf10_individual_inicial.pdf p3 shows `{Protagonista}` in the centre
+      // header (vs `{año}` on pdf04_otros_inicial.pdf p3). The signature carries
+      // `{Firma}` via the signature argument.
+      final page = _dedicationPage(DotsAlbumType.individuales);
+      expect(page.header.centerLabel, equals('{Protagonista}'));
+    });
+
+    test(
+        'AlbumSpreadPage — non-individual dedication subject keeps the passed '
+        'context label', () {
+      // Gate check: otros/parejas/hijos render the caller-supplied label
+      // unchanged (no `{Protagonista}` override).
+      expect(
+        _dedicationPage(DotsAlbumType.otros).header.centerLabel,
+        equals('{Año} | {Año}'),
+      );
+      expect(
+        _dedicationPage(DotsAlbumType.parejas).header.centerLabel,
+        equals('{tiempojuntos}'),
+      );
+      expect(
+        _dedicationPage(DotsAlbumType.hijos).header.centerLabel,
+        equals('{Protagonistas}'),
+      );
+    });
   });
 
   // ──────────────────────────────────────────────────────────────────────────
