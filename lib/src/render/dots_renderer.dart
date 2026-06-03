@@ -754,12 +754,25 @@ abstract class DotsRenderer {
     final top = slot.yMm * _mmToPt;
     final width = slot.widthMm * _mmToPt;
     final height = slot.heightMm * _mmToPt;
+    // L_hito QR card frame per docs/specs/01-general-base.md (L_hito
+    // table, page-83 callouts): rounded corners with a 6 pt corner
+    // radius, a 5 pt stroke weight, in color #f0f0f0. The frame wraps
+    // the QR matrix so the milestone card reads as a contained tile.
+    const double cornerRadiusPt = 6;
+    const double strokePt = 5;
+    const frameColor = PdfColor.fromInt(0xFFF0F0F0);
     return pw.Positioned(
       left: left,
       top: top,
-      child: pw.SizedBox(
+      child: pw.Container(
         width: width,
         height: height,
+        decoration: pw.BoxDecoration(
+          borderRadius: const pw.BorderRadius.all(
+            pw.Radius.circular(cornerRadiusPt),
+          ),
+          border: pw.Border.all(color: frameColor, width: strokePt),
+        ),
         child: pw.BarcodeWidget(
           data: payload,
           barcode: Barcode.qrCode(

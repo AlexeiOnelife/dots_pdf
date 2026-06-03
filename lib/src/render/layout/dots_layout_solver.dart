@@ -757,10 +757,13 @@ class DotsLayoutSolver {
     const double bodyWidthMm = 122;
     const double qrContainerWidthMm = 130;
     const double qrInnerBoxMm = 105.5;
-    // 24 pt leading -> 8.467 mm per line. Title and subtitle each
-    // reserve 2 lines.
-    const double titleHeightMm = 24 * 0.352777778 * 2;
-    const double subtitleHeightMm = 24 * 0.352777778 * 2;
+    // Box heights are taken verbatim from the page-83 callouts in
+    // docs/specs/01-general-base.md (L_hito table): the title box is
+    // 149 × 5.92 mm, the subtitle (date) box is 149 × 2.701 mm. These
+    // are anchor boxes — the 20 / 24 pt type overflows the SizedBox the
+    // renderer draws, exactly like the other caption slots.
+    const double titleHeightMm = 5.92;
+    const double subtitleHeightMm = 2.701;
     // 800 chars at ~50 chars/line on 122 mm -> ~16 lines * 3.81 mm.
     const double bodyHeightMm = 10.8 * 0.352777778 * 16;
     const double titleToSubtitleGap = 4;
