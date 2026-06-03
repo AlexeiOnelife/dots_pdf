@@ -1841,12 +1841,14 @@ class DotsAlbumSpreadPage extends DotsPage {
     ];
 
     // ── 2 title text elements ───────────────────────────────────────────────
-    // Line 1: P22 Mackinac Medium 23pt at (19 mm + 203 mm offset, 43 mm).
-    // Line 2: P22 Mackinac Medium Italic 23pt, 27.6 pt below line 1.
+    // Line 1: P22 Mackinac Medium 27pt at (19 mm + 203 mm offset, 43 mm).
+    // Line 2: P22 Mackinac Medium Italic 27pt, 31 pt below line 1.
+    // Per docs/specs/04-boda.md §p3 the "Antes de empezar el viaje" title is
+    // P22 Mackinac 27 / 31 pt (the canonical antes-cluster title size).
     const double titleXPt = (19.0 + rightPageOffsetMm) * _mmToPt;
     const double titleYPt = 43.0 * _mmToPt;
-    const double titleFontSize = 23.0;
-    const double line2YPt = titleYPt + 27.6;
+    const double titleFontSize = 27.0;
+    const double line2YPt = titleYPt + 31.0;
 
     final textElements = <DotsElement>[
       DotsTextElement(
@@ -1866,10 +1868,11 @@ class DotsAlbumSpreadPage extends DotsPage {
     ];
 
     // ── 1 body text block ───────────────────────────────────────────────────
-    // Inter Book 9pt, 95 mm wide, lineHeight 1.2, left-aligned.
-    // Positioned 27.6 pt below line 2 + 5 mm gap.
+    // Inter Book 9pt, 95 mm wide, lineHeight 1.2, center-aligned per
+    // docs/specs/04-boda.md §p3 (Body align = center).
+    // Positioned 31 pt below line 2 + 5 mm gap.
     const double bodyXPt = (19.0 + rightPageOffsetMm) * _mmToPt;
-    const double bodyYPt = line2YPt + 27.6 + 5.0 * _mmToPt;
+    const double bodyYPt = line2YPt + 31.0 + 5.0 * _mmToPt;
     const double bodyWidthPt = 95.0 * _mmToPt;
 
     final bodyElement = DotsTextBlockElement(
@@ -1879,7 +1882,7 @@ class DotsAlbumSpreadPage extends DotsPage {
       fontSize: 9,
       width: bodyWidthPt,
       fontFamily: 'Inter',
-      textAlign: DotsTextAlign.left,
+      textAlign: DotsTextAlign.center,
       lineHeight: 1.2,
     );
 
@@ -1896,19 +1899,21 @@ class DotsAlbumSpreadPage extends DotsPage {
   }
 
   // ---------------------------------------------------------------------------
-  // Named constructor — boda-halo spread (stub; body implemented in PR 2)
+  // Named constructor — boda final p2 photo halo spread
   // ---------------------------------------------------------------------------
 
-  /// Builds the "Boda de Nombre&Nombre" radial halo title spread for
-  /// [DotsAlbumType.boda] (boda p.4).
+  /// Builds the boda final p2 "photo halo" spread for [DotsAlbumType.boda].
+  ///
+  /// Per docs/specs/04-boda.md §final p2 the page is the 28-slot photo halo
+  /// **alone** — the same coordinate set as docs/specs/02-pareja.md §final p2.
+  /// There is no QR card and no title on this page (the QR keep-alive is
+  /// final p1; see [DotsAlbumSpreadPage.closingQrSpread]).
   ///
   /// Throws [ArgumentError] for any `type != DotsAlbumType.boda`.
-  /// Throws [RangeError] if `content.photoPaths.length != 10`.
+  /// Throws [RangeError] if `content.photoPaths.length != 28`.
   ///
-  /// Produces exactly 15 elements:
-  ///   - 10 [DotsRotatedPhotoElement] instances from [kBodaHaloLayout].
-  ///   - 2 [DotsOvalQrElement] instances for the gutter QR cards.
-  ///   - 3 [DotsTextElement] instances: title line 1, title line 2, date.
+  /// Produces exactly 28 [DotsPhotoCircleElement] instances from
+  /// [kBodaHaloLayout] (uniform 44.45 mm diameter).
   ///
   /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
   ///         rightPageNumber = '${pageNumber + 1}'.
@@ -1927,105 +1932,28 @@ class DotsAlbumSpreadPage extends DotsPage {
       );
     }
 
-    if (content.photoPaths.length != 10) {
+    if (content.photoPaths.length != kBodaHaloLayout.length) {
       throw RangeError.value(
         content.photoPaths.length,
         'photoPaths.length',
-        'Expected 10 photo paths, got ${content.photoPaths.length}.',
+        'Expected ${kBodaHaloLayout.length} photo paths, '
+            'got ${content.photoPaths.length}.',
       );
     }
 
-    // ── 10 rotated photo elements from kBodaHaloLayout ─────────────────────
-    // Indices 0–4 are R-slots (right-page-relative): add 203 mm offset.
-    // Indices 5–9 are L-slots (left-page-relative): no offset.
-    const double rightPageOffsetMm = 203.0;
-    // Uniform unrotated dimensions: 33.5 mm wide × 46.4 mm tall.
-    const double widthPt = 33.5 * _mmToPt;
-    const double heightPt = 46.4 * _mmToPt;
-
-    final photoElements = <DotsElement>[
+    // Build the 28 photo-circle elements from kBodaHaloLayout. Per
+    // docs/specs/04-boda.md §final p2 the page is the photo halo ALONE: no
+    // title, no date subtitle, no QR. The QR keep-alive (title, body,
+    // caption, single oval QR card) is final p1 — see
+    // [DotsAlbumSpreadPage.closingQrSpread].
+    final circles = <DotsElement>[
       for (var i = 0; i < kBodaHaloLayout.length; i++)
-        DotsRotatedPhotoElement(
-          x: (kBodaHaloLayout[i].xMm + (i < 5 ? rightPageOffsetMm : 0.0)) * _mmToPt,
+        DotsPhotoCircleElement(
+          x: kBodaHaloLayout[i].xMm * _mmToPt,
           y: kBodaHaloLayout[i].yMm * _mmToPt,
           assetPath: content.photoPaths[i],
-          width: widthPt,
-          height: heightPt,
-          angleDegrees: kBodaHaloLayout[i].angleDegrees,
-          bleedBottom: kBodaHaloLayout[i].bleedBottom,
+          diameter: kBodaHaloLayout[i].diameterMm * _mmToPt,
         ),
-    ];
-
-    // ── 2 oval QR elements at the bottom gutter ─────────────────────────────
-    // Oval dimensions reused from slice 5 (25.841 × 43.127 mm).
-    // Left QR centre x = 176 mm → TL x = 176 − 25.841/2 = 163.0795 mm.
-    // Right QR centre x = 230 mm → TL x = 230 − 25.841/2 = 217.0795 mm.
-    // y = 190.87 mm (caption-top interpretation, same as slice 5).
-    const double kOvalWidthMm = 25.841;
-    const double kOvalHeightMm = 43.127;
-    const double ovalYMm = 190.87;
-    const double ovalLeftXMm = 176.0 - kOvalWidthMm / 2.0;
-    const double ovalRightXMm = 230.0 - kOvalWidthMm / 2.0;
-
-    const String defaultLeftCaption = 'Vuestro álbum en digital';
-    const String defaultRightCaption = 'Escanea el QR para volver a ver el álbum y los vídeos';
-
-    final String leftCaption = content.qrCaptionLeftOverride ?? defaultLeftCaption;
-    final String rightCaption = content.qrCaptionRightOverride ?? defaultRightCaption;
-
-    final ovals = <DotsElement>[
-      DotsOvalQrElement(
-        x: ovalLeftXMm * _mmToPt,
-        y: ovalYMm * _mmToPt,
-        ovalWidth: kOvalWidthMm * _mmToPt,
-        ovalHeight: kOvalHeightMm * _mmToPt,
-        qrPayload: content.qrPayloadLeft,
-        caption: leftCaption,
-      ),
-      DotsOvalQrElement(
-        x: ovalRightXMm * _mmToPt,
-        y: ovalYMm * _mmToPt,
-        ovalWidth: kOvalWidthMm * _mmToPt,
-        ovalHeight: kOvalHeightMm * _mmToPt,
-        qrPayload: content.qrPayloadRight,
-        caption: rightCaption,
-      ),
-    ];
-
-    // ── 3 text elements (title line 1, title line 2, date subtitle) ─────────
-    // Title: P22 Mackinac Medium 23pt / 27.6pt leading at (19 mm, 43 mm)
-    // on the left page (no +203 mm offset — boda halo title is left-page only).
-    // Line 2: 27.6 pt below line 1 (23pt × 1.2 leading).
-    // Date: P22 Mackinac Book 9pt, 5 mm below line 2.
-    const double titleXMm = 19.0;
-    const double titleYMm = 43.0;
-    const double titleFontSize = 23.0;
-    const double titleLeadingPt = titleFontSize * 1.2; // 27.6 pt
-    const double line2YPt = titleYMm * _mmToPt + titleLeadingPt;
-    const double dateYPt = line2YPt + titleLeadingPt + 5.0 * _mmToPt;
-
-    final texts = <DotsElement>[
-      DotsTextElement(
-        x: titleXMm * _mmToPt,
-        y: titleYMm * _mmToPt,
-        value: content.titleLine1,
-        fontSize: titleFontSize,
-        fontFamily: 'P22 Mackinac Medium',
-      ),
-      DotsTextElement(
-        x: titleXMm * _mmToPt,
-        y: line2YPt,
-        value: content.titleLine2,
-        fontSize: titleFontSize,
-        fontFamily: 'P22 Mackinac Medium',
-      ),
-      DotsTextElement(
-        x: titleXMm * _mmToPt,
-        y: dateYPt,
-        value: content.dateSubtitle,
-        fontSize: 9.0,
-        fontFamily: 'P22 Mackinac Book',
-      ),
     ];
 
     return DotsAlbumSpreadPage(
@@ -2036,7 +1964,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         rightPageNumber: '${pageNumber + 1}',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: [...photoElements, ...ovals, ...texts],
+      elements: circles,
     );
   }
 

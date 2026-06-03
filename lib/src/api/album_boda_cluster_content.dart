@@ -24,11 +24,11 @@ class AlbumBodaClusterContent {
   /// Ordered list of photo asset paths; one per cluster slot (exactly 7).
   final List<String> photoPaths;
 
-  /// Title line 1 rendered in P22 Mackinac Medium 23pt.
+  /// Title line 1 rendered in P22 Mackinac Medium 27pt.
   /// Defaults to `"Antes de empezar"`.
   final String title;
 
-  /// Title line 2 rendered in P22 Mackinac Medium Italic 23pt.
+  /// Title line 2 rendered in P22 Mackinac Medium Italic 27pt.
   /// Defaults to `"el viaje"`.
   final String titleItalicLine;
 

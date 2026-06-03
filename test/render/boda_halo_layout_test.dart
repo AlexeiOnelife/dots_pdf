@@ -1,176 +1,84 @@
-// Tests for kBodaHaloLayout — 10 entries, unrotated x/y/angle within ±0.001 mm
-// of the D1 worked table, uniform 33.5×46.4 mm dims, R5/L5 bleedBottom true,
-// all other slots bleedBottom false. Scenarios S10–S14 from R3.
-// GREEN immediately: kBodaHaloLayout and kBodaHaloLayoutForTest exist after T2.3.
-import 'package:dots_pdf/src/render/boda_halo_layout.dart';
+// Tests for kBodaHaloLayout — entry count, uniform diameter, and coordinate
+// values (docs/specs/04-boda.md §final p2 — the same 28-slot photo halo set as
+// docs/specs/02-pareja.md §final p2).
+import 'package:dots_pdf/src/render/boda_halo_layout.dart'
+    show kBodaHaloLayoutForTest;
 import 'package:flutter_test/flutter_test.dart';
 
+// Tolerance for floating-point mm coordinate comparisons.
+const double _epsilon = 0.0001;
+
 void main() {
-  group('kBodaHaloLayout — entry count (S10)', () {
-    test('has exactly 10 entries', () {
-      expect(kBodaHaloLayoutForTest.length, 10);
-    });
-  });
-
-  group('kBodaHaloLayout — uniform dimensions (S11)', () {
-    test('all 10 slots have widthMm == 33.5', () {
-      for (var i = 0; i < 10; i++) {
-        expect(
-          kBodaHaloLayoutForTest[i].widthMm,
-          closeTo(33.5, 0.001),
-          reason: 'slot $i widthMm',
-        );
-      }
+  group('kBodaHaloLayout — structure (boda final p2)', () {
+    test('exactly 28 entries', () {
+      expect(kBodaHaloLayoutForTest.length, equals(28));
     });
 
-    test('all 10 slots have heightMm == 46.4', () {
-      for (var i = 0; i < 10; i++) {
+    test('all entries have diameterMm == 44.45', () {
+      for (final anchor in kBodaHaloLayoutForTest) {
         expect(
-          kBodaHaloLayoutForTest[i].heightMm,
-          closeTo(46.4, 0.001),
-          reason: 'slot $i heightMm',
+          anchor.diameterMm,
+          equals(44.45),
+          reason: 'Expected diameterMm=44.45 at '
+              '(x=${anchor.xMm}, y=${anchor.yMm})',
         );
       }
     });
   });
 
-  group('kBodaHaloLayout — right-page slot angles positive (S12)', () {
-    test('R1 angleDegrees == +3.2', () {
-      expect(kBodaHaloLayoutForTest[0].angleDegrees, closeTo(3.2, 0.001));
-    });
-    test('R2 angleDegrees == +20.7', () {
-      expect(kBodaHaloLayoutForTest[1].angleDegrees, closeTo(20.7, 0.001));
-    });
-    test('R3 angleDegrees == +37.2', () {
-      expect(kBodaHaloLayoutForTest[2].angleDegrees, closeTo(37.2, 0.001));
-    });
-    test('R4 angleDegrees == +55.2', () {
-      expect(kBodaHaloLayoutForTest[3].angleDegrees, closeTo(55.2, 0.001));
-    });
-    test('R5 angleDegrees == +68.3', () {
-      expect(kBodaHaloLayoutForTest[4].angleDegrees, closeTo(68.3, 0.001));
+  group('kBodaHaloLayout — coordinates match spec table (boda final p2)', () {
+    // docs/specs/04-boda.md §final p2 — same 28-slot coordinate set as
+    // docs/specs/02-pareja.md §final p2 (mm, spread artboard).
+    const expected = <(double, double)>[
+      (390, 57),
+      (362, 77),
+      (338, 57),
+      (307, 94),
+      (266, 102),
+      (236, 140),
+      (202, 128),
+      (205, 160),
+      (137, 142),
+      (149, 142),
+      (163, 136),
+      (165, 154),
+      (182, 157),
+      (177, 140),
+      (185, 132),
+      (241, 186),
+      (389, 94),
+      (348, 138),
+      (310, 194),
+      (271, 203),
+      (291, 135),
+      (266, 151),
+      (307, 216),
+      (348, 232),
+      (395, 139),
+      (369, 182),
+      (391, 201),
+      (389, 238),
+    ];
+
+    test('layout has same length as spec table (28)', () {
+      expect(kBodaHaloLayoutForTest.length, equals(expected.length));
     });
 
-    test('all R slots (0–4) have strictly positive angleDegrees', () {
-      for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < expected.length; i++) {
+      final (xExpected, yExpected) = expected[i];
+      test('entry #${i + 1}: xMm ≈ $xExpected, yMm ≈ $yExpected', () {
+        final anchor = kBodaHaloLayoutForTest[i];
         expect(
-          kBodaHaloLayoutForTest[i].angleDegrees,
-          greaterThan(0),
-          reason: 'R-slot $i should be positive',
+          anchor.xMm,
+          closeTo(xExpected, _epsilon),
+          reason: 'xMm mismatch at entry #${i + 1}',
         );
-      }
-    });
-  });
-
-  group('kBodaHaloLayout — left-page slot angles negative (S13)', () {
-    test('L1 angleDegrees == -3.2', () {
-      expect(kBodaHaloLayoutForTest[5].angleDegrees, closeTo(-3.2, 0.001));
-    });
-    test('L2 angleDegrees == -20.7', () {
-      expect(kBodaHaloLayoutForTest[6].angleDegrees, closeTo(-20.7, 0.001));
-    });
-    test('L3 angleDegrees == -37.2', () {
-      expect(kBodaHaloLayoutForTest[7].angleDegrees, closeTo(-37.2, 0.001));
-    });
-    test('L4 angleDegrees == -55.2', () {
-      expect(kBodaHaloLayoutForTest[8].angleDegrees, closeTo(-55.2, 0.001));
-    });
-    test('L5 angleDegrees == -68.3', () {
-      expect(kBodaHaloLayoutForTest[9].angleDegrees, closeTo(-68.3, 0.001));
-    });
-  });
-
-  group('kBodaHaloLayout — unrotated top-left coords vs D1 table (S10–S14)', () {
-    test('R1 xMm == 15.30', () {
-      expect(kBodaHaloLayoutForTest[0].xMm, closeTo(15.30, 0.001));
-    });
-    test('R1 yMm == 94.95', () {
-      expect(kBodaHaloLayoutForTest[0].yMm, closeTo(94.95, 0.001));
-    });
-
-    test('R2 xMm == 63.30', () {
-      expect(kBodaHaloLayoutForTest[1].xMm, closeTo(63.30, 0.001));
-    });
-    test('R2 yMm == 111.30', () {
-      expect(kBodaHaloLayoutForTest[1].yMm, closeTo(111.30, 0.001));
-    });
-
-    test('R3 xMm == 104.75', () {
-      expect(kBodaHaloLayoutForTest[2].xMm, closeTo(104.75, 0.001));
-    });
-    test('R3 yMm == 141.00', () {
-      expect(kBodaHaloLayoutForTest[2].yMm, closeTo(141.00, 0.001));
-    });
-
-    test('R4 xMm == 134.00', () {
-      expect(kBodaHaloLayoutForTest[3].xMm, closeTo(134.00, 0.001));
-    });
-    test('R4 yMm == 181.90', () {
-      expect(kBodaHaloLayoutForTest[3].yMm, closeTo(181.90, 0.001));
-    });
-
-    test('R5 xMm == 151.80', () {
-      expect(kBodaHaloLayoutForTest[4].xMm, closeTo(151.80, 0.001));
-    });
-    test('R5 yMm == 228.75', () {
-      expect(kBodaHaloLayoutForTest[4].yMm, closeTo(228.75, 0.001));
-    });
-
-    test('L1 xMm == 154.30', () {
-      expect(kBodaHaloLayoutForTest[5].xMm, closeTo(154.30, 0.001));
-    });
-    test('L1 yMm == 94.20', () {
-      expect(kBodaHaloLayoutForTest[5].yMm, closeTo(94.20, 0.001));
-    });
-
-    test('L2 xMm == 118.90', () {
-      expect(kBodaHaloLayoutForTest[6].xMm, closeTo(118.90, 0.001));
-    });
-    test('L2 yMm == 108.80', () {
-      expect(kBodaHaloLayoutForTest[6].yMm, closeTo(108.80, 0.001));
-    });
-
-    test('L3 xMm == 76.55', () {
-      expect(kBodaHaloLayoutForTest[7].xMm, closeTo(76.55, 0.001));
-    });
-    test('L3 yMm == 138.50', () {
-      expect(kBodaHaloLayoutForTest[7].yMm, closeTo(138.50, 0.001));
-    });
-
-    test('L4 xMm == 25.50', () {
-      expect(kBodaHaloLayoutForTest[8].xMm, closeTo(25.50, 0.001));
-    });
-    test('L4 yMm == 179.10', () {
-      expect(kBodaHaloLayoutForTest[8].yMm, closeTo(179.10, 0.001));
-    });
-
-    test('L5 xMm == 17.90', () {
-      expect(kBodaHaloLayoutForTest[9].xMm, closeTo(17.90, 0.001));
-    });
-    test('L5 yMm == 230.30', () {
-      expect(kBodaHaloLayoutForTest[9].yMm, closeTo(230.30, 0.001));
-    });
-  });
-
-  group('kBodaHaloLayout — bleedBottom flags (S14)', () {
-    test('R5 (index 4) bleedBottom is true', () {
-      expect(kBodaHaloLayoutForTest[4].bleedBottom, isTrue);
-    });
-
-    test('L5 (index 9) bleedBottom is true', () {
-      expect(kBodaHaloLayoutForTest[9].bleedBottom, isTrue);
-    });
-
-    test('all other 8 slots have bleedBottom == false', () {
-      const bleedSlots = {4, 9};
-      for (var i = 0; i < 10; i++) {
-        if (bleedSlots.contains(i)) continue;
         expect(
-          kBodaHaloLayoutForTest[i].bleedBottom,
-          isFalse,
-          reason: 'slot $i should not bleed bottom',
+          anchor.yMm,
+          closeTo(yExpected, _epsilon),
+          reason: 'yMm mismatch at entry #${i + 1}',
         );
-      }
-    });
+      });
+    }
   });
 }

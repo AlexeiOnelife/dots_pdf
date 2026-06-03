@@ -526,12 +526,7 @@ List<DotsAlbumSpreadPage> _bodaPages() => [
         pageNumber: 5,
         contextLabelValue: 'Ana y Luis',
         content: AlbumBodaHaloContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('boda_halo_$i')],
-          titleLine1: 'Ese día',
-          titleLine2: 'nos cambió',
-          dateSubtitle: '14 de mayo de 2025',
-          qrPayloadLeft: 'https://example.com/boda-left',
-          qrPayloadRight: 'https://example.com/boda-right',
+          photoPaths: [for (var i = 0; i < 28; i++) _photo('boda_halo_$i')],
         ),
       ),
       DotsAlbumSpreadPage.welcomeJourney(
