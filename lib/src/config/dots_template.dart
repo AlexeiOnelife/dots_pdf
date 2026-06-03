@@ -38,8 +38,7 @@ const double _mmToPt = 2.834645669;
 /// is exact (matches every annotated diameter exactly once), but
 /// individual position↔diameter pairings within a cluster are
 /// best-effort and may need refinement after visual QA.
-const List<({double xMm, double yMm, double diameterMm})>
-    _kRightPageCircles = [
+const List<({double xMm, double yMm, double diameterMm})> _kRightPageCircles = [
   // Top-right corner area.
   (xMm: 390, yMm: 57, diameterMm: 40),
   (xMm: 362, yMm: 77, diameterMm: 13),
@@ -92,8 +91,7 @@ double _qrCircleAlphaForX(double xMm) {
   const double rightEdgeMm = 395;
   const double minAlpha = 0.2;
   const double maxAlpha = 1.0;
-  final double t = ((xMm - leftEdgeMm) / (rightEdgeMm - leftEdgeMm))
-      .clamp(0.0, 1.0);
+  final double t = ((xMm - leftEdgeMm) / (rightEdgeMm - leftEdgeMm)).clamp(0.0, 1.0);
   return minAlpha + (maxAlpha - minAlpha) * t;
 }
 
@@ -169,8 +167,7 @@ class DotsTextElement extends DotsElement {
       other.colorHex == colorHex;
 
   @override
-  int get hashCode =>
-      Object.hash(x, y, value, fontSize, fontFamily, colorHex);
+  int get hashCode => Object.hash(x, y, value, fontSize, fontFamily, colorHex);
 }
 
 /// An image positioned at ([x], [y]) with explicit [width] and [height].
@@ -228,17 +225,8 @@ class DotsImageElement extends DotsElement {
       other.bleedRight == bleedRight;
 
   @override
-  int get hashCode => Object.hash(
-        x,
-        y,
-        assetPath,
-        width,
-        height,
-        bleedTop,
-        bleedBottom,
-        bleedLeft,
-        bleedRight,
-      );
+  int get hashCode =>
+      Object.hash(x, y, assetPath, width, height, bleedTop, bleedBottom, bleedLeft, bleedRight);
 }
 
 /// Gradient direction for elements that support an opacity gradient.
@@ -324,8 +312,7 @@ class DotsRotatedTextElement extends DotsElement {
       other.colorHex == colorHex;
 
   @override
-  int get hashCode =>
-      Object.hash(x, y, value, fontSize, angleDegrees, fontFamily, colorHex);
+  int get hashCode => Object.hash(x, y, value, fontSize, angleDegrees, fontFamily, colorHex);
 }
 
 /// A width-constrained, word-wrapping text block positioned at ([x], [y]).
@@ -395,18 +382,18 @@ class DotsTextBlockElement extends DotsElement {
 
   @override
   int get hashCode => Object.hash(
-        x,
-        y,
-        value,
-        fontSize,
-        width,
-        fontFamily,
-        colorHex,
-        textAlign,
-        lineHeight,
-        maxChars,
-        maxLines,
-      );
+    x,
+    y,
+    value,
+    fontSize,
+    width,
+    fontFamily,
+    colorHex,
+    textAlign,
+    lineHeight,
+    maxChars,
+    maxLines,
+  );
 }
 
 /// A solid, decorative rounded rectangle (no photo, no text).
@@ -480,10 +467,7 @@ class DotsDecorativeCircleElement extends DotsElement {
     this.bleedRight = false,
     this.bleedTop = false,
     this.bleedBottom = false,
-  }) : assert(
-          opacityAlpha >= 0.0 && opacityAlpha <= 1.0,
-          'opacityAlpha must be in [0.0, 1.0]',
-        );
+  }) : assert(opacityAlpha >= 0.0 && opacityAlpha <= 1.0, 'opacityAlpha must be in [0.0, 1.0]');
 
   /// Circle diameter in PDF points.
   final double diameter;
@@ -535,17 +519,17 @@ class DotsDecorativeCircleElement extends DotsElement {
 
   @override
   int get hashCode => Object.hash(
-        x,
-        y,
-        diameter,
-        colorHex,
-        gaussianFadeMm,
-        opacityAlpha,
-        bleedLeft,
-        bleedRight,
-        bleedTop,
-        bleedBottom,
-      );
+    x,
+    y,
+    diameter,
+    colorHex,
+    gaussianFadeMm,
+    opacityAlpha,
+    bleedLeft,
+    bleedRight,
+    bleedTop,
+    bleedBottom,
+  );
 }
 
 /// A circular-cropped photo element positioned at ([x], [y]) with a uniform
@@ -604,16 +588,8 @@ class DotsPhotoCircleElement extends DotsElement {
       other.bleedBottom == bleedBottom;
 
   @override
-  int get hashCode => Object.hash(
-        x,
-        y,
-        assetPath,
-        diameter,
-        bleedLeft,
-        bleedRight,
-        bleedTop,
-        bleedBottom,
-      );
+  int get hashCode =>
+      Object.hash(x, y, assetPath, diameter, bleedLeft, bleedRight, bleedTop, bleedBottom);
 }
 
 /// An oval-framed QR card positioned at ([x], [y]).
@@ -668,8 +644,7 @@ class DotsOvalQrElement extends DotsElement {
       other.caption == caption;
 
   @override
-  int get hashCode =>
-      Object.hash(x, y, ovalWidth, ovalHeight, qrPayload, caption);
+  int get hashCode => Object.hash(x, y, ovalWidth, ovalHeight, qrPayload, caption);
 }
 
 /// A rectangular photo element with per-photo opacity gradient and Gaussian
@@ -762,20 +737,20 @@ class DotsClusterPhotoElement extends DotsElement {
 
   @override
   int get hashCode => Object.hash(
-        x,
-        y,
-        assetPath,
-        width,
-        height,
-        opacityGradientStart,
-        opacityGradientEnd,
-        opacityGradientDirection,
-        gaussianFadeMm,
-        bleedLeft,
-        bleedRight,
-        bleedTop,
-        bleedBottom,
-      );
+    x,
+    y,
+    assetPath,
+    width,
+    height,
+    opacityGradientStart,
+    opacityGradientEnd,
+    opacityGradientDirection,
+    gaussianFadeMm,
+    bleedLeft,
+    bleedRight,
+    bleedTop,
+    bleedBottom,
+  );
 }
 
 /// A rectangular photo element with signed rotation and rounded-rect clip,
@@ -856,18 +831,18 @@ class DotsRotatedPhotoElement extends DotsElement {
 
   @override
   int get hashCode => Object.hash(
-        x,
-        y,
-        assetPath,
-        width,
-        height,
-        angleDegrees,
-        cornerRadiusMm,
-        bleedLeft,
-        bleedRight,
-        bleedTop,
-        bleedBottom,
-      );
+    x,
+    y,
+    assetPath,
+    width,
+    height,
+    angleDegrees,
+    cornerRadiusMm,
+    bleedLeft,
+    bleedRight,
+    bleedTop,
+    bleedBottom,
+  );
 }
 
 /// A polaroid-style photo card positioned at ([x], [y]) with explicit
@@ -956,18 +931,18 @@ class DotsPolaroidElement extends DotsElement {
 
   @override
   int get hashCode => Object.hash(
-        x,
-        y,
-        assetPath,
-        width,
-        height,
-        angleDegrees,
-        gradientRtl,
-        bleedLeft,
-        bleedRight,
-        bleedTop,
-        bleedBottom,
-      );
+    x,
+    y,
+    assetPath,
+    width,
+    height,
+    angleDegrees,
+    gradientRtl,
+    bleedLeft,
+    bleedRight,
+    bleedTop,
+    bleedBottom,
+  );
 }
 
 /// Which half of a [DotsSpreadImageElement]'s source image this
@@ -1061,17 +1036,8 @@ class DotsSpreadImageElement extends DotsElement {
       other.bleedOuter == bleedOuter;
 
   @override
-  int get hashCode => Object.hash(
-        x,
-        y,
-        assetPath,
-        spreadWidth,
-        height,
-        half,
-        bleedTop,
-        bleedBottom,
-        bleedOuter,
-      );
+  int get hashCode =>
+      Object.hash(x, y, assetPath, spreadWidth, height, half, bleedTop, bleedBottom, bleedOuter);
 }
 
 /// Placeholder element produced by the seven `DotsAlbumSpreadPage` factory
@@ -1088,10 +1054,7 @@ class DotsSpreadImageElement extends DotsElement {
 class DotsUnimplementedElement extends DotsElement {
   /// Creates a placeholder element pointing at the task that will
   /// implement its real content.
-  const DotsUnimplementedElement({
-    required this.taskId,
-    required this.message,
-  }) : super(x: 0, y: 0);
+  const DotsUnimplementedElement({required this.taskId, required this.message}) : super(x: 0, y: 0);
 
   /// Human-friendly identifier of the task that will replace this stub
   /// with real content. Typical values are `'Task 4'`, `'Task 5'`,
@@ -1104,9 +1067,7 @@ class DotsUnimplementedElement extends DotsElement {
 
   @override
   bool operator ==(Object other) =>
-      other is DotsUnimplementedElement &&
-      other.taskId == taskId &&
-      other.message == message;
+      other is DotsUnimplementedElement && other.taskId == taskId && other.message == message;
 
   @override
   int get hashCode => Object.hash(taskId, message);
@@ -1131,10 +1092,7 @@ sealed class DotsPage {
 /// pre-positioned [DotsElement]s.
 class DotsElementsPage extends DotsPage {
   /// Creates an elements-page.
-  const DotsElementsPage({
-    required super.pageNumber,
-    required this.elements,
-  });
+  const DotsElementsPage({required super.pageNumber, required this.elements});
 
   /// Elements laid out on the page, in declaration order.
   final List<DotsElement> elements;
@@ -1187,13 +1145,11 @@ class DotsLayoutPage extends DotsPage {
 
   @override
   int get hashCode => Object.hash(
-        pageNumber,
-        layoutCode,
-        Object.hashAll(photoAssetPaths),
-        Object.hashAllUnordered(
-          captions.entries.map((e) => Object.hash(e.key, e.value)),
-        ),
-      );
+    pageNumber,
+    layoutCode,
+    Object.hashAll(photoAssetPaths),
+    Object.hashAllUnordered(captions.entries.map((e) => Object.hash(e.key, e.value))),
+  );
 }
 
 /// Structural header for an album-spread page.
@@ -1205,11 +1161,7 @@ class DotsLayoutPage extends DotsPage {
 @immutable
 class DotsSpreadHeader {
   /// Creates a spread header.
-  const DotsSpreadHeader({
-    this.leftPageNumber,
-    this.centerLabel,
-    this.rightPageNumber,
-  });
+  const DotsSpreadHeader({this.leftPageNumber, this.centerLabel, this.rightPageNumber});
 
   /// Optional page-number string shown at the top-left of the spread.
   final String? leftPageNumber;
@@ -1248,8 +1200,7 @@ class DotsSpreadFooter {
   final String wordmark;
 
   @override
-  bool operator ==(Object other) =>
-      other is DotsSpreadFooter && other.wordmark == wordmark;
+  bool operator ==(Object other) => other is DotsSpreadFooter && other.wordmark == wordmark;
 
   @override
   int get hashCode => wordmark.hashCode;
@@ -1330,14 +1281,8 @@ class DotsPageChrome {
       other.suppressFooter == suppressFooter;
 
   @override
-  int get hashCode => Object.hash(
-        pageNumber,
-        centerLabel,
-        wordmark,
-        isLeftPage,
-        suppressHeader,
-        suppressFooter,
-      );
+  int get hashCode =>
+      Object.hash(pageNumber, centerLabel, wordmark, isLeftPage, suppressHeader, suppressFooter);
 }
 
 /// An album-spread page whose top and bottom edges carry first-class
@@ -1389,10 +1334,11 @@ class DotsAlbumSpreadPage extends DotsPage {
     required String body,
     required String signature,
   }) {
-    // Canonical element positions corrected against pdf02 p.5 / pdf08 p.5
-    // (Task 4 fidelity work):
+    // Canonical element positions corrected against docs/specs/02-pareja.md
+    // §p5 (dedication):
     //   - text x = 50.53 mm from the (right-page) trim left edge.
-    //   - body width = 120 mm (was 102 mm — too narrow).
+    //   - body width = 102 mm (spec: "Body … 102 wide"). The spec is the
+    //     contract and overrides the earlier 120 mm reading.
     //   - y values stay near the previous defaults until the relative-y
     //     refinement lands (deferred follow-up: title→body 6.5 mm gap,
     //     body→signature 8 mm gap).
@@ -1400,7 +1346,7 @@ class DotsAlbumSpreadPage extends DotsPage {
     const double titleY = 60 * _mmToPt;
     const double bodyY = 90 * _mmToPt;
     const double signatureY = 160 * _mmToPt;
-    const double bodyWidthMm = 120;
+    const double bodyWidthMm = 102;
     const double bodyWidthPt = bodyWidthMm * _mmToPt;
 
     final elements = <DotsElement>[
@@ -1479,8 +1425,7 @@ class DotsAlbumSpreadPage extends DotsPage {
       DotsAlbumType.hijos ||
       DotsAlbumType.individuales ||
       DotsAlbumType.otros ||
-      DotsAlbumType.generalEventos =>
-        20.0,
+      DotsAlbumType.generalEventos => 20.0,
     };
 
     // Text box width is per-category:
@@ -1492,8 +1437,7 @@ class DotsAlbumSpreadPage extends DotsPage {
       DotsAlbumType.hijos ||
       DotsAlbumType.individuales ||
       DotsAlbumType.otros ||
-      DotsAlbumType.generalEventos =>
-        115.0,
+      DotsAlbumType.generalEventos => 115.0,
     };
 
     // Canonical element positions verified against pdf03 p.3 / pdf09 p.3
@@ -1608,19 +1552,21 @@ class DotsAlbumSpreadPage extends DotsPage {
       //   (polar-2 otros behavior), OR
       // - the slot itself declares gradientRtl: true.
       final gradientRtl = (applyOtrosGradient && i == 1) || slot.gradientRtl;
-      elements.add(DotsPolaroidElement(
-        x: slot.x,
-        y: slot.y,
-        assetPath: photoPaths[i],
-        width: slot.width,
-        height: slot.height,
-        angleDegrees: slot.angleDegrees,
-        gradientRtl: gradientRtl,
-        bleedLeft: slot.bleedLeft,
-        bleedRight: slot.bleedRight,
-        bleedTop: slot.bleedTop,
-        bleedBottom: slot.bleedBottom,
-      ));
+      elements.add(
+        DotsPolaroidElement(
+          x: slot.x,
+          y: slot.y,
+          assetPath: photoPaths[i],
+          width: slot.width,
+          height: slot.height,
+          angleDegrees: slot.angleDegrees,
+          gradientRtl: gradientRtl,
+          bleedLeft: slot.bleedLeft,
+          bleedRight: slot.bleedRight,
+          bleedTop: slot.bleedTop,
+          bleedBottom: slot.bleedBottom,
+        ),
+      );
     }
 
     return DotsAlbumSpreadPage(
@@ -1670,15 +1616,13 @@ class DotsAlbumSpreadPage extends DotsPage {
     // sheet (pdf02 p.2 + pdf08 p.2); the {PROTAGONISTA} token is
     // resolved by the variables-map at JSON parse time.
     final String defaultEyebrow = switch (type) {
-      DotsAlbumType.parejas ||
-      DotsAlbumType.hijos =>
-        'DOTBOOK DE {PROTAGONISTA}',
+      DotsAlbumType.parejas || DotsAlbumType.hijos => 'DOTBOOK DE {PROTAGONISTA}',
       _ => throw ArgumentError.value(
-          type,
-          'type',
-          'DotsAlbumSpreadPage.cover only supports '
-              'DotsAlbumType.parejas and DotsAlbumType.hijos; got $type',
-        ),
+        type,
+        'type',
+        'DotsAlbumSpreadPage.cover only supports '
+            'DotsAlbumType.parejas and DotsAlbumType.hijos; got $type',
+      ),
     };
     final String eyebrow = eyebrowOverride ?? defaultEyebrow;
 
@@ -1754,7 +1698,12 @@ class DotsAlbumSpreadPage extends DotsPage {
   // Named constructor — photo-arc spread
   // ---------------------------------------------------------------------------
 
-  /// Builds the "Un año lleno de recuerdos" photo-arc spread for [type].
+  /// Builds the final p2 photo arc/halo spread for [type].
+  ///
+  /// Per docs/specs/02-pareja.md §final p2 (shared across otros/hijos/
+  /// individual), the page is the photo arc/halo **alone** — 28 photo slots,
+  /// no title and no QR. The QR keep-alive (title/body/caption/QR card) is
+  /// final p1; see [DotsAlbumSpreadPage.closingQrSpread].
   ///
   /// Supported types: [DotsAlbumType.parejas], [DotsAlbumType.hijos],
   /// [DotsAlbumType.individuales], and [DotsAlbumType.otros].
@@ -1764,7 +1713,7 @@ class DotsAlbumSpreadPage extends DotsPage {
   /// MUST have `width >= 406 mm (1150.87 pt)`. Elements with
   /// `x + diameter > pageWidth` will be clipped silently by the PDF viewer.
   ///
-  /// Throws a [RangeError] when `content.photoPaths.length != 10`.
+  /// Throws a [RangeError] when `content.photoPaths.length != 28`.
   ///
   /// Header: leftPageNumber = '$pageNumber', centerLabel = [contextLabelValue],
   ///         rightPageNumber = '${pageNumber + 1}'. This factory builds a
@@ -1797,37 +1746,12 @@ class DotsAlbumSpreadPage extends DotsPage {
       );
     }
 
-    // Per-type QR caption defaults.
-    const String rightCaption = 'Todos tus hitos en un lugar';
-    final String defaultLeftCaption = switch (type) {
-      DotsAlbumType.parejas => 'Vuestro álbum en digital',
-      DotsAlbumType.hijos ||
-      DotsAlbumType.individuales ||
-      DotsAlbumType.otros =>
-        'Tu album en digital',
-      DotsAlbumType.boda ||
-      DotsAlbumType.generalEventos =>
-        '', // unreachable — guarded above
-    };
-    final String leftCaption =
-        content.qrCaptionLeftOverride ?? defaultLeftCaption;
-    final String rightCaptionResolved =
-        content.qrCaptionRightOverride ?? rightCaption;
-
-    // Oval QR geometry constants (mm → pt).
-    // Source: parejas p.9 / boda p.4 canonical spec dimensions.
-    const double kOvalWidthMm = 25.841;
-    const double kOvalHeightMm = 43.127;
-    // Gutter centre at 203 mm; QR centres 27 mm each side.
-    // Left QR centre x = 203 - 27 = 176 mm → top-left x = 176 - 25.841/2 = 163.0795 mm.
-    // Right QR centre x = 203 + 27 = 230 mm → top-left x = 230 - 25.841/2 = 217.0795 mm.
-    // Top of QR caption: 20 mm above page bottom (254 mm) → caption top at 234 mm.
-    // Oval top-left y = 254 - 20 - 43.127 = 190.873 mm (caption-top interpretation).
-    const double ovalYMm = 190.873;
-    const double ovalLeftXMm = 163.0795;
-    const double ovalRightXMm = 217.0795;
-
-    // Build 10 photo-circle elements from kPhotoArcLayout.
+    // Build the 28 photo-circle elements from kPhotoArcLayout.
+    //
+    // Per docs/specs/02-pareja.md §final p2 the page is the photo arc/halo
+    // ALONE: no title, no date subtitle, no QR. The QR keep-alive (title,
+    // body, caption, single oval QR card) is final p1 — see
+    // [DotsAlbumSpreadPage.closingQrSpread].
     final circles = <DotsElement>[
       for (var i = 0; i < kPhotoArcLayout.length; i++)
         DotsPhotoCircleElement(
@@ -1838,53 +1762,6 @@ class DotsAlbumSpreadPage extends DotsPage {
         ),
     ];
 
-    // Build 2 oval-QR elements at the bottom gutter.
-    final ovals = <DotsElement>[
-      DotsOvalQrElement(
-        x: ovalLeftXMm * _mmToPt,
-        y: ovalYMm * _mmToPt,
-        ovalWidth: kOvalWidthMm * _mmToPt,
-        ovalHeight: kOvalHeightMm * _mmToPt,
-        qrPayload: content.qrPayloadLeft,
-        caption: leftCaption,
-      ),
-      DotsOvalQrElement(
-        x: ovalRightXMm * _mmToPt,
-        y: ovalYMm * _mmToPt,
-        ovalWidth: kOvalWidthMm * _mmToPt,
-        ovalHeight: kOvalHeightMm * _mmToPt,
-        qrPayload: content.qrPayloadRight,
-        caption: rightCaptionResolved,
-      ),
-    ];
-
-    // Build title text at (19 mm, 43 mm) — P22 Mackinac Medium 23pt.
-    // Build date subtitle at (19 mm, 43 mm + 23pt*1.2/mmToPt + 5 mm).
-    // 23pt * 1.2 = 27.6pt; 27.6pt / 2.834645669 ≈ 9.737 mm; + 5 mm = 14.737 mm gap.
-    const double titleXMm = 19.0;
-    const double titleYMm = 43.0;
-    const double titleFontSize = 23.0;
-    const double subtitleXMm = 19.0;
-    const double subtitleYMm =
-        titleYMm + (titleFontSize * 1.2 / _mmToPt) + 5.0;
-
-    final texts = <DotsElement>[
-      DotsTextElement(
-        x: titleXMm * _mmToPt,
-        y: titleYMm * _mmToPt,
-        value: content.title,
-        fontSize: titleFontSize,
-        fontFamily: 'P22 Mackinac Medium',
-      ),
-      DotsTextElement(
-        x: subtitleXMm * _mmToPt,
-        y: subtitleYMm * _mmToPt,
-        value: content.dateSubtitle,
-        fontSize: 9.0,
-        fontFamily: 'P22 Mackinac Book',
-      ),
-    ];
-
     return DotsAlbumSpreadPage(
       pageNumber: pageNumber,
       header: DotsSpreadHeader(
@@ -1893,7 +1770,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         rightPageNumber: '${pageNumber + 1}',
       ),
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
-      elements: [...circles, ...ovals, ...texts],
+      elements: circles,
     );
   }
 
@@ -1947,8 +1824,7 @@ class DotsAlbumSpreadPage extends DotsPage {
           height: kBodaClusterLayout[i].heightMm * _mmToPt,
           opacityGradientStart: kBodaClusterLayout[i].opacityGradientStart,
           opacityGradientEnd: kBodaClusterLayout[i].opacityGradientEnd,
-          opacityGradientDirection:
-              kBodaClusterLayout[i].opacityGradientDirection,
+          opacityGradientDirection: kBodaClusterLayout[i].opacityGradientDirection,
           gaussianFadeMm: kBodaClusterLayout[i].gaussianFadeMm,
           bleedTop: kBodaClusterLayout[i].bleedTop,
         ),
@@ -2060,9 +1936,7 @@ class DotsAlbumSpreadPage extends DotsPage {
     final photoElements = <DotsElement>[
       for (var i = 0; i < kBodaHaloLayout.length; i++)
         DotsRotatedPhotoElement(
-          x: (kBodaHaloLayout[i].xMm +
-                  (i < 5 ? rightPageOffsetMm : 0.0)) *
-              _mmToPt,
+          x: (kBodaHaloLayout[i].xMm + (i < 5 ? rightPageOffsetMm : 0.0)) * _mmToPt,
           y: kBodaHaloLayout[i].yMm * _mmToPt,
           assetPath: content.photoPaths[i],
           width: widthPt,
@@ -2084,13 +1958,10 @@ class DotsAlbumSpreadPage extends DotsPage {
     const double ovalRightXMm = 230.0 - kOvalWidthMm / 2.0;
 
     const String defaultLeftCaption = 'Vuestro álbum en digital';
-    const String defaultRightCaption =
-        'Escanea el QR para volver a ver el álbum y los vídeos';
+    const String defaultRightCaption = 'Escanea el QR para volver a ver el álbum y los vídeos';
 
-    final String leftCaption =
-        content.qrCaptionLeftOverride ?? defaultLeftCaption;
-    final String rightCaption =
-        content.qrCaptionRightOverride ?? defaultRightCaption;
+    final String leftCaption = content.qrCaptionLeftOverride ?? defaultLeftCaption;
+    final String rightCaption = content.qrCaptionRightOverride ?? defaultRightCaption;
 
     final ovals = <DotsElement>[
       DotsOvalQrElement(
@@ -2292,8 +2163,8 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///     body centered in a 93 mm-wide box at x=55.309 mm.
   ///
   /// Per-category copy:
-  ///   - `parejas`, `hijos`: marker `(Q1)` / `(Q2)`, canonical bodies
-  ///     from the source PDFs.
+  ///   - `parejas`: marker `(01)` / `(02)` per docs/specs/02-pareja.md §p9.
+  ///   - `hijos`: marker `(Q1)` / `(Q2)`, canonical bodies from the source PDF.
   ///   - `individuales`, `otros`, `boda`, `generalEventos`: marker
   ///     `(01)` / `(02)`, per-category bodies.
   ///
@@ -2322,136 +2193,136 @@ class DotsAlbumSpreadPage extends DotsPage {
       String q2Body,
     ) = switch (type) {
       DotsAlbumType.parejas => (
-          // pdf02 p.9 — vosotros form, marker uses Q-letter prefix.
-          '(Q1)',
-          'Buscad vuestro momento',
-          'Encontrad un espacio donde podáis estar en calma. Sentaos. '
-              'Respirad despacio. Dejad que el silencio os encuentre, '
-              'aunque sea por un instante, y que todo lo demás se '
-              'disuelva un poco: las prisas, los pensamientos, el ruido '
-              'de fuera... En ese pequeño respiro, el tiempo se abre y '
-              'con ello comienza vuestro viaje al pasado. Sentid. '
-              'Dejaos llevar. Ese es el único objetivo.',
-          '(Q2)',
-          'Escuchad vuestra historia',
-          'Hay recuerdos que no caben en una foto. Durante todo este '
-              'tiempo habéis ido guardando esos instantes que han '
-              'marcado vuestra historia, para que encuentren un lugar '
-              'permanente en vuestra memoria. Estos recuerdos van '
-              'acompañados de un código QR; escanéalo y podréis revivir '
-              'las voces, las palabras y las emociones de esos momentos '
-              'compartidos, guardados en el tiempo para vosotros.',
-        ),
+        // pdf02 p.9 — vosotros form. Section numbers per spec p9: (01)/(02).
+        '(01)',
+        'Buscad vuestro momento',
+        'Encontrad un espacio donde podáis estar en calma. Sentaos. '
+            'Respirad despacio. Dejad que el silencio os encuentre, '
+            'aunque sea por un instante, y que todo lo demás se '
+            'disuelva un poco: las prisas, los pensamientos, el ruido '
+            'de fuera... En ese pequeño respiro, el tiempo se abre y '
+            'con ello comienza vuestro viaje al pasado. Sentid. '
+            'Dejaos llevar. Ese es el único objetivo.',
+        '(02)',
+        'Escuchad vuestra historia',
+        'Hay recuerdos que no caben en una foto. Durante todo este '
+            'tiempo habéis ido guardando esos instantes que han '
+            'marcado vuestra historia, para que encuentren un lugar '
+            'permanente en vuestra memoria. Estos recuerdos van '
+            'acompañados de un código QR; escanéalo y podréis revivir '
+            'las voces, las palabras y las emociones de esos momentos '
+            'compartidos, guardados en el tiempo para vosotros.',
+      ),
       DotsAlbumType.hijos => (
-          // pdf08 p.9 — tú form, marker uses Q-letter prefix.
-          '(Q1)',
-          'Busca un lugar tranquilo',
-          'Encuentra un espacio donde puedas estar en calma. Siéntate. '
-              'Respira despacio. Deja que el silencio te encuentre, '
-              'aunque sea por un instante, y que todo lo demás se '
-              'disuelva un poco: las prisas, los pensamientos, el ruido '
-              'de fuera... En ese pequeño respiro, el tiempo se abre y '
-              'con ello comienza tu viaje al pasado. Siente. Déjate '
-              'llevar. Ese es el único objetivo.',
-          '(Q2)',
-          'Escucha los momentos especiales',
-          'Hay páginas con recuerdos que no caben en una foto. Durante '
-              'todo este tiempo hemos ido guardando esos instantes que '
-              'marcaron tu camino, para que encuentren un lugar '
-              'permanente en tu memoria. Estos recuerdos van '
-              'acompañados de un código QR, escanéalo: escucharás la '
-              'voz de quienes estuvieron contigo mientras crecías, sus '
-              'palabras congeladas en el tiempo para ti.',
-        ),
+        // pdf08 p.9 — tú form, marker uses Q-letter prefix.
+        '(Q1)',
+        'Busca un lugar tranquilo',
+        'Encuentra un espacio donde puedas estar en calma. Siéntate. '
+            'Respira despacio. Deja que el silencio te encuentre, '
+            'aunque sea por un instante, y que todo lo demás se '
+            'disuelva un poco: las prisas, los pensamientos, el ruido '
+            'de fuera... En ese pequeño respiro, el tiempo se abre y '
+            'con ello comienza tu viaje al pasado. Siente. Déjate '
+            'llevar. Ese es el único objetivo.',
+        '(Q2)',
+        'Escucha los momentos especiales',
+        'Hay páginas con recuerdos que no caben en una foto. Durante '
+            'todo este tiempo hemos ido guardando esos instantes que '
+            'marcaron tu camino, para que encuentren un lugar '
+            'permanente en tu memoria. Estos recuerdos van '
+            'acompañados de un código QR, escanéalo: escucharás la '
+            'voz de quienes estuvieron contigo mientras crecías, sus '
+            'palabras congeladas en el tiempo para ti.',
+      ),
       DotsAlbumType.generalEventos => (
-          // pdf12 p.2 — tú form, numeric markers.
-          '(01)',
-          'Busca un lugar tranquilo',
-          'Encuentra un espacio donde puedas estar en calma. Siéntate. '
-              'Respira despacio. Deja que el silencio te encuentre, '
-              'aunque sea por un instante, y que todo lo demás se '
-              'disuelva un poco: las prisas, los pensamientos, el ruido '
-              'de fuera... En ese pequeño respiro, el tiempo se abre y '
-              'con ello comienza tu viaje al pasado. Siente. Déjate '
-              'llevar. Ese es el único objetivo.',
-          '(02)',
-          'Más allá del papel',
-          'Las fotografías capturan instantes. Los vídeos conservan las '
-              'voces, las emociones y todo aquello que el papel no '
-              'puede guardar. En el final de este Dotbook encontrarás '
-              'un código QR para revivir esos momentos más especiales '
-              'de una forma más viva y real. Porque hay recuerdos que '
-              'no solo se miran… también se sienten.',
-        ),
+        // pdf12 p.2 — tú form, numeric markers.
+        '(01)',
+        'Busca un lugar tranquilo',
+        'Encuentra un espacio donde puedas estar en calma. Siéntate. '
+            'Respira despacio. Deja que el silencio te encuentre, '
+            'aunque sea por un instante, y que todo lo demás se '
+            'disuelva un poco: las prisas, los pensamientos, el ruido '
+            'de fuera... En ese pequeño respiro, el tiempo se abre y '
+            'con ello comienza tu viaje al pasado. Siente. Déjate '
+            'llevar. Ese es el único objetivo.',
+        '(02)',
+        'Más allá del papel',
+        'Las fotografías capturan instantes. Los vídeos conservan las '
+            'voces, las emociones y todo aquello que el papel no '
+            'puede guardar. En el final de este Dotbook encontrarás '
+            'un código QR para revivir esos momentos más especiales '
+            'de una forma más viva y real. Porque hay recuerdos que '
+            'no solo se miran… también se sienten.',
+      ),
       DotsAlbumType.boda => (
-          // pdf06 p.2 — Q1 body matches generalEventos; Q2 body differs
-          // (wedding-photo + QR copy).
-          '(01)',
-          'Busca un lugar tranquilo',
-          'Encuentra un espacio donde puedas estar en calma. Siéntate. '
-              'Respira despacio. Deja que el silencio te encuentre, '
-              'aunque sea por un instante, y que todo lo demás se '
-              'disuelva un poco: las prisas, los pensamientos, el ruido '
-              'de fuera... En ese pequeño respiro, el tiempo se abre y '
-              'con ello comienza tu viaje al pasado. Siente. Déjate '
-              'llevar. Ese es el único objetivo.',
-          '(02)',
-          'Más allá del papel',
-          'En estas páginas tienes la historia impresa para guardarla '
-              'siempre. Las fotos, no son solo imágenes, sino una señal '
-              'de que aquellos que más quieres estuvieron a tu lado en '
-              'este día tan importante. Sin embargo, hay momentos que '
-              'se viven mejor en movimiento: los vídeos forman una parte '
-              'importante de este recuerdo. En las última páginas de '
-              'este libro encontraréis un código QR, escanéalo y vuelve '
-              'al álbum digital cuando quieras para revivir un instante '
-              'concreto y ver todo lo que quedó más allá del papel.',
-        ),
+        // pdf06 p.2 — Q1 body matches generalEventos; Q2 body differs
+        // (wedding-photo + QR copy).
+        '(01)',
+        'Busca un lugar tranquilo',
+        'Encuentra un espacio donde puedas estar en calma. Siéntate. '
+            'Respira despacio. Deja que el silencio te encuentre, '
+            'aunque sea por un instante, y que todo lo demás se '
+            'disuelva un poco: las prisas, los pensamientos, el ruido '
+            'de fuera... En ese pequeño respiro, el tiempo se abre y '
+            'con ello comienza tu viaje al pasado. Siente. Déjate '
+            'llevar. Ese es el único objetivo.',
+        '(02)',
+        'Más allá del papel',
+        'En estas páginas tienes la historia impresa para guardarla '
+            'siempre. Las fotos, no son solo imágenes, sino una señal '
+            'de que aquellos que más quieres estuvieron a tu lado en '
+            'este día tan importante. Sin embargo, hay momentos que '
+            'se viven mejor en movimiento: los vídeos forman una parte '
+            'importante de este recuerdo. En las última páginas de '
+            'este libro encontraréis un código QR, escanéalo y vuelve '
+            'al álbum digital cuando quieras para revivir un instante '
+            'concreto y ver todo lo que quedó más allá del papel.',
+      ),
       DotsAlbumType.individuales => (
-          // pdf10 p.7 — tú form. Title from pdf reads "Encontra" (no u);
-          // body uses "Encuentra". Faithful to the source.
-          '(01)',
-          'Encontra tu momento',
-          'Encuentra un espacio donde puedas estar en calma. Siéntate. '
-              'Respira despacio. Deja que el silencio te encuentre, '
-              'aunque sea por un instante, y que todo lo demás se '
-              'disuelva un poco: las prisas, los pensamientos, el ruido '
-              'de fuera... En ese pequeño respiro, el tiempo se abre y '
-              'comienza este viaje hacia tus recuerdos. Siente. Déjate '
-              'llevar. Ese es el único objetivo.',
-          '(02)',
-          'Escucha la historia',
-          'Hay recuerdos que no caben en una foto. Momentos, palabras y '
-              'emociones que merecen ser vividos también con la voz. A '
-              'lo largo de este Dotbook encontrarás tarjetas '
-              'acompañadas de un código QR. Cuando llegues a ellas, '
-              'escanéalo y deja que el recuerdo cobre vida. Escucharás '
-              'fragmentos guardados en el tiempo: palabras, voces y '
-              'momentos que un día formaron parte de esta historia y '
-              'que hoy puedes volver a sentir.',
-        ),
+        // pdf10 p.7 — tú form. Title from pdf reads "Encontra" (no u);
+        // body uses "Encuentra". Faithful to the source.
+        '(01)',
+        'Encontra tu momento',
+        'Encuentra un espacio donde puedas estar en calma. Siéntate. '
+            'Respira despacio. Deja que el silencio te encuentre, '
+            'aunque sea por un instante, y que todo lo demás se '
+            'disuelva un poco: las prisas, los pensamientos, el ruido '
+            'de fuera... En ese pequeño respiro, el tiempo se abre y '
+            'comienza este viaje hacia tus recuerdos. Siente. Déjate '
+            'llevar. Ese es el único objetivo.',
+        '(02)',
+        'Escucha la historia',
+        'Hay recuerdos que no caben en una foto. Momentos, palabras y '
+            'emociones que merecen ser vividos también con la voz. A '
+            'lo largo de este Dotbook encontrarás tarjetas '
+            'acompañadas de un código QR. Cuando llegues a ellas, '
+            'escanéalo y deja que el recuerdo cobre vida. Escucharás '
+            'fragmentos guardados en el tiempo: palabras, voces y '
+            'momentos que un día formaron parte de esta historia y '
+            'que hoy puedes volver a sentir.',
+      ),
       DotsAlbumType.otros => (
-          // pdf04 p.7 — vosotros form.
-          '(01)',
-          'Encontrad vuestro momento',
-          'Encontrad un espacio donde podáis estar en calma. Sentaos. '
-              'Respirad despacio. Dejad que el silencio os encuentre, '
-              'aunque sea por un instante, y que todo lo demás se '
-              'disuelva un poco: las prisas, los pensamientos, el ruido '
-              'de fuera... En ese pequeño respiro, el tiempo se abre y '
-              'comienza este viaje hacia vuestros recuerdos. Sentid. '
-              'Dejaos llevar. Ese es el único objetivo.',
-          '(02)',
-          'Escuchad la historia',
-          'Hay recuerdos que no caben en una foto. Momentos, palabras y '
-              'emociones que merecen ser vividos también con la voz. A '
-              'lo largo de este Dotbook encontraréis tarjetas '
-              'acompañadas de un código QR. Cuando lleguéis a ellas, '
-              'escaneadlo y dejad que el recuerdo cobre vida. '
-              'Escucharéis fragmentos guardados en el tiempo: palabras, '
-              'voces y momentos que un día formaron parte de esta '
-              'historia y que hoy podéis volver a sentir.',
-        ),
+        // pdf04 p.7 — vosotros form.
+        '(01)',
+        'Encontrad vuestro momento',
+        'Encontrad un espacio donde podáis estar en calma. Sentaos. '
+            'Respirad despacio. Dejad que el silencio os encuentre, '
+            'aunque sea por un instante, y que todo lo demás se '
+            'disuelva un poco: las prisas, los pensamientos, el ruido '
+            'de fuera... En ese pequeño respiro, el tiempo se abre y '
+            'comienza este viaje hacia vuestros recuerdos. Sentid. '
+            'Dejaos llevar. Ese es el único objetivo.',
+        '(02)',
+        'Escuchad la historia',
+        'Hay recuerdos que no caben en una foto. Momentos, palabras y '
+            'emociones que merecen ser vividos también con la voz. A '
+            'lo largo de este Dotbook encontraréis tarjetas '
+            'acompañadas de un código QR. Cuando lleguéis a ellas, '
+            'escaneadlo y dejad que el recuerdo cobre vida. '
+            'Escucharéis fragmentos guardados en el tiempo: palabras, '
+            'voces y momentos que un día formaron parte de esta '
+            'historia y que hoy podéis volver a sentir.',
+      ),
     };
 
     // Layout constants (mm) — verified against pdf02 p.9 + pdf08 p.9
@@ -2609,11 +2480,11 @@ class DotsAlbumSpreadPage extends DotsPage {
             'continuación. Lee despacio, sin prisa y siente cada momento '
             'de nuevo.',
       _ => throw ArgumentError.value(
-          type,
-          'type',
-          'DotsAlbumSpreadPage.welcomeJourney supports '
-              'DotsAlbumType.generalEventos and DotsAlbumType.boda only.',
-        ),
+        type,
+        'type',
+        'DotsAlbumSpreadPage.welcomeJourney supports '
+            'DotsAlbumType.generalEventos and DotsAlbumType.boda only.',
+      ),
     };
 
     // Layout constants (mm) — verified against pdf12 p.1 and pdf06 p.1.
@@ -2720,8 +2591,8 @@ class DotsAlbumSpreadPage extends DotsPage {
     const double qrCaptionYMm = 94.081;
     const double qrCaptionWidthMm = 36.178;
 
-    final String qrCaption = content.captionOverride ??
-        'Escanea el QR para abrir tu viaje al pasado.';
+    final String qrCaption =
+        content.captionOverride ?? 'Escanea el QR para abrir tu viaje al pasado.';
 
     final elements = <DotsElement>[
       // Title — shared opening/closing wording.
@@ -2739,7 +2610,8 @@ class DotsAlbumSpreadPage extends DotsPage {
       const DotsTextBlockElement(
         x: bodyXMm * _mmToPt,
         y: bodyYMm * _mmToPt,
-        value: 'Las fotografías capturan instantes. Los vídeos conservan '
+        value:
+            'Las fotografías capturan instantes. Los vídeos conservan '
             'las voces, las emociones y todo aquello que el papel no puede '
             'guardar. Escanea el QR al final de este Dotbook para revivir '
             'esos momentos más especiales de una forma más viva y real.',
@@ -2769,7 +2641,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         fontSize: 9,
         width: qrCaptionWidthMm * _mmToPt,
         fontFamily: 'P22 Mackinac Medium',
-        textAlign: DotsTextAlign.left,
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.2,
       ),
       // Right-page decorative-circle scatter — shared with
@@ -2833,7 +2705,8 @@ class DotsAlbumSpreadPage extends DotsPage {
     const double bottomYMm = 229.42;
     const double bottomWidthMm = 143;
 
-    final String bottomText = content.bottomTextOverride ??
+    final String bottomText =
+        content.bottomTextOverride ??
         (contextLabelValue.isEmpty
             ? '{Protagonistas}, disfruta de está última experiencia.'
             : '$contextLabelValue, disfruta de está última experiencia.');
@@ -2849,21 +2722,21 @@ class DotsAlbumSpreadPage extends DotsPage {
         fontSize: 23,
         width: titleWidthMm * _mmToPt,
         fontFamily: 'P22 Mackinac Medium',
-        textAlign: DotsTextAlign.left,
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.087, // 25 / 23.
       ),
-      // Body — fixed canonical copy.
+      // Body — fixed canonical copy (docs/specs/02-pareja.md §final p1).
       const DotsTextBlockElement(
         x: bodyXMm * _mmToPt,
         y: bodyYMm * _mmToPt,
-        value: 'Las fotografías capturan momentos. Las palabras los hacen '
-            'vivir. En este álbum, ambos viajan juntos para que el tiempo '
-            'no los borre.',
+        value:
+            'Las fotografías capturan momentos. Los vídeos conservan la '
+            'emoción…',
         fontSize: 9,
         width: bodyWidthMm * _mmToPt,
         fontFamily: 'Inter',
         colorHex: '#1e1e1e',
-        textAlign: DotsTextAlign.left,
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.2,
       ),
       // QR block. The PDF shows a SQUARE 27×27 mm block; we use the
@@ -2886,7 +2759,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         fontSize: 9,
         width: qrCaptionWidthMm * _mmToPt,
         fontFamily: 'P22 Mackinac Medium',
-        textAlign: DotsTextAlign.left,
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.2,
       ),
       // Bottom variable text — `{Protagonistas}, disfruta de está…`.
@@ -2898,7 +2771,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         width: bottomWidthMm * _mmToPt,
         fontFamily: 'Inter',
         colorHex: '#1e1e1e',
-        textAlign: DotsTextAlign.left,
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.2,
       ),
       // Right-page decorative-circle scatter — 28 circles from
@@ -2966,8 +2839,7 @@ class DotsAlbumSpreadPage extends DotsPage {
     const double textBoxWidthPt = 115.0 * _mmToPt;
     const double titleFontSize = 20.0;
     const double titleY = photoY + photoHeightPt + 5.0 * _mmToPt;
-    const double subtitleY =
-        titleY + titleFontSize * 1.2 + 5.0 * _mmToPt;
+    const double subtitleY = titleY + titleFontSize * 1.2 + 5.0 * _mmToPt;
 
     final String subtitle =
         'Vivido con mucho amor por: ${content.signature1} y '
@@ -3124,10 +2996,10 @@ class DotsAlbumSpreadPage extends DotsPage {
     // "vivir" wording (pdf10 p.8 / pdf04 p.8); boda + generalEventos
     // omit the CTA entirely (no such element in pdf06 p.3 / pdf12 p.3).
     final String? cta = switch (type) {
-      DotsAlbumType.parejas || DotsAlbumType.hijos =>
-        'Pasad la página para empezar esta experiencia',
-      DotsAlbumType.individuales || DotsAlbumType.otros =>
-        'Pasad la página para vivir la experiencia',
+      DotsAlbumType.parejas ||
+      DotsAlbumType.hijos => 'Pasad la página para empezar esta experiencia',
+      DotsAlbumType.individuales ||
+      DotsAlbumType.otros => 'Pasad la página para vivir la experiencia',
       DotsAlbumType.boda || DotsAlbumType.generalEventos => null,
     };
 
@@ -3177,8 +3049,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         DotsTextBlockElement(
           x: (203 + (203 - 100) / 2) * _mmToPt,
           y: 210 * _mmToPt,
-          value:
-              contextLabelValue.isEmpty ? '{Protagonistas}' : contextLabelValue,
+          value: contextLabelValue.isEmpty ? '{Protagonistas}' : contextLabelValue,
           fontSize: 9,
           width: 100 * _mmToPt,
           fontFamily: 'Inter',
@@ -3235,12 +3106,7 @@ class DotsAlbumSpreadPage extends DotsPage {
       _listEquals(other.elements, elements);
 
   @override
-  int get hashCode => Object.hash(
-        pageNumber,
-        header,
-        footer,
-        Object.hashAll(elements),
-      );
+  int get hashCode => Object.hash(pageNumber, header, footer, Object.hashAll(elements));
 }
 
 /// Top-level template tree consumed by the generator.
@@ -3326,13 +3192,8 @@ class DotsTemplate {
   ///
   /// Used as part of the cache key so that artifacts on disk are
   /// auto-invalidated whenever the template changes.
-  int get contentHash => Object.hash(
-        documentId,
-        pageSize,
-        category,
-        defaultChrome,
-        Object.hashAll(pliegos),
-      );
+  int get contentHash =>
+      Object.hash(documentId, pageSize, category, defaultChrome, Object.hashAll(pliegos));
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {

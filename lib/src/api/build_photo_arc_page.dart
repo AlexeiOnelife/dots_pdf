@@ -2,8 +2,11 @@ import '../api/dots_album_type.dart';
 import '../config/dots_template.dart';
 import 'album_photo_arc_content.dart';
 
-/// Builds a [DotsAlbumSpreadPage] for the "Un año lleno de recuerdos"
-/// photo-arc layout.
+/// Builds a [DotsAlbumSpreadPage] for the final p2 photo arc/halo layout.
+///
+/// Per docs/specs/02-pareja.md §final p2 the page is the photo arc/halo
+/// **alone** (28 photo slots); the QR keep-alive lives on final p1
+/// ([DotsAlbumSpreadPage.closingQrSpread]).
 ///
 /// Supported types: [DotsAlbumType.parejas], [DotsAlbumType.hijos],
 /// [DotsAlbumType.individuales], and [DotsAlbumType.otros].
@@ -13,7 +16,7 @@ import 'album_photo_arc_content.dart';
 /// MUST have `width >= 406 mm (1150.87 pt)`. Elements with
 /// `x + diameter > pageWidth` will be clipped silently by the PDF viewer.
 ///
-/// Throws a [RangeError] when `content.photoPaths.length != 10`.
+/// Throws a [RangeError] when `content.photoPaths.length != 28`.
 DotsAlbumSpreadPage buildPhotoArcPageFor(
   DotsAlbumType type,
   AlbumPhotoArcContent content, {

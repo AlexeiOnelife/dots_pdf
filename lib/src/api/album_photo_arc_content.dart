@@ -1,77 +1,36 @@
 import 'package:meta/meta.dart';
 
-/// Immutable value object that describes the photo content and optional
-/// settings for a photo-arc spread ("Un año lleno de recuerdos").
+/// Immutable value object that describes the photo content for the final p2
+/// photo arc/halo spread.
 ///
 /// Pass an instance to [buildPhotoArcPageFor] or directly to
 /// [DotsAlbumSpreadPage.photoArc] to produce a [DotsAlbumSpreadPage].
 ///
-/// [photoPaths] must have exactly 10 entries (one per arc circle slot).
-/// A [RangeError] is thrown by the factory when the length differs.
+/// Per docs/specs/02-pareja.md §final p2 (shared across otros/hijos/individual
+/// and boda/general-eventos), the photo arc/halo is the **halo alone** — the
+/// QR keep-alive (title, body, caption, QR card) lives on final p1
+/// ([DotsAlbumSpreadPage.closingQrSpread]). This content therefore carries
+/// only the ordered photo slot paths.
 ///
-/// [title] defaults to `"Un año lleno de recuerdos"` when not provided.
-///
-/// [qrCaptionLeftOverride] and [qrCaptionRightOverride] — when non-null,
-/// these win over the per-type caption defaults resolved by the builder.
+/// [photoPaths] must have exactly 28 entries (one per arc slot). A
+/// [RangeError] is thrown by the factory when the length differs.
 @immutable
 class AlbumPhotoArcContent {
   /// Creates an [AlbumPhotoArcContent].
   const AlbumPhotoArcContent({
     required this.photoPaths,
-    required this.qrPayloadLeft,
-    required this.qrPayloadRight,
-    required this.dateSubtitle,
-    this.title = 'Un año lleno de recuerdos',
-    this.qrCaptionLeftOverride,
-    this.qrCaptionRightOverride,
   });
 
-  /// Ordered list of photo asset paths; one per arc circle slot (exactly 10).
+  /// Ordered list of photo asset paths; one per arc slot (exactly 28).
   final List<String> photoPaths;
-
-  /// QR code payload for the left oval QR card (typically a URL).
-  final String qrPayloadLeft;
-
-  /// QR code payload for the right oval QR card (typically a URL).
-  final String qrPayloadRight;
-
-  /// Date subtitle text rendered below the spread title.
-  final String dateSubtitle;
-
-  /// Spread title text. Defaults to `"Un año lleno de recuerdos"`.
-  final String title;
-
-  /// Optional override for the left QR card caption.
-  ///
-  /// When non-null, wins over the per-type default resolved by the builder.
-  final String? qrCaptionLeftOverride;
-
-  /// Optional override for the right QR card caption.
-  ///
-  /// When non-null, wins over the per-type default resolved by the builder.
-  final String? qrCaptionRightOverride;
 
   @override
   bool operator ==(Object other) =>
       other is AlbumPhotoArcContent &&
-      _listEquals(other.photoPaths, photoPaths) &&
-      other.qrPayloadLeft == qrPayloadLeft &&
-      other.qrPayloadRight == qrPayloadRight &&
-      other.dateSubtitle == dateSubtitle &&
-      other.title == title &&
-      other.qrCaptionLeftOverride == qrCaptionLeftOverride &&
-      other.qrCaptionRightOverride == qrCaptionRightOverride;
+      _listEquals(other.photoPaths, photoPaths);
 
   @override
-  int get hashCode => Object.hash(
-        Object.hashAll(photoPaths),
-        qrPayloadLeft,
-        qrPayloadRight,
-        dateSubtitle,
-        title,
-        qrCaptionLeftOverride,
-        qrCaptionRightOverride,
-      );
+  int get hashCode => Object.hashAll(photoPaths);
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {

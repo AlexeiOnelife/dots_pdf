@@ -272,11 +272,7 @@ List<DotsAlbumSpreadPage> _parejasPages() => [
         pageNumber: 9,
         contextLabelValue: 'Ana y Luis',
         content: AlbumPhotoArcContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('parejas_arc_$i')],
-          qrPayloadLeft: 'https://example.com/parejas-left',
-          qrPayloadRight: 'https://example.com/parejas-right',
-          dateSubtitle: '2024 — 2025',
-          title: 'Un año lleno de recuerdos',
+          photoPaths: [for (var i = 0; i < 28; i++) _photo('parejas_arc_$i')],
         ),
       ),
       DotsAlbumSpreadPage.closingQrSpread(
@@ -333,11 +329,7 @@ List<DotsAlbumSpreadPage> _hijosPages() => [
         pageNumber: 9,
         contextLabelValue: 'Mateo',
         content: AlbumPhotoArcContent(
-          photoPaths: [for (var i = 0; i < 10; i++) _photo('hijos_arc_$i')],
-          qrPayloadLeft: 'https://example.com/hijos-left',
-          qrPayloadRight: 'https://example.com/hijos-right',
-          dateSubtitle: '2024 — 2025',
-          title: 'Tu primer año en imágenes',
+          photoPaths: [for (var i = 0; i < 28; i++) _photo('hijos_arc_$i')],
         ),
       ),
       DotsAlbumSpreadPage.closingQrSpread(
@@ -409,12 +401,8 @@ List<DotsAlbumSpreadPage> _individualesPages() => [
         contextLabelValue: '2024',
         content: AlbumPhotoArcContent(
           photoPaths: [
-            for (var i = 0; i < 10; i++) _photo('individuales_arc_$i'),
+            for (var i = 0; i < 28; i++) _photo('individuales_arc_$i'),
           ],
-          qrPayloadLeft: 'https://example.com/individuales-left',
-          qrPayloadRight: 'https://example.com/individuales-right',
-          dateSubtitle: '2024',
-          title: 'Un año a mi manera',
         ),
       ),
       DotsAlbumSpreadPage.closingQrSpread(
@@ -485,12 +473,8 @@ List<DotsAlbumSpreadPage> _otrosPages() => [
         contextLabelValue: 'Todos',
         content: AlbumPhotoArcContent(
           photoPaths: [
-            for (var i = 0; i < 10; i++) _photo('otros_arc_$i'),
+            for (var i = 0; i < 28; i++) _photo('otros_arc_$i'),
           ],
-          qrPayloadLeft: 'https://example.com/otros-left',
-          qrPayloadRight: 'https://example.com/otros-right',
-          dateSubtitle: 'Verano 2024 — Verano 2025',
-          title: 'Todo lo que vivimos juntos',
         ),
       ),
       DotsAlbumSpreadPage.closingQrSpread(
