@@ -75,8 +75,11 @@ class DotsCoverRenderer {
     );
   }
 
-  /// Millimetres → PDF points multiplier (1 mm = 2.834645 pt).
-  static const double _mmToPt = 2.834645;
+  /// Millimetres → PDF points multiplier (1 mm = 2.834645669 pt).
+  ///
+  /// Matches the canonical constant in `docs/specs/00-foundation.md`
+  /// and the interior renderer.
+  static const double _mmToPt = 2.834645669;
 
   /// Crop-mark tick length in millimetres.
   ///
