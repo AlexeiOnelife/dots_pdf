@@ -402,8 +402,10 @@ void main() {
       // Body remains 122 mm and QR container 130 mm.
       expect(slots[2].widthMm, 122);
       expect(slots[3].widthMm, 130);
-      // Subtitle height grows to 2 lines of 24 pt leading.
-      expect(slots[1].heightMm, slots[0].heightMm);
+      // Box heights are the verbatim page-83 callouts: title 5.92 mm,
+      // subtitle (date) 2.701 mm — they are distinct anchor boxes.
+      expect((slots[0].heightMm - 5.92).abs(), lessThan(_tolMm));
+      expect((slots[1].heightMm - 2.701).abs(), lessThan(_tolMm));
     });
   });
 }
