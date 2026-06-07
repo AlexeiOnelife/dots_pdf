@@ -143,22 +143,36 @@ Future<pw.Page> buildAlbumSpreadPage({
 }) async {
   final children = <pw.Widget>[];
 
-  // ── Chrome (background + header + footer) ────────────────────────────────
-  // Build a DotsPageChrome from the spread page's header/footer and delegate
-  // to the shared buildPageChrome helper. This is the single chrome site (R8).
+  // ── Chrome (split pass: background + foreground) ─────────────────────────
+  // Build a DotsPageChrome from the spread page's header/footer and split
+  // the rendered chrome into two passes:
+  //   1. background: the full-bleed #fdfefd page fill, drawn FIRST.
+  //   2. foreground: page numbers, centre label, footer wordmark — drawn
+  //      LAST so chrome text is never hidden by decorative elements like
+  //      beforeJourney's LEFT-page light-blue rect or its circle cluster.
   // Cover pages set leftPageNumber/rightPageNumber both null and wordmark ''
-  // so buildPageChrome returns [] — cover stays chrome-free (R1).
+  // so buildPageChromeSplit returns two empty lists — cover stays
+  // chrome-free (R1).
   final leftNum = page.header.leftPageNumber;
   final rightNum = page.header.rightPageNumber;
+  // Detect SPREAD chrome: both page numbers set AND they differ. Single-page
+  // factories set leftPageNumber == rightPageNumber (same number on both
+  // header slots so the page renders correctly whether it lands on a left
+  // or right side); spread factories set them to N and N+1.
+  final bool isSpreadChrome =
+      leftNum != null && rightNum != null && leftNum != rightNum;
   final spreadChrome = DotsPageChrome(
     pageNumber: leftNum ?? rightNum,
+    rightPageNumber: isSpreadChrome ? rightNum : null,
     isLeftPage: leftNum != null,
     centerLabel: page.header.centerLabel,
     wordmark: page.footer.wordmark,
   );
-  children.addAll(buildPageChrome(spreadChrome, format, fontResolver));
+  final chromeSplit =
+      buildPageChromeSplit(spreadChrome, format, fontResolver);
+  children.addAll(chromeSplit.background);
 
-  // ── Elements ─────────────────────────────────────────────────────────────
+  // ── Elements (drawn between chrome background and chrome foreground) ─────
   for (final element in page.elements) {
     final widget = await _buildElement(
       element: element,
@@ -171,6 +185,9 @@ Future<pw.Page> buildAlbumSpreadPage({
     );
     if (widget != null) children.add(widget);
   }
+
+  // ── Chrome foreground — drawn LAST so text always wins ───────────────────
+  children.addAll(chromeSplit.foreground);
 
   // ── Width warning (spread pages require >= 406 mm width) ────────────────
   // Photo-arc (DotsPhotoCircleElement / DotsOvalQrElement) and boda-cluster

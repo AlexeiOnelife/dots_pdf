@@ -1226,6 +1226,7 @@ class DotsPageChrome {
   /// full-bleed background is always rendered.
   const DotsPageChrome({
     this.pageNumber,
+    this.rightPageNumber,
     this.centerLabel,
     this.wordmark,
     this.isLeftPage = true,
@@ -1238,6 +1239,18 @@ class DotsPageChrome {
   ///
   /// A `null` value omits the page-number slot entirely.
   final String? pageNumber;
+
+  /// Optional second page-number string for SPREAD chrome — when set,
+  /// the renderer draws BOTH [pageNumber] at the left outer column AND
+  /// [rightPageNumber] at the right outer column.
+  ///
+  /// Populated by `buildAlbumSpreadPage` for 2-page-spread factories
+  /// (e.g. `closingQrSpread`, `beforeYouStart`, `beforeJourney`,
+  /// `photoArc`, `bodaCluster`, `bodaHalo`, `polaroidCollage`) where
+  /// the spread header carries BOTH `leftPageNumber=N` and
+  /// `rightPageNumber=N+1`. A `null` value falls back to the existing
+  /// single-page chrome rendering (one number, placed per [isLeftPage]).
+  final String? rightPageNumber;
 
   /// Context-label string placed in the centre column of the header band.
   ///
@@ -1274,6 +1287,7 @@ class DotsPageChrome {
   bool operator ==(Object other) =>
       other is DotsPageChrome &&
       other.pageNumber == pageNumber &&
+      other.rightPageNumber == rightPageNumber &&
       other.centerLabel == centerLabel &&
       other.wordmark == wordmark &&
       other.isLeftPage == isLeftPage &&
@@ -1281,8 +1295,15 @@ class DotsPageChrome {
       other.suppressFooter == suppressFooter;
 
   @override
-  int get hashCode =>
-      Object.hash(pageNumber, centerLabel, wordmark, isLeftPage, suppressHeader, suppressFooter);
+  int get hashCode => Object.hash(
+        pageNumber,
+        rightPageNumber,
+        centerLabel,
+        wordmark,
+        isLeftPage,
+        suppressHeader,
+        suppressFooter,
+      );
 }
 
 /// An album-spread page whose top and bottom edges carry first-class
@@ -1625,14 +1646,16 @@ class DotsAlbumSpreadPage extends DotsPage {
   ///
   /// The eyebrow is resolved as follows:
   ///   - [eyebrowOverride] wins when non-null.
-  ///   - [DotsAlbumType.parejas] default → `"DOTBOOK DE {PROTAGONISTA}"`.
-  ///   - [DotsAlbumType.hijos]   default → `"DOTBOOK DE {PROTAGONISTA}"`.
-  ///
-  /// The eyebrow token `{PROTAGONISTA}` is resolved by the caller's
-  /// variables map at parse time. The literal eyebrow text was corrected
-  /// in Task 4 of `final-render-refinement` against
-  /// `pdf02_pareja_inicial.pdf` p.2 and `pdf08_hijos_inicial.pdf` p.2;
-  /// both PDFs use the same eyebrow format.
+  ///   - Otherwise the canonical `"DOTBOOK DE {PROTAGONISTA}"` template
+  ///     is used (per pdf02 p.2 / pdf08 p.2 — both parejas and hijos
+  ///     share the same format).
+  ///   - The `{PROTAGONISTA}` token is then substituted with the
+  ///     [contextLabelValue] argument when non-empty. When empty, the
+  ///     token remains literal — useful for previews / placeholder
+  ///     rendering. Callers parsing JSON templates pass the resolved
+  ///     protagonist name via [contextLabelValue]; the templates-level
+  ///     `variables` map no longer needs to substitute the token before
+  ///     reaching this factory.
   ///
   /// [header] and [footer] are set so that no page-number trio or wordmark
   /// appears on the cover (header trio is all-null; footer wordmark is empty).
@@ -1641,12 +1664,12 @@ class DotsAlbumSpreadPage extends DotsPage {
     required int pageNumber,
     required String title,
     required String dateLine,
+    String contextLabelValue = '',
     String? eyebrowOverride,
   }) {
     // Resolve per-type eyebrow; throw for unsupported types.
     // Both parejas and hijos use the same eyebrow text per the PDF spec
-    // sheet (pdf02 p.2 + pdf08 p.2); the {PROTAGONISTA} token is
-    // resolved by the variables-map at JSON parse time.
+    // sheet (pdf02 p.2 + pdf08 p.2).
     final String defaultEyebrow = switch (type) {
       DotsAlbumType.parejas || DotsAlbumType.hijos => 'DOTBOOK DE {PROTAGONISTA}',
       _ => throw ArgumentError.value(
@@ -1656,7 +1679,14 @@ class DotsAlbumSpreadPage extends DotsPage {
             'DotsAlbumType.parejas and DotsAlbumType.hijos; got $type',
       ),
     };
-    final String eyebrow = eyebrowOverride ?? defaultEyebrow;
+    // Substitute the {PROTAGONISTA} token with the caller-provided value
+    // when non-empty. The substitution applies to BOTH the default
+    // eyebrow AND any `eyebrowOverride` the caller passes — overrides
+    // may also contain the token.
+    final String rawEyebrow = eyebrowOverride ?? defaultEyebrow;
+    final String eyebrow = contextLabelValue.isEmpty
+        ? rawEyebrow
+        : rawEyebrow.replaceAll('{PROTAGONISTA}', contextLabelValue);
 
     // ── 14 decorative circles from kCoverCircleLayout ────────────────────────
     final circles = kCoverCircleLayout
@@ -2938,6 +2968,34 @@ class DotsAlbumSpreadPage extends DotsPage {
     // Title height 19.1 mm + 5 mm gap below L2 baseline.
     const double bodyYMm = titleL1YMm + 19.1 + 5;
 
+    // ── LEFT-page decorative circles (best-effort approximation) ──────
+    //
+    // The source PDFs (pdf02 p.10, pdf06 p.3, pdf08 p.10, pdf10 p.8,
+    // pdf04 p.8, pdf12 p.3) annotate a cascading column of 7 circles on
+    // the LEFT page with per-circle opacity gradients ("Perdida de
+    // opacidad de arriba a abajo desde 100% a 30% a partir del 1,6mm
+    // en Y", etc.). The annotated X/Y values in those PDFs are
+    // ambiguous (no clear separation between positions, dimensions, and
+    // gradient parameters) so this table is a visual approximation of
+    // the cluster pattern rather than a strict transcription. Refine
+    // via visual QA against the source PDFs.
+    //
+    // The full-page light-blue background is emitted as a
+    // DotsDecorativeRectElement BEFORE the circles — the chrome split
+    // pass (buildPageChromeSplit) ensures the chrome text widgets render
+    // ON TOP of both the background rect and the circles, so page
+    // numbers and the footer wordmark remain legible.
+    const List<({double xMm, double yMm, double diameterMm, double alpha})>
+        leftCircles = [
+      (xMm: 105, yMm: 18, diameterMm: 78, alpha: 1.00),
+      (xMm: 70, yMm: 62, diameterMm: 42, alpha: 0.85),
+      (xMm: 115, yMm: 95, diameterMm: 32, alpha: 0.70),
+      (xMm: 78, yMm: 122, diameterMm: 28, alpha: 0.55),
+      (xMm: 102, yMm: 148, diameterMm: 22, alpha: 0.45),
+      (xMm: 90, yMm: 172, diameterMm: 12, alpha: 0.35),
+      (xMm: 85, yMm: 188, diameterMm: 8, alpha: 0.30),
+    ];
+
     final String body = content.bodyOverride ?? defaultBody;
 
     // Per-category right-page CTA. parejas/hijos use the "empezar"
@@ -2964,6 +3022,32 @@ class DotsAlbumSpreadPage extends DotsPage {
     };
 
     final elements = <DotsElement>[
+      // ── LEFT-page full-page light-blue background ──────────────────────
+      // The source PDFs (pdf02 p.10, pdf06 p.3, pdf08 p.10, pdf10 p.8,
+      // pdf04 p.8, pdf12 p.3) show the LEFT page of this spread filled
+      // edge-to-edge with light-blue #CDE7F2. Renders BETWEEN the chrome
+      // page-fill (#fdfefd) and the chrome header/footer text thanks to
+      // the split-pass rendering in `buildAlbumSpreadPage` — chrome text
+      // (page number on the outer-left edge of the LEFT page) draws on
+      // top of this rect and stays legible.
+      const DotsDecorativeRectElement(
+        x: 0,
+        y: 0,
+        width: 203 * _mmToPt,
+        height: 254 * _mmToPt,
+        colorHex: '#CDE7F2',
+      ),
+      // ── LEFT-page decorative circles — emitted AFTER the background rect
+      //    so they sit on top of it, but BEFORE the right-page text in the
+      //    z-order (within the element stack; chrome foreground renders last).
+      for (final c in leftCircles)
+        DotsDecorativeCircleElement(
+          x: c.xMm * _mmToPt,
+          y: c.yMm * _mmToPt,
+          diameter: c.diameterMm * _mmToPt,
+          colorHex: '#CDE7F2',
+          opacityAlpha: c.alpha,
+        ),
       // Title line 1 — "Antes de empezar" (P22 Mackinac Medium 27pt).
       const DotsTextBlockElement(
         x: titleXMm * _mmToPt,
