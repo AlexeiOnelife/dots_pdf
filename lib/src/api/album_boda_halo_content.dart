@@ -1,85 +1,33 @@
 import 'package:meta/meta.dart';
 
-/// Immutable value object that describes the photo content and optional
-/// settings for the boda-halo spread ("Boda de Nombre&Nombre" title spread,
-/// boda p.4).
+/// Immutable value object that describes the photo content for the boda
+/// final p2 "photo halo" spread (docs/specs/04-boda.md §final p2).
 ///
 /// Pass an instance to [buildBodaHaloPageFor] or directly to
 /// [DotsAlbumSpreadPage.bodaHalo] to produce a [DotsAlbumSpreadPage].
 ///
-/// [photoPaths] must have exactly 10 entries (one per halo radial slot).
-/// A [RangeError] is thrown by the factory when the length differs.
-///
-/// [titleLine1] defaults to `"Boda de"` when not provided.
-/// [titleLine2] is required (e.g. `"Ana & Luis"`).
-///
-/// [qrCaptionLeftOverride] and [qrCaptionRightOverride] — when non-null,
-/// these win over the per-type caption defaults resolved by the builder.
+/// Per the spec the halo is the 28-slot photo arrangement alone — there is no
+/// QR card and no title on this page (the QR keep-alive is final p1; see
+/// [DotsAlbumSpreadPage.closingQrSpread]). [photoPaths] must therefore have
+/// exactly 28 entries (one per halo slot). A [RangeError] is thrown by the
+/// factory when the length differs.
 @immutable
 class AlbumBodaHaloContent {
   /// Creates an [AlbumBodaHaloContent].
   const AlbumBodaHaloContent({
     required this.photoPaths,
-    required this.titleLine2,
-    required this.dateSubtitle,
-    required this.qrPayloadLeft,
-    required this.qrPayloadRight,
-    this.titleLine1 = 'Boda de',
-    this.qrCaptionLeftOverride,
-    this.qrCaptionRightOverride,
   });
 
-  /// Ordered list of photo asset paths; one per halo radial slot (exactly 10).
+  /// Ordered list of photo asset paths; one per halo slot (exactly 28).
   final List<String> photoPaths;
-
-  /// First title line. Defaults to `"Boda de"`.
-  final String titleLine1;
-
-  /// Second title line (e.g. `"Ana & Luis"`).
-  final String titleLine2;
-
-  /// Date subtitle text rendered below the title.
-  final String dateSubtitle;
-
-  /// QR code payload for the left oval QR card (typically a URL).
-  final String qrPayloadLeft;
-
-  /// QR code payload for the right oval QR card (typically a URL).
-  final String qrPayloadRight;
-
-  /// Optional override for the left QR card caption.
-  ///
-  /// When non-null, wins over the per-type default resolved by the builder.
-  final String? qrCaptionLeftOverride;
-
-  /// Optional override for the right QR card caption.
-  ///
-  /// When non-null, wins over the per-type default resolved by the builder.
-  final String? qrCaptionRightOverride;
 
   @override
   bool operator ==(Object other) =>
       other is AlbumBodaHaloContent &&
-      _listEquals(other.photoPaths, photoPaths) &&
-      other.titleLine1 == titleLine1 &&
-      other.titleLine2 == titleLine2 &&
-      other.dateSubtitle == dateSubtitle &&
-      other.qrPayloadLeft == qrPayloadLeft &&
-      other.qrPayloadRight == qrPayloadRight &&
-      other.qrCaptionLeftOverride == qrCaptionLeftOverride &&
-      other.qrCaptionRightOverride == qrCaptionRightOverride;
+      _listEquals(other.photoPaths, photoPaths);
 
   @override
-  int get hashCode => Object.hash(
-        Object.hashAll(photoPaths),
-        titleLine1,
-        titleLine2,
-        dateSubtitle,
-        qrPayloadLeft,
-        qrPayloadRight,
-        qrCaptionLeftOverride,
-        qrCaptionRightOverride,
-      );
+  int get hashCode => Object.hashAll(photoPaths);
 }
 
 bool _listEquals<T>(List<T> a, List<T> b) {

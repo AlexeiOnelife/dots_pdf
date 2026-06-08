@@ -107,18 +107,23 @@ void main() {
     });
 
     test(
-        'buildSimplePagesFor — individuales header.centerLabel equals {Año}',
-        () {
+        'buildSimplePagesFor — individuales dedication subject is '
+        '{Protagonista}, closing label is {Año}', () {
+      // docs/specs/06-individual.md "Differences vs otros": the individual
+      // dedication subject token is `{Protagonista}` (base truth
+      // pdf10_individual_inicial.pdf p3), while the generic right-page label
+      // carried by other pages is `{Año}`.
       final pages = _build(DotsAlbumType.individuales, _fullContent);
-      for (final p in pages) {
-        expect(p.header.centerLabel, equals('{Año}'));
-      }
+      // pages[0] = dedication, pages[1] = closing.
+      expect(pages[0].header.centerLabel, equals('{Protagonista}'));
+      expect(pages[1].header.centerLabel, equals('{Año}'));
     });
 
-    test('buildSimplePagesFor — otros header.centerLabel equals {Año}', () {
+    test('buildSimplePagesFor — otros header.centerLabel equals {Año} | {Año}',
+        () {
       final pages = _build(DotsAlbumType.otros, _fullContent);
       for (final p in pages) {
-        expect(p.header.centerLabel, equals('{Año}'));
+        expect(p.header.centerLabel, equals('{Año} | {Año}'));
       }
     });
 

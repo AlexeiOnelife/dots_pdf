@@ -127,13 +127,60 @@ void main() {
       expect(sig.angleDegrees, equals(2.0));
     });
 
-    test('AlbumSpreadPage — dedication body is constrained to 120 mm width',
+    test('AlbumSpreadPage — dedication body is constrained to 102 mm width',
         () {
       final page = _dedicationPage(DotsAlbumType.parejas);
       final body = page.elements.whereType<DotsTextBlockElement>().first;
-      // 120 mm × 2.834645669 pt/mm ≈ 340.16 pt. Width corrected in Task 4
-      // (`pareja-hijos-fidelity`) against pdf02 p.5 / pdf08 p.5.
-      expect(body.width, closeTo(120.0 * _mmToPt, 0.01));
+      // 102 mm × 2.834645669 pt/mm ≈ 289.13 pt, per docs/specs/02-pareja.md
+      // §p5 ("Body … 102 wide"). The spec is the contract.
+      expect(body.width, closeTo(102.0 * _mmToPt, 0.01));
+    });
+
+    test(
+        'AlbumSpreadPage — otros/individuales dedication body is 120 mm wide',
+        () {
+      // docs/specs/03-otros.md p3 + docs/specs/06-individual.md p3:
+      // "body Inter Book 9 / 10.8 pt, 120 mm wide" (vs 102 mm pareja/hijos).
+      for (final type in [
+        DotsAlbumType.otros,
+        DotsAlbumType.individuales,
+      ]) {
+        final page = _dedicationPage(type);
+        final body = page.elements.whereType<DotsTextBlockElement>().first;
+        expect(body.width, closeTo(120.0 * _mmToPt, 0.01),
+            reason: '$type dedication body width should be 120 mm');
+      }
+    });
+
+    test(
+        'AlbumSpreadPage — individuales dedication subject header is '
+        '{Protagonista}', () {
+      // docs/specs/06-individual.md "Differences vs otros": dedication subject
+      // token = `{Protagonista}` + `{Firma}`. Base truth
+      // pdf10_individual_inicial.pdf p3 shows `{Protagonista}` in the centre
+      // header (vs `{año}` on pdf04_otros_inicial.pdf p3). The signature carries
+      // `{Firma}` via the signature argument.
+      final page = _dedicationPage(DotsAlbumType.individuales);
+      expect(page.header.centerLabel, equals('{Protagonista}'));
+    });
+
+    test(
+        'AlbumSpreadPage — non-individual dedication subject keeps the passed '
+        'context label', () {
+      // Gate check: otros/parejas/hijos render the caller-supplied label
+      // unchanged (no `{Protagonista}` override).
+      expect(
+        _dedicationPage(DotsAlbumType.otros).header.centerLabel,
+        equals('{Año} | {Año}'),
+      );
+      expect(
+        _dedicationPage(DotsAlbumType.parejas).header.centerLabel,
+        equals('{tiempojuntos}'),
+      );
+      expect(
+        _dedicationPage(DotsAlbumType.hijos).header.centerLabel,
+        equals('{Protagonistas}'),
+      );
     });
   });
 

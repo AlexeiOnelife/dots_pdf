@@ -1,8 +1,5 @@
 // Tests for kPhotoArcLayout — entry count, uniform diameter, and coordinate
-// values (D6, T1.3).
-//
-// These tests are GREEN immediately: kPhotoArcLayout is defined in
-// photo_arc_layout.dart as part of slice 5 PR 1 (T2.3).
+// values (docs/specs/02-pareja.md §final p2, 28-slot photo arc/halo).
 import 'package:dots_pdf/src/render/photo_arc_layout.dart'
     show kPhotoArcLayoutForTest;
 import 'package:flutter_test/flutter_test.dart';
@@ -11,9 +8,9 @@ import 'package:flutter_test/flutter_test.dart';
 const double _epsilon = 0.0001;
 
 void main() {
-  group('kPhotoArcLayout — structure (D6)', () {
-    test('exactly 10 entries', () {
-      expect(kPhotoArcLayoutForTest.length, equals(10));
+  group('kPhotoArcLayout — structure (final p2)', () {
+    test('exactly 28 entries', () {
+      expect(kPhotoArcLayoutForTest.length, equals(28));
     });
 
     test('all entries have diameterMm == 44.45', () {
@@ -21,40 +18,50 @@ void main() {
         expect(
           anchor.diameterMm,
           equals(44.45),
-          reason:
-              'Expected diameterMm=44.45 at '
+          reason: 'Expected diameterMm=44.45 at '
               '(x=${anchor.xMm}, y=${anchor.yMm})',
         );
       }
     });
   });
 
-  group('kPhotoArcLayout — coordinates match spec table (D6)', () {
-    // Spec table (mm from top-left of 406 × 254 mm spread):
-    // # | x (mm)  | y (mm)
-    // 1 | 29.59   | 273.28
-    // 2 | 376.17  | 273.28
-    // 3 | 45.09   | 224.02
-    // 4 | 360.66  | 224.02
-    // 5 | 77.97   | 180.93
-    // 6 | 327.79  | 180.93
-    // 7 | 120.96  | 150.11
-    // 8 | 284.79  | 150.11
-    // 9 | 171.04  | 134.01
-    //10 | 234.72  | 134.01
-
+  group('kPhotoArcLayout — coordinates match spec table (final p2)', () {
+    // docs/specs/02-pareja.md §final p2 — 28 slot coordinates (mm, spread
+    // artboard).
     const expected = <(double, double)>[
-      (29.59, 273.28),
-      (376.17, 273.28),
-      (45.09, 224.02),
-      (360.66, 224.02),
-      (77.97, 180.93),
-      (327.79, 180.93),
-      (120.96, 150.11),
-      (284.79, 150.11),
-      (171.04, 134.01),
-      (234.72, 134.01),
+      (390, 57),
+      (362, 77),
+      (338, 57),
+      (307, 94),
+      (266, 102),
+      (236, 140),
+      (202, 128),
+      (205, 160),
+      (137, 142),
+      (149, 142),
+      (163, 136),
+      (165, 154),
+      (182, 157),
+      (177, 140),
+      (185, 132),
+      (241, 186),
+      (389, 94),
+      (348, 138),
+      (310, 194),
+      (271, 203),
+      (291, 135),
+      (266, 151),
+      (307, 216),
+      (348, 232),
+      (395, 139),
+      (369, 182),
+      (391, 201),
+      (389, 238),
     ];
+
+    test('layout has same length as spec table (28)', () {
+      expect(kPhotoArcLayoutForTest.length, equals(expected.length));
+    });
 
     for (var i = 0; i < expected.length; i++) {
       final (xExpected, yExpected) = expected[i];

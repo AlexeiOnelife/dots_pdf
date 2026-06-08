@@ -32,8 +32,9 @@ class _SpineTier {
 /// three inputs:
 ///
 /// - [pageCount]: total interior page count (must be a multiple of 4
-///   between [DotsSupplier.minPageCount] and 250 inclusive, and within
-///   the per-substrate tier table).
+///   between [DotsSupplier.minPageCount] and the per-substrate maximum
+///   — 250 for `uncoated150`, 300 for `satin170` / `gloss200` — and
+///   within the per-substrate tier table).
 /// - [paperSubstrate]: interior stock that selects the spine-tier table.
 /// - [supplier]: print supplier that fixes the page-count floor and
 ///   crop-mark policy.
@@ -54,7 +55,9 @@ class DotsCoverGeometry {
   ///
   /// - [pageCount] is not a positive multiple of 4.
   /// - [pageCount] is below [DotsSupplier.minPageCount].
-  /// - [pageCount] exceeds the library-wide cap of 250.
+  /// - [pageCount] exceeds the per-substrate cap returned by
+  ///   [maxPageCountForSubstrate] (250 for `uncoated150`, 300 for
+  ///   `satin170` / `gloss200`).
   /// - [pageCount] falls outside the page range defined by the tier
   ///   table for [paperSubstrate] (e.g. 244 pages on `uncoated150`,
   ///   whose ceiling is 242).
@@ -86,9 +89,29 @@ class DotsCoverGeometry {
     required this.spineLetter,
   });
 
-  /// Hard cap on interior page count, regardless of substrate or
-  /// supplier (per `SPECS.md` Resolved clarifications, point 2).
+  /// Hard cap on interior page count for `uncoated150` stock (Table 1),
+  /// and the default reference value. Satin/gloss coated stock extends
+  /// to [satinGlossMaxPageCount] per Table 2 of
+  /// `FileSpecs.203x254.V1.xlsx`.
   static const int maxPageCount = 250;
+
+  /// Hard cap on interior page count for `satin170` / `gloss200` coated
+  /// stock (Table 2, letter F extends to 300 pages).
+  static const int satinGlossMaxPageCount = 300;
+
+  /// Maximum interior page count permitted for [substrate].
+  ///
+  /// `uncoated150` caps at [maxPageCount] (250; its tier ceiling is 242);
+  /// `satin170` / `gloss200` cap at [satinGlossMaxPageCount] (300).
+  static int maxPageCountForSubstrate(final DotsPaperSubstrate substrate) {
+    switch (substrate) {
+      case DotsPaperSubstrate.uncoated150:
+        return maxPageCount;
+      case DotsPaperSubstrate.satin170:
+      case DotsPaperSubstrate.gloss200:
+        return satinGlossMaxPageCount;
+    }
+  }
 
   /// Finished book-block width in millimetres (interior trim).
   static const double bookBlockWidthMm = 203;
@@ -120,10 +143,8 @@ class DotsCoverGeometry {
 
   /// Spine-tier table for Satin 170 / Gloss 200 stock (`Substrate block` s45).
   ///
-  /// The spreadsheet's Table 2 letter F nominally extends to 300 pages,
-  /// but the library hard-caps at 250 (see [maxPageCount]); the table
-  /// here is left at its spreadsheet value because the cap is enforced
-  /// independently by [_validate].
+  /// Table 2 of `FileSpecs.203x254.V1.xlsx`; letter F extends to 300
+  /// pages, the per-substrate cap enforced by [maxPageCountForSubstrate].
   static const List<_SpineTier> _coatedTiers = <_SpineTier>[
     _SpineTier(minPages: 20, maxPages: 50, spineMm: 6.76, letter: 'A'),
     _SpineTier(minPages: 52, maxPages: 100, spineMm: 11.25, letter: 'B'),
@@ -207,9 +228,11 @@ class DotsCoverGeometry {
         pointer: r'$.pageCount',
       );
     }
-    if (pageCount > maxPageCount) {
+    final int maxPages = maxPageCountForSubstrate(paperSubstrate);
+    if (pageCount > maxPages) {
       throw DotsConfigException(
-        'pageCount $pageCount exceeds the library cap of $maxPageCount.',
+        'pageCount $pageCount exceeds the ${paperSubstrate.name} '
+        'cap of $maxPages.',
         pointer: r'$.pageCount',
       );
     }

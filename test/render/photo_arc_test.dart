@@ -48,20 +48,13 @@ bool _hasPdfMagic(Uint8List bytes) =>
     bytes[3] == 0x46;
 
 List<String> _tenPaths() =>
-    List.generate(10, (i) => 'photo_${i + 1}.jpg');
+    List.generate(28, (i) => 'photo_${i + 1}.jpg');
 
 AlbumPhotoArcContent _content({
   List<String>? photoPaths,
-  String? qrCaptionLeftOverride,
-  String? qrCaptionRightOverride,
 }) =>
     AlbumPhotoArcContent(
       photoPaths: photoPaths ?? _tenPaths(),
-      qrPayloadLeft: 'https://left.example.com',
-      qrPayloadRight: 'https://right.example.com',
-      dateSubtitle: '01/01/2024 | 31/12/2024',
-      qrCaptionLeftOverride: qrCaptionLeftOverride,
-      qrCaptionRightOverride: qrCaptionRightOverride,
     );
 
 /// Spy logger that records warn calls.
@@ -98,24 +91,24 @@ void main() {
       );
     });
 
-    test('elements list has exactly 14 entries', () {
-      expect(page.elements.length, equals(14));
+    test('elements list has exactly 28 entries', () {
+      expect(page.elements.length, equals(28));
     });
 
-    test('exactly 10 elements are DotsPhotoCircleElement', () {
+    test('exactly 28 elements are DotsPhotoCircleElement', () {
       final circles =
           page.elements.whereType<DotsPhotoCircleElement>().toList();
-      expect(circles.length, equals(10));
+      expect(circles.length, equals(28));
     });
 
-    test('exactly 2 elements are DotsOvalQrElement', () {
+    test('no DotsOvalQrElement (halo alone — QR lives on final p1)', () {
       final ovals = page.elements.whereType<DotsOvalQrElement>().toList();
-      expect(ovals.length, equals(2));
+      expect(ovals, isEmpty);
     });
 
-    test('exactly 2 elements are DotsTextElement', () {
+    test('no DotsTextElement (halo alone — no title/date subtitle)', () {
       final texts = page.elements.whereType<DotsTextElement>().toList();
-      expect(texts.length, equals(2));
+      expect(texts, isEmpty);
     });
 
     test('circle elements match kPhotoArcLayout coordinates', () {
@@ -178,35 +171,35 @@ void main() {
       );
     });
 
-    test('throws RangeError when photoPaths.length == 9', () {
+    test('throws RangeError when photoPaths.length == 27', () {
       expect(
         () => DotsAlbumSpreadPage.photoArc(
           type: DotsAlbumType.parejas,
           pageNumber: 1,
           contextLabelValue: 'x',
           content: _content(
-            photoPaths: List.generate(9, (i) => 'photo_${i + 1}.jpg'),
+            photoPaths: List.generate(27, (i) => 'photo_${i + 1}.jpg'),
           ),
         ),
         throwsA(isA<RangeError>()),
       );
     });
 
-    test('throws RangeError when photoPaths.length == 11', () {
+    test('throws RangeError when photoPaths.length == 29', () {
       expect(
         () => DotsAlbumSpreadPage.photoArc(
           type: DotsAlbumType.parejas,
           pageNumber: 1,
           contextLabelValue: 'x',
           content: _content(
-            photoPaths: List.generate(11, (i) => 'photo_${i + 1}.jpg'),
+            photoPaths: List.generate(29, (i) => 'photo_${i + 1}.jpg'),
           ),
         ),
         throwsA(isA<RangeError>()),
       );
     });
 
-    test('no error when photoPaths.length == 10', () {
+    test('no error when photoPaths.length == 28', () {
       expect(
         () => DotsAlbumSpreadPage.photoArc(
           type: DotsAlbumType.parejas,
@@ -226,7 +219,7 @@ void main() {
   group('photo-arc rendering (R9)', () {
     test('render via main-isolate produces non-empty PDF byte buffer', () async {
       final fs = MemoryFileSystem.test();
-      for (var i = 1; i <= 10; i++) {
+      for (var i = 1; i <= 28; i++) {
         await fs.file('/photo_$i.jpg').writeAsBytes(_onePixelPng());
       }
 
@@ -242,11 +235,8 @@ void main() {
         contextLabelValue: '5 años juntos',
         content: AlbumPhotoArcContent(
           photoPaths: [
-            for (var i = 1; i <= 10; i++) '/photo_$i.jpg',
+            for (var i = 1; i <= 28; i++) '/photo_$i.jpg',
           ],
-          qrPayloadLeft: 'https://left.example.com',
-          qrPayloadRight: 'https://right.example.com',
-          dateSubtitle: '2024',
         ),
       );
 
@@ -286,7 +276,7 @@ void main() {
         if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
       });
 
-      for (var i = 1; i <= 10; i++) {
+      for (var i = 1; i <= 28; i++) {
         io.File('${tempDir.path}/photo_$i.jpg')
             .writeAsBytesSync(_onePixelPng());
       }
@@ -303,11 +293,8 @@ void main() {
         contextLabelValue: '5 años juntos',
         content: AlbumPhotoArcContent(
           photoPaths: [
-            for (var i = 1; i <= 10; i++) '${tempDir.path}/photo_$i.jpg',
+            for (var i = 1; i <= 28; i++) '${tempDir.path}/photo_$i.jpg',
           ],
-          qrPayloadLeft: 'https://left.example.com',
-          qrPayloadRight: 'https://right.example.com',
-          dateSubtitle: '2024',
         ),
       );
 
@@ -373,7 +360,7 @@ void main() {
       );
 
       // Build the pw.Page directly via buildAlbumSpreadPage — bytesResolver
-      // always throws so all 10 photo-circle elements trigger onPhotoFailure.
+      // always throws so all 28 photo-circle elements trigger onPhotoFailure.
       final builtPage = await buildAlbumSpreadPage(
         format: _spreadFormat,
         page: page,
@@ -386,8 +373,8 @@ void main() {
 
       // Page still builds (no exception thrown).
       expect(builtPage, isA<pw.Page>());
-      // All 10 photo paths triggered onPhotoFailure.
-      expect(failedPaths.length, equals(10));
+      // All 28 photo paths triggered onPhotoFailure.
+      expect(failedPaths.length, equals(28));
     });
 
     test('logger warns when page width < 406 mm (R11)', () async {
