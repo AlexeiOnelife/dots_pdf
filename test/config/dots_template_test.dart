@@ -186,10 +186,13 @@ void main() {
       expect(page.elements, isNotEmpty);
     });
 
-    test('has title DotsTextElement as first element', () {
-      expect(page.elements.first, isA<DotsTextElement>());
-      final title = page.elements.first as DotsTextElement;
+    test('has centre-aligned title block as first element', () {
+      // docs/specs/02-pareja.md §p5: the dedication title is centre-aligned,
+      // so it is a DotsTextBlockElement (not a point-anchored DotsTextElement).
+      expect(page.elements.first, isA<DotsTextBlockElement>());
+      final title = page.elements.first as DotsTextBlockElement;
       expect(title.value, equals('Nuestro viaje'));
+      expect(title.textAlign, equals(DotsTextAlign.center));
     });
 
     test('has DotsTextBlockElement for body', () {
@@ -197,7 +200,10 @@ void main() {
         page.elements.whereType<DotsTextBlockElement>(),
         isNotEmpty,
       );
-      final body = page.elements.whereType<DotsTextBlockElement>().first;
+      // Title and body are both text blocks; select the body by value.
+      final body = page.elements
+          .whereType<DotsTextBlockElement>()
+          .firstWhere((e) => e.value == 'Un año de amor.');
       expect(body.value, equals('Un año de amor.'));
     });
 

@@ -102,8 +102,11 @@ void main() {
 
         // Inspect the element model — all three text content items must be
         // present as elements on the page.
+        // The dedication title is a centre-aligned DotsTextBlockElement
+        // (docs/specs/02-pareja.md §p5: title align center), distinct from
+        // the body block by its value.
         final titles = page.elements
-            .whereType<DotsTextElement>()
+            .whereType<DotsTextBlockElement>()
             .where((e) => e.value == 'Nuestro viaje');
         expect(titles, isNotEmpty, reason: 'title text element must be present');
 
@@ -130,7 +133,9 @@ void main() {
     test('AlbumSpreadPage — dedication body is constrained to 102 mm width',
         () {
       final page = _dedicationPage(DotsAlbumType.parejas);
-      final body = page.elements.whereType<DotsTextBlockElement>().first;
+      final body = page.elements
+          .whereType<DotsTextBlockElement>()
+          .firstWhere((e) => e.value == 'Un año de amor.');
       // 102 mm × 2.834645669 pt/mm ≈ 289.13 pt, per docs/specs/02-pareja.md
       // §p5 ("Body … 102 wide"). The spec is the contract.
       expect(body.width, closeTo(102.0 * _mmToPt, 0.01));
@@ -146,7 +151,9 @@ void main() {
         DotsAlbumType.individuales,
       ]) {
         final page = _dedicationPage(type);
-        final body = page.elements.whereType<DotsTextBlockElement>().first;
+        final body = page.elements
+          .whereType<DotsTextBlockElement>()
+          .firstWhere((e) => e.value == 'Un año de amor.');
         expect(body.width, closeTo(120.0 * _mmToPt, 0.01),
             reason: '$type dedication body width should be 120 mm');
       }
@@ -713,13 +720,17 @@ void main() {
         'uses Inter', () {
       final page = _dedicationPage(DotsAlbumType.parejas);
 
-      final titleFont =
-          page.elements.whereType<DotsTextElement>().first.fontFamily;
+      final titleFont = page.elements
+          .whereType<DotsTextBlockElement>()
+          .firstWhere((e) => e.value == 'Nuestro viaje')
+          .fontFamily;
       expect(titleFont, equals('P22 Mackinac Medium'),
           reason: 'title element must use P22 Mackinac Medium');
 
-      final bodyFont =
-          page.elements.whereType<DotsTextBlockElement>().first.fontFamily;
+      final bodyFont = page.elements
+          .whereType<DotsTextBlockElement>()
+          .firstWhere((e) => e.value == 'Un año de amor.')
+          .fontFamily;
       expect(bodyFont, equals('Inter'),
           reason: 'body text block must use Inter');
     });
