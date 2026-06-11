@@ -780,11 +780,16 @@ pw.Widget _buildOvalQrElement({
 }) {
   final captionFont = fontResolver(DotsFontRole.p22MackinacBook);
 
-  // Inscribed-square QR side: min(ovalWidth, ovalHeight) minus inset on each side.
-  final double qrSidePt = (element.ovalWidth < element.ovalHeight
-          ? element.ovalWidth
-          : element.ovalHeight) -
-      2.0 * _kQrInsetMm * _kMmToPt;
+  final bool isSquare = element.frameShape == DotsQrFrameShape.square;
+
+  // QR side. Oval frames inset the QR so it stays inscribed in the circle;
+  // the square frame lets the QR fill the full box (the base-truth PDF
+  // shows a plain square QR with no surrounding frame).
+  final double minSidePt = element.ovalWidth < element.ovalHeight
+      ? element.ovalWidth
+      : element.ovalHeight;
+  final double qrSidePt =
+      isSquare ? minSidePt : minSidePt - 2.0 * _kQrInsetMm * _kMmToPt;
   final double qrLeftPt = (element.ovalWidth - qrSidePt) / 2.0;
   final double qrTopPt = (element.ovalHeight - qrSidePt) / 2.0;
   final double captionTopPt =
@@ -795,17 +800,22 @@ pw.Widget _buildOvalQrElement({
     top: element.y,
     child: pw.Stack(
       children: [
-        // Oval frame — BoxShape.circle draws an ellipse inscribed in the bbox.
+        // Sized base layer — anchors the Stack's geometry (a Stack made
+        // only of Positioned children has no intrinsic size → NaN). The
+        // oval treatment decorates it with a circular outline; the square
+        // treatment leaves it undecorated so the QR reads as a plain block.
         pw.Container(
           width: element.ovalWidth,
           height: element.ovalHeight,
-          decoration: pw.BoxDecoration(
-            shape: pw.BoxShape.circle,
-            border: pw.Border.all(
-              color: _kOvalBorderColor,
-              width: _kOvalBorderWidthPt,
-            ),
-          ),
+          decoration: isSquare
+              ? null
+              : pw.BoxDecoration(
+                  shape: pw.BoxShape.circle,
+                  border: pw.Border.all(
+                    color: _kOvalBorderColor,
+                    width: _kOvalBorderWidthPt,
+                  ),
+                ),
         ),
         // QR code centred inside the oval.
         pw.Positioned(

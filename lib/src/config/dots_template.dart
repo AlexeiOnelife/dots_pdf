@@ -605,6 +605,16 @@ class DotsPhotoCircleElement extends DotsElement {
 /// (file-private in `album_spread_page.dart`) — NOT exposed as element
 /// fields.
 ///
+/// Frame shape drawn around a [DotsOvalQrElement]'s inscribed QR code.
+enum DotsQrFrameShape {
+  /// Circular outline (the legacy keep-alive treatment).
+  oval,
+
+  /// Plain square block — the base-truth treatment for the QR keep-alive
+  /// page (`pdf13_general_eventos_final.pdf` p.1): a square QR, no frame.
+  square,
+}
+
 /// All geometry fields are in PDF points (1 pt = 1/72 inch).
 @immutable
 class DotsOvalQrElement extends DotsElement {
@@ -616,6 +626,7 @@ class DotsOvalQrElement extends DotsElement {
     required this.ovalHeight,
     required this.qrPayload,
     required this.caption,
+    this.frameShape = DotsQrFrameShape.oval,
   });
 
   /// Bounding-box width of the oval in PDF points.
@@ -623,6 +634,14 @@ class DotsOvalQrElement extends DotsElement {
 
   /// Bounding-box height of the oval in PDF points.
   final double ovalHeight;
+
+  /// Frame shape drawn around the inscribed QR code.
+  ///
+  /// [DotsQrFrameShape.oval] (default) draws the circular outline used by
+  /// the legacy keep-alive treatment; [DotsQrFrameShape.square] draws the
+  /// plain square QR block annotated in the base-truth PDFs
+  /// (`pdf13_general_eventos_final.pdf` p.1 — 27 mm square, no oval frame).
+  final DotsQrFrameShape frameShape;
 
   /// QR code payload (typically a URL).
   final String qrPayload;
@@ -641,10 +660,12 @@ class DotsOvalQrElement extends DotsElement {
       other.ovalWidth == ovalWidth &&
       other.ovalHeight == ovalHeight &&
       other.qrPayload == qrPayload &&
-      other.caption == caption;
+      other.caption == caption &&
+      other.frameShape == frameShape;
 
   @override
-  int get hashCode => Object.hash(x, y, ovalWidth, ovalHeight, qrPayload, caption);
+  int get hashCode =>
+      Object.hash(x, y, ovalWidth, ovalHeight, qrPayload, caption, frameShape);
 }
 
 /// A rectangular photo element with per-photo opacity gradient and Gaussian
@@ -1368,21 +1389,21 @@ class DotsAlbumSpreadPage extends DotsPage {
     required String body,
     required String signature,
   }) {
-    // Canonical element positions corrected against docs/specs/02-pareja.md
-    // §p5 (dedication):
-    //   - text x = 50.53 mm from the (right-page) trim left edge.
-    //   - body width is per-category (the spec is the contract):
-    //       * parejas / hijos    → 102 mm  (docs/specs/02-pareja.md §p5)
+    // Canonical dedication layout, against docs/specs/02-pareja.md §p5:
+    //   - The whole block is centre-aligned and vertically centred on the
+    //     page midline — the spec callout "EL CONJUNTO SIEMPRE APARECE
+    //     CENTRADO" + "AUTO" markers, and "grows from center".
+    //   - Inter-element gaps: title→body 6.5 mm, body→signature 8 mm.
+    //   - Body box width is per-category (the spec is the contract):
+    //       * parejas / hijos      → 102 mm (docs/specs/02-pareja.md §p5)
     //       * individuales / otros → 120 mm (docs/specs/03-otros.md p3,
     //         docs/specs/06-individual.md p3 — "body … 120 mm wide")
     //       * boda has no dedication; generalEventos is not emitted here.
-    //   - y values stay near the previous defaults until the relative-y
-    //     refinement lands (deferred follow-up: title→body 6.5 mm gap,
-    //     body→signature 8 mm gap).
-    const double textX = 50.53 * _mmToPt;
-    const double titleY = 60 * _mmToPt;
-    const double bodyY = 90 * _mmToPt;
-    const double signatureY = 160 * _mmToPt;
+    //
+    // The renderer top-anchors every text element (no vertical-centre
+    // primitive), so the block is laid out by ESTIMATING the wrapped line
+    // count of the title and body — within ±1 line, i.e. ±~1 mm of shift,
+    // which is well inside the reflow tolerance the spec itself allows.
     final double bodyWidthMm = switch (type) {
       DotsAlbumType.individuales || DotsAlbumType.otros => 120.0,
       DotsAlbumType.parejas ||
@@ -1390,22 +1411,57 @@ class DotsAlbumSpreadPage extends DotsPage {
       DotsAlbumType.boda ||
       DotsAlbumType.generalEventos => 102.0,
     };
-    final double bodyWidthPt = bodyWidthMm * _mmToPt;
+    final double boxWidthPt = bodyWidthMm * _mmToPt;
+    final double boxXPt = (203.0 * _mmToPt - boxWidthPt) / 2.0;
+
+    const double titleFontSize = 23.0;
+    const double bodyFontSize = 9.0;
+    const double signatureFontSize = 12.0;
+    const double titleLineHeightPt = titleFontSize * 1.2; // 27.6 pt
+    const double bodyLineHeightPt = bodyFontSize * 1.2; // 10.8 pt
+    const double signatureLineHeightPt = signatureFontSize * 1.2; // 14.4 pt
+    const double titleGapPt = 6.5 * _mmToPt;
+    const double signatureGapPt = 8.0 * _mmToPt;
+
+    final bool hasSignature = signature.isNotEmpty;
+    final int titleLines = _estimateWrappedLines(title, titleFontSize, boxWidthPt);
+    final int bodyLines = _estimateWrappedLines(body, bodyFontSize, boxWidthPt);
+    final double titleHeightPt = titleLines * titleLineHeightPt;
+    final double bodyHeightPt = bodyLines * bodyLineHeightPt;
+
+    final double blockHeightPt = titleHeightPt +
+        titleGapPt +
+        bodyHeightPt +
+        (hasSignature ? signatureGapPt + signatureLineHeightPt : 0.0);
+    // Centre the block on the page's vertical midline (254 mm trim).
+    final double blockTopPt = (254.0 * _mmToPt - blockHeightPt) / 2.0;
+    final double titleY = blockTopPt;
+    final double bodyY = blockTopPt + titleHeightPt + titleGapPt;
+    final double signatureY = bodyY + bodyHeightPt + signatureGapPt;
+
+    // Centre the rotated signature horizontally using the same advance-width
+    // estimate the renderer applies in _buildRotatedText (fontSize×len×0.6).
+    final double signatureWidthPt = signatureFontSize * signature.length * 0.6;
+    final double signatureXPt = (203.0 * _mmToPt - signatureWidthPt) / 2.0;
 
     final elements = <DotsElement>[
-      DotsTextElement(
-        x: textX,
+      DotsTextBlockElement(
+        x: boxXPt,
         y: titleY,
         value: title,
-        fontSize: 23,
+        fontSize: titleFontSize,
+        width: boxWidthPt,
         fontFamily: 'P22 Mackinac Medium',
+        textAlign: DotsTextAlign.center,
+        lineHeight: 1.2,
+        maxChars: 50,
       ),
       DotsTextBlockElement(
-        x: textX,
+        x: boxXPt,
         y: bodyY,
         value: body,
-        fontSize: 9,
-        width: bodyWidthPt,
+        fontSize: bodyFontSize,
+        width: boxWidthPt,
         fontFamily: 'Inter',
         colorHex: '#1e1e1e',
         textAlign: DotsTextAlign.center,
@@ -1413,12 +1469,12 @@ class DotsAlbumSpreadPage extends DotsPage {
         maxChars: 1000,
         maxLines: 32,
       ),
-      if (signature.isNotEmpty)
+      if (hasSignature)
         DotsRotatedTextElement(
-          x: textX,
+          x: signatureXPt,
           y: signatureY,
           value: signature,
-          fontSize: 12,
+          fontSize: signatureFontSize,
           angleDegrees: 2.0,
           fontFamily: 'Biro Script Plus',
           colorHex: '#1e1e1e',
@@ -1445,6 +1501,26 @@ class DotsAlbumSpreadPage extends DotsPage {
       footer: const DotsSpreadFooter(wordmark: 'Dots. Memories'),
       elements: elements,
     );
+  }
+
+  /// Estimates the number of wrapped lines [text] occupies in a box
+  /// [boxWidthPt] wide at [fontSize], honouring explicit newlines.
+  ///
+  /// Used by layouts that must position elements relative to a wrapped
+  /// text block (e.g. the dedication's "grows from center" rule) on a
+  /// renderer that top-anchors every element and exposes no text-measure
+  /// primitive. The 0.5 factor approximates the average glyph advance of
+  /// the Inter / P22 Mackinac faces (≈0.5×fontSize), calibrated against
+  /// rendered output; accurate to within ±1 line.
+  static int _estimateWrappedLines(String text, double fontSize, double boxWidthPt) {
+    if (text.isEmpty) return 1;
+    final int charsPerLine = (boxWidthPt / (fontSize * 0.5)).floor().clamp(1, 1 << 30);
+    var lines = 0;
+    for (final paragraph in text.split('\n')) {
+      final int len = paragraph.isEmpty ? 1 : paragraph.length;
+      lines += (len / charsPerLine).ceil();
+    }
+    return lines < 1 ? 1 : lines;
   }
 
   /// Builds a closing single page for [type] at [pageNumber].
@@ -2593,7 +2669,9 @@ class DotsAlbumSpreadPage extends DotsPage {
         fontSize: 23,
         width: titleWidthMm * _mmToPt,
         fontFamily: 'P22 Mackinac Medium',
-        textAlign: DotsTextAlign.left,
+        // Center-aligned per pdf13 p.1 (TÍTULO "Align-text: center"),
+        // mirroring closingQrSpread.
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.087, // 25 / 23.
       ),
       // Body — opening copy (welcoming role).
@@ -2609,12 +2687,12 @@ class DotsAlbumSpreadPage extends DotsPage {
         width: bodyWidthMm * _mmToPt,
         fontFamily: 'Inter',
         colorHex: '#1e1e1e',
-        textAlign: DotsTextAlign.left,
+        // Center-aligned per pdf13 p.1 (TEXTO "Align-text: center").
+        textAlign: DotsTextAlign.center,
         lineHeight: 1.2,
       ),
-      // QR block — 27×27 mm square; oval element with equal w/h is a
-      // temporary approximation pending a true square-frame element
-      // variant (same approximation as closingQrSpread).
+      // QR block — a plain 27×27 mm SQUARE (mirrors closingQrSpread; the
+      // base-truth PDF shows a square QR with no oval frame).
       DotsOvalQrElement(
         x: qrXMm * _mmToPt,
         y: qrYMm * _mmToPt,
@@ -2622,6 +2700,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         ovalHeight: qrSizeMm * _mmToPt,
         qrPayload: content.qrPayload,
         caption: '', // caption rendered separately to the right of the QR.
+        frameShape: DotsQrFrameShape.square,
       ),
       // QR caption — to the right of the QR block.
       DotsTextBlockElement(
@@ -2729,10 +2808,8 @@ class DotsAlbumSpreadPage extends DotsPage {
         textAlign: DotsTextAlign.center,
         lineHeight: 1.2,
       ),
-      // QR block. The PDF shows a SQUARE 27×27 mm block; we use the
-      // existing oval QR element with equal width/height as a temporary
-      // approximation. A follow-up task replaces this with a true
-      // square-frame variant.
+      // QR block — a plain 27×27 mm SQUARE per
+      // pdf13_general_eventos_final.pdf p.1 (no oval frame).
       DotsOvalQrElement(
         x: qrXMm * _mmToPt,
         y: qrYMm * _mmToPt,
@@ -2740,6 +2817,7 @@ class DotsAlbumSpreadPage extends DotsPage {
         ovalHeight: qrSizeMm * _mmToPt,
         qrPayload: content.qrPayload,
         caption: '', // caption rendered separately to the right of the QR.
+        frameShape: DotsQrFrameShape.square,
       ),
       // QR caption — to the right of the QR block.
       DotsTextBlockElement(
